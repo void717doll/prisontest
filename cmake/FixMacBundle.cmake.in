@@ -1,0 +1,10 @@
+include(BundleUtilities)
+set(bundle "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/prisontest.app")
+set(extra_libraries)
+if("@SDL2_COMPAT_FOUND@")
+    # keep this unversioned name beside sdl2 for its @loader_path lookup.
+    list(APPEND extra_libraries "${bundle}/Contents/Frameworks/libSDL3.dylib")
+endif()
+fixup_bundle("${bundle}" "${extra_libraries}"
+    "@SDL2_RUNTIME_PREFIX@/lib;@SDL3_LIBRARY_DIRS@;@CURL_LIBRARY_DIRS@;@JSONCPP_LIBRARY_DIRS@")
+execute_process(COMMAND codesign --force --deep --sign - "${bundle}" COMMAND_ERROR_IS_FATAL ANY)

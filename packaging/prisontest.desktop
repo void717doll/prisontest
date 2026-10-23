@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=prisontest
+Comment=singleplayer prison mining game
+Exec=prisontest
+Icon=prisontest
+Terminal=false
+Categories=Game;
