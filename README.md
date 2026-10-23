@@ -37,15 +37,14 @@ for macos and windows dependencies, packages and the release workflow.
 ## assets and saves
 
 the asset files are kept in `ui/`, `textures/`, `sounds/`, `fonts/` and `data/`
-at the repository root. the client downloads them from `https://assets.prisontest.com/`
-on launch and caches them for offline play. release packages include only the
-app icon, so the first launch needs an internet connection. `resources.txt`
-lists the files the client downloads.
+at the repository root. every build and release package includes the files
+listed in `resources.txt`. the client loads them directly from its installation,
+so the first launch works offline without an asset download or cache.
 
-on linux, saves and the asset cache live under `~/.local/share/prisoncpp/`,
+on linux, saves and settings live under `~/.local/share/prisoncpp/`,
 or `$XDG_DATA_HOME/prisoncpp/` when set. windows uses
 `%LOCALAPPDATA%/prisoncpp/`; macos uses `~/Library/Application Support/prisoncpp/`.
-`--save-dir PATH` changes the save directory and puts the cache beside it.
+`--save-dir PATH` changes the save directory and puts settings beside it.
 
 ## playing
 
@@ -65,8 +64,8 @@ python3 tools/check_data.py .
 ctest --test-dir build --output-on-failure
 ```
 
-`--assets "$PWD"` runs the client with the repository's files and skips
-downloads. [asset hosting](docs/ASSETS.md) covers the file layout and cache;
+`--assets "$PWD"` runs the client with the repository's files instead of the
+build's copy. [game assets](docs/ASSETS.md) covers the file layout and packaging;
 [game data](data/README.md) describes the gameplay tables.
 
 ## credits and license

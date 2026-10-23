@@ -1,6 +1,6 @@
 # asset credits
 
-the downloaded DejaVu fonts retain their [license](fonts/LICENSE-DejaVu.txt).
+the bundled DejaVu fonts retain their [license](fonts/LICENSE-DejaVu.txt).
 the three `stone_break_*.wav` sounds are original procedural effects made by
 [the included generator](tools/generate_mining_sounds.py), using no recordings
 or third-party samples. [Sound notes](sounds/README.md) describe them.

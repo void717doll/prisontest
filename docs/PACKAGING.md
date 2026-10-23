@@ -43,8 +43,7 @@ run this workflow here, at the `prisoncpp` repository root.
 | macos x64 | macos 15 intel | zip containing `prisontest.app` and its libraries |
 
 the workflow only builds and packages. it configures `BUILD_TESTING=OFF`, does
-not run the client or tests, and does not download game assets. asset-server
-availability and data revisions do not affect packaging.
+not run the client or tests. game assets are packaged from the checkout.
 
 new runs wait for an active run in the same concurrency group. build jobs have
 a 30-minute limit. after changing the workflow, start a new **Run workflow**;
@@ -55,21 +54,19 @@ macos apps are ad-hoc signed for their relocated libraries and are not notarized
 windows executables are not signed.
 
 build jobs use pinned actions with read-only repository permissions. packages
-contain the client, required libraries, app icon, resource list, documentation
-and licenses. game data, textures, fonts, sounds, saves and caches are excluded.
-windows/mac packages also include a CA bundle for asset downloads and the optional HTTPS help API,
+contain the client, required libraries, game assets, resource list, documentation
+and licenses. saves and caches are excluded.
+windows/mac packages also include a CA bundle for the optional HTTPS help API,
 so it does not depend on a certificate path from the build machine.
 
-every client build stages the resource list and app icon beside the executable,
-or inside the macos app's Resources directory. asset files are not needed to
-build or package the client. installed `resources.txt` lists which files the
-client fetches from `https://assets.prisontest.com/` on launch. downloads keep
-the host's `ui/`, `textures/`, `sounds/`, `fonts/` and `data/` layout.
-`--assets PATH` selects a local asset pack and skips downloads.
+every client build stages the files in `resources.txt` beside the executable,
+or inside the macos app's Resources directory. packages install the same files
+under `share/prisoncpp` on linux/windows and `Contents/Resources` on macos,
+keeping the `ui/`, `textures/`, `sounds/`, `fonts/` and `data/` layout.
+the first launch works offline. `--assets PATH` selects another local asset folder.
 
-the resource list, app icon and trusted certificates stay in the application directory.
-downloaded game assets, worlds, settings and the help cache use the existing
-per-user data directory, in separate files and directories. install permissions can
+assets stay in the application directory. worlds, settings and the optional
+help cache use the existing per-user data directory. install permissions can
 protect shared game files from accidental edits by other users; this is an offline
 game and does not prevent the machine's owner from editing files or saves.
 
@@ -93,8 +90,8 @@ its actual filename. rpm dependencies are generated from the linked libraries;
 the private JsonCpp library is excluded from system provides and requirements.
 
 make the AppImage executable with `chmod +x prisontest-v0.1.0-linux-x64.AppImage`,
-then run it. the icon and runtime libraries are bundled; game assets still download
-on first launch. [linuxdeploy](https://github.com/linuxdeploy/linuxdeploy) builds
+then run it. game assets and runtime libraries are bundled.
+[linuxdeploy](https://github.com/linuxdeploy/linuxdeploy) builds
 this package with a pinned release and checksum.
 
 on macos:
@@ -122,7 +119,7 @@ list the target architectures.
 
 windows installers use [NSIS](https://nsis.sourceforge.io/Download), available
 with `choco install nsis --yes`. each installer includes the runtime DLLs and
-adds start-menu and desktop shortcuts. saves and downloaded assets stay in the
+adds start-menu and desktop shortcuts. saves and settings stay in the
 user's data directory when the client is uninstalled.
 
 then, on any target:
@@ -140,12 +137,12 @@ AppImage also needs `curl`, `file` and `desktop-file-utils`:
 sh tools/package_appimage.sh build
 ```
 
-to run checks locally, enable testing and point `PRISON_TEST_ASSETS` at a complete downloaded pack:
+to run checks locally, enable testing with the repository's asset files:
 
 ```sh
-cmake -S . -B build -DBUILD_TESTING=ON -DPRISON_TEST_ASSETS=/path/to/asset-pack
+cmake -S . -B build -DBUILD_TESTING=ON -DPRISON_TEST_ASSETS="$PWD"
 cmake --build build --parallel 2
-python3 tools/check_data.py /path/to/asset-pack
+python3 tools/check_data.py .
 ctest --test-dir build --output-on-failure
 ```
 

@@ -29,7 +29,7 @@ endif()
 
 include(CTest)
 if(BUILD_TESTING)
-    set(PRISON_TEST_ASSETS "${CMAKE_CURRENT_BINARY_DIR}/test-assets" CACHE PATH "downloaded assets for checks")
+    set(PRISON_TEST_ASSETS "${CMAKE_CURRENT_SOURCE_DIR}" CACHE PATH "asset directory for checks")
     foreach(name game world items save integration rewards lore)
         add_executable(${name}_test tests/${name}_test.cpp)
         target_link_libraries(${name}_test PRIVATE prison_core)
@@ -63,7 +63,7 @@ if(PRISON_CLIENT)
         set(PRISON_HASH "unknown")
     endif()
     add_executable(prisoncpp src/main.cpp src/render.cpp ${PRISON_UI_SOURCES} src/help.cpp
-        src/settings.cpp src/sound.cpp src/assets.cpp)
+        src/settings.cpp src/sound.cpp)
     target_link_libraries(prisoncpp PRIVATE prison_core SDL2::SDL2 OpenGL::GL
         PNG::PNG Freetype::Freetype PkgConfig::CURL)
     target_compile_definitions(prisoncpp PRIVATE SDL_MAIN_HANDLED

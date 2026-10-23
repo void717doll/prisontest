@@ -1,4 +1,3 @@
-#include "prison/assets.hpp"
 #include "prison/bombs.hpp"
 #include "prison/game.hpp"
 #include "prison/guardians.hpp"
@@ -32,7 +31,7 @@ struct Options {
     std::filesystem::path assets, saveDir = SaveStore::defaultDirectory(), screenshot, import;
     std::vector<std::string> commands;
     std::string load, stress, menu;
-    bool headless = false, newWorld = false, dev = false, noVsync = false, localAssets = false;
+    bool headless = false, newWorld = false, dev = false, noVsync = false;
     int frames = 0, iterations = 1000, width = 1280, height = 800;
 };
 std::filesystem::path discoverResources(const char* exe) {
@@ -66,10 +65,9 @@ Options parse(int argc, char** argv) {
                 throw std::runtime_error("Missing value for " + a);
             return std::string(argv[i]);
         };
-        if (a == "--assets") {
+        if (a == "--assets")
             o.assets = value();
-            o.localAssets = true;
-        } else if (a == "--save-dir")
+        else if (a == "--save-dir")
             o.saveDir = value();
         else if (a == "--load")
             o.load = value();
@@ -206,13 +204,9 @@ Json stress(Game& game, Mine& mine, const std::string& type, int iterations) {
     return result;
 }
 int run(const Options& options) {
-    traceStartup("selecting game assets");
     Data data;
-    const auto assetRoot = options.localAssets
-                               ? options.assets
-                               : updateAssets(options.assets, options.saveDir.parent_path() / "asset-cache");
     traceStartup("loading game data");
-    data.load(assetRoot);
+    data.load(options.assets);
     traceStartup("creating game");
     Game game(data);
     traceStartup("creating mine");

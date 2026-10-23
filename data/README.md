@@ -1,10 +1,8 @@
 # game data
 
-the client reads these json files through `src/common.cpp`. they are hosted at
-`https://assets.prisontest.com/data/` and downloaded into the launch cache.
-the source tables are stored here in git and excluded from client packages.
-use `--assets "$PWD"` from the repository root to preview edits before publishing
-the complete `data/` folder to the asset host.
+the client reads these json files through `src/common.cpp`. the source tables
+are stored here in git and included in every client package. use `--assets "$PWD"`
+from the repository root to preview edits before rebuilding the client.
 
 | file | contents |
 | --- | --- |
@@ -104,14 +102,13 @@ help entries. it checks the current structure; gameplay formula and transfer
 behavior remain covered by the local C++ tests. the github workflow only builds
 and packages the client.
 
-the cached `help.json` works offline. the optional help API can update articles
+the bundled `help.json` works offline. the optional help API can update articles
 and descriptions only. the native client retains local command categories, syntax, aliases
 and developer visibility, including when an API response omits some commands.
 the help API cannot change balance, item stats or command implementations.
 the three native progression/economy tables require `data_revision: 2` together.
-older or mixed packs are rejected. the client keeps the previous valid cache;
-a first launch requires a complete valid download. normal asset updates can
-replace the gameplay tables; see [asset hosting](../docs/ASSETS.md).
+older or mixed packs are rejected. gameplay tables are updated with the client
+package; see [game assets](../docs/ASSETS.md).
 
 ## native gem economy
 
@@ -124,7 +121,7 @@ level. `late_cost_scaling` applies to both native and ordinary enchants; its
 multiplier is 1 below its start level. gem enchants start scaling at level 100
 with power 2; Time Finder starts at 10 because its cap is 100. ruby base/step prices were raised 1,000x and sapphires 2,000x;
 token-paid RubyGreed and gem drop amounts/chances are unchanged. keep these
-tables in sync on the asset host: cached remote files also supply live prices.
+tables in sync when changing the bundled data.
 robot upgrade prices still use their separate `upgrade_cost_multiplier`.
 on load, saves without `gem_currency_version: 1` convert existing gem balances
 at 1:1m, then record that version. both wallets use the ordinary currency cap

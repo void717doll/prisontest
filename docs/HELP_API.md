@@ -1,6 +1,6 @@
 # help API
 
-`/help`, `/wiki`, `/info` and `/mods` share the guide. normal asset updates supply
+`/help`, `/wiki`, `/info` and `/mods` share the guide. the client package includes
 `data/help.json`; an optional API can replace its articles and command descriptions.
 set `PRISON_HELP_URL=https://your-host/api` before launching to enable it.
 `https://prisontest.com/api` is an example, not a configured service.

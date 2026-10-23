@@ -58,8 +58,8 @@ for the AppImage, run `chmod +x prisontest-{tag}-linux-x64.AppImage` first.
 JsonCpp is bundled in all linux packages. macos builds are ad-hoc signed and not notarized; windows builds
 are not signed.
 
-the first launch requires internet. assets download from https://assets.prisontest.com/ and stay cached for offline
-play. existing worlds remain in the normal per-user save directory.
+all game assets are included. the first launch works offline without an asset download or cache.
+existing worlds remain in the normal per-user save directory.
 
 SHA256SUMS.txt contains checksums for all ten packages. use the named client
 packages above; github's automatic source archives are not playable builds.

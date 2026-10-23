@@ -50,7 +50,7 @@ add_custom_target(prison_resources
         "-DPRISON_SOURCE_ROOT=${CMAKE_CURRENT_SOURCE_DIR}"
         "-DPRISON_RESOURCE_ROOT=${PRISON_RESOURCE_ROOT}"
         -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/CopyResources.cmake"
-    COMMENT "copying client resource list and icon"
+    COMMENT "copying game assets"
     VERBATIM)
 add_dependencies(prisoncpp prison_resources)
 if(TARGET ui_test)
@@ -59,7 +59,13 @@ if(TARGET ui_test)
 endif()
 
 install(FILES README.md LICENSE DESTINATION "${PRISON_DATA_DESTINATION}")
-install(FILES ui/prisontest_icon.png DESTINATION "${PRISON_DATA_DESTINATION}/ui")
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS resources.txt)
+file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/resources.txt" PRISON_RESOURCE_FILES)
+foreach(relative IN LISTS PRISON_RESOURCE_FILES)
+    get_filename_component(directory "${relative}" DIRECTORY)
+    install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/${relative}"
+        DESTINATION "${PRISON_DATA_DESTINATION}/${directory}")
+endforeach()
 install(FILES fonts/LICENSE-DejaVu.txt DESTINATION "${PRISON_DATA_DESTINATION}/fonts")
 install(FILES sounds/README.md DESTINATION "${PRISON_DATA_DESTINATION}/sounds")
 install(FILES sounds/prison/README.md DESTINATION "${PRISON_DATA_DESTINATION}/sounds/prison")
