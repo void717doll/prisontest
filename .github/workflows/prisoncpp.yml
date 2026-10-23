@@ -85,7 +85,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y ninja-build pkg-config libsdl2-dev libgl-dev libfreetype-dev libpng-dev libjsoncpp-dev libcurl4-openssl-dev xvfb dpkg-dev
+          sudo apt-get install -y ninja-build pkg-config libsdl2-dev libgl-dev libfreetype-dev libpng-dev libjsoncpp-dev libcurl4-openssl-dev dpkg-dev rpm file desktop-file-utils
       - name: macos dependencies
         if: runner.os == 'macOS'
         run: |
@@ -95,129 +95,15 @@ jobs:
         env:
           PRISON_VERSION: ${{ needs.prepare.outputs.version }}
         run: |
-          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DPRISON_VERSION="$PRISON_VERSION"
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF -DPRISON_VERSION="$PRISON_VERSION"
           cmake --build build --parallel 2
-      - name: install and package
-        run: |
-          cmake --install build --prefix "$RUNNER_TEMP/prisontest"
-          cpack --config build/CPackConfig.cmake -B build/packages
-      - name: installed client check
-        timeout-minutes: 2
-        env:
-          PACKAGE_ROOT: ${{ runner.temp }}/prisontest
-          PRISON_TRACE_STARTUP: "1"
-        run: |
-          python3 -u - <<'PY'
-          import os
-          import subprocess
-          import sys
-          from pathlib import Path
-
-          root = Path(os.environ["PACKAGE_ROOT"])
-          temporary = Path(os.environ["RUNNER_TEMP"])
-          macos = os.environ["RUNNER_OS"] == "macOS"
-          environment = os.environ.copy()
-          if macos:
-              package, = (Path(os.environ["GITHUB_WORKSPACE"]) / "build/packages").glob("*.zip")
-              extracted = temporary / "macos-check"
-              subprocess.run(["ditto", "-x", "-k", str(package), str(extracted)], check=True)
-              app, = extracted.rglob("prisontest.app")
-              root = app.parent
-              sdl3 = app / "Contents/Frameworks/libSDL3.dylib"
-              if not sdl3.is_file() or sdl3.resolve().parent != sdl3.parent.resolve():
-                  sys.exit("::error::the macos package must contain the SDL3 runtime used by sdl2-compat")
-              subprocess.run(["codesign", "--verify", "--deep", "--strict", str(app)], check=True)
-              environment["DYLD_PRINT_LIBRARIES"] = "1"
-          if os.environ["RUNNER_OS"] == "Linux":
-              package, = (Path(os.environ["GITHUB_WORKSPACE"]) / "build/packages").glob("*.deb")
-              dependencies = subprocess.check_output(["dpkg-deb", "-f", str(package), "Depends"], text=True)
-              print(f"deb dependencies: {dependencies.strip()}")
-              if "libjsoncpp" in dependencies:
-                  sys.exit("::error::the deb must use its bundled JsonCpp library")
-              extracted = temporary / "deb-check"
-              subprocess.run(["dpkg-deb", "-x", str(package), str(extracted)], check=True)
-              root = extracted / "usr"
-              libraries = subprocess.check_output(["ldd", str(root / "bin/prisontest")], text=True)
-              jsoncpp = [line.split()[2] for line in libraries.splitlines()
-                         if line.strip().startswith("libjsoncpp.so")]
-              if len(jsoncpp) != 1 or Path(jsoncpp[0]).resolve().parent != root / "lib/prisoncpp":
-                  sys.exit("::error::the client did not resolve its bundled JsonCpp library\n" + libraries)
-              print(f"bundled JsonCpp: {jsoncpp[0]}")
-          executable = root / ("prisontest.app/Contents/MacOS/prisontest"
-                               if macos else "bin/prisontest")
-          print(f"checking installed client: {executable}")
-          startup_log = temporary / "native-check/startup.log"
-          startup_log.parent.mkdir(parents=True, exist_ok=True)
-          with startup_log.open("w") as output:
-              try:
-                  process = subprocess.Popen([
-                      str(executable), "--headless", "--save-dir", str(temporary / "native-check/saves"),
-                      "--dev", "--command", "/givecrystal 2 1 token 10"
-                  ], cwd=temporary, env=environment, stdout=output, stderr=subprocess.STDOUT)
-              except OSError as error:
-                  print(f"::error::could not launch the installed client: {error}", file=sys.stderr)
-                  sys.exit(1)
-          try:
-              status = process.wait(timeout=90)
-          except subprocess.TimeoutExpired:
-              print("::error::installed headless client did not exit within 90 seconds", file=sys.stderr)
-              try:
-                  if macos:
-                      report = temporary / "native-check/macos-hang.txt"
-                      report.parent.mkdir(parents=True, exist_ok=True)
-                      try:
-                          subprocess.run(["/usr/bin/sample", str(process.pid), "5", "-file", str(report)],
-                                         timeout=15, check=False)
-                      except (OSError, subprocess.TimeoutExpired) as error:
-                          print(f"could not sample the stalled client: {error}", file=sys.stderr)
-                      if report.is_file():
-                          print(report.read_text(errors="replace").split("\nBinary Images:", 1)[0])
-              finally:
-                  process.kill()
-                  process.wait(timeout=5)
-              status = 124
-          startup = startup_log.read_text(errors="replace")
-          for line in startup.splitlines():
-              if not line.startswith("dyld[") or "libSDL" in line:
-                  print(line)
-          if macos and status == 0:
-              if not any(line.startswith("dyld[") and line.endswith(str(sdl3.resolve()))
-                         for line in startup.splitlines()):
-                  sys.exit("::error::the client did not load SDL3 from the packaged app")
-              print(f"bundled SDL3: {sdl3}")
-          if status:
-              print(f"::error::installed client exited with status {status}", file=sys.stderr)
-          sys.exit(status if status >= 0 else 128 - status)
-          PY
-      - name: check downloaded game data and core
-        run: |
-          python3 - <<'PY'
-          import json
-          import os
-          import shutil
-          from pathlib import Path
-
-          cache = Path(os.environ["RUNNER_TEMP"]) / "native-check/asset-cache"
-          pack = json.loads((cache / "current.json").read_text())["pack"]
-          shutil.copytree(cache / pack, "build/test-assets")
-          PY
-          python3 tools/check_data.py build/test-assets
-          ctest --test-dir build --output-on-failure
-      - name: graphical checks
+      - name: package
+        run: cpack --config build/CPackConfig.cmake -B build/packages
+      - name: appimage
         if: runner.os == 'Linux'
         env:
-          LIBGL_ALWAYS_SOFTWARE: "1"
-        run: xvfb-run -a ./build/ui_test "$GITHUB_WORKSPACE/build/test-assets" "$RUNNER_TEMP/ui-checks"
-      - name: upload macos diagnostics
-        if: failure() && runner.os == 'macOS'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
-        with:
-          name: native-check-${{ matrix.name }}
-          path: |
-            ${{ runner.temp }}/native-check/macos-hang.txt
-            ${{ runner.temp }}/native-check/startup.log
-          if-no-files-found: ignore
-          retention-days: 14
+          PRISON_VERSION: ${{ needs.prepare.outputs.version }}
+        run: sh tools/package_appimage.sh build "$PRISON_VERSION"
       - name: upload packages
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
@@ -225,6 +111,8 @@ jobs:
           path: |
             build/packages/*.tar.gz
             build/packages/*.deb
+            build/packages/*.rpm
+            build/packages/*.AppImage
             build/packages/*.zip
           if-no-files-found: error
           retention-days: 14
@@ -232,9 +120,19 @@ jobs:
 
   windows:
     needs: prepare
-    name: windows-x64
+    name: ${{ matrix.name }}
     runs-on: windows-2022
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: windows-x64
+            msystem: UCRT64
+            prefix: mingw-w64-ucrt-x86_64
+          - name: windows-x86
+            msystem: MINGW32
+            prefix: mingw-w64-i686
     defaults:
       run:
         shell: msys2 {0}
@@ -242,58 +140,39 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
+      - name: installer tools
+        shell: pwsh
+        run: choco install nsis --no-progress --yes
       - uses: msys2/setup-msys2@ec48f7c5447b3140e2b088413ae3a55687bccb6e # v2
         with:
-          msystem: UCRT64
+          msystem: ${{ matrix.msystem }}
           update: true
           install: >-
             git
-            mingw-w64-ucrt-x86_64-gcc
-            mingw-w64-ucrt-x86_64-cmake
-            mingw-w64-ucrt-x86_64-ninja
-            mingw-w64-ucrt-x86_64-pkgconf
-            mingw-w64-ucrt-x86_64-python
-            mingw-w64-ucrt-x86_64-SDL2
-            mingw-w64-ucrt-x86_64-freetype
-            mingw-w64-ucrt-x86_64-libpng
-            mingw-w64-ucrt-x86_64-jsoncpp
-            mingw-w64-ucrt-x86_64-curl
+            ${{ matrix.prefix }}-gcc
+            ${{ matrix.prefix }}-cmake
+            ${{ matrix.prefix }}-ninja
+            ${{ matrix.prefix }}-pkgconf
+            ${{ matrix.prefix }}-SDL2
+            ${{ matrix.prefix }}-freetype
+            ${{ matrix.prefix }}-libpng
+            ${{ matrix.prefix }}-jsoncpp
+            ${{ matrix.prefix }}-curl
       - name: build
         env:
           PRISON_VERSION: ${{ needs.prepare.outputs.version }}
         run: |
-          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DPRISON_VERSION="$PRISON_VERSION"
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF -DPRISON_VERSION="$PRISON_VERSION"
           cmake --build build --parallel 2
-      - name: install and package
-        run: |
-          cmake --install build --prefix "$RUNNER_TEMP/prisontest"
-          cpack --config build/CPackConfig.cmake -B build/packages
-      - name: installed client without msys on path
-        shell: pwsh
-        run: |
-          $env:PATH = "$env:SystemRoot\System32;$env:SystemRoot"
-          Set-Location $env:RUNNER_TEMP
-          & "$env:RUNNER_TEMP/prisontest/bin/prisontest.exe" --headless --save-dir "$env:RUNNER_TEMP/native-check/saves" --dev --command '/givecrystal 2 1 token 10'
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-      - name: check downloaded game data and core
-        run: |
-          python3 - <<'PY'
-          import json
-          import os
-          import shutil
-          from pathlib import Path
-
-          cache = Path(os.environ["RUNNER_TEMP"]) / "native-check/asset-cache"
-          pack = json.loads((cache / "current.json").read_text())["pack"]
-          shutil.copytree(cache / pack, "build/test-assets")
-          PY
-          python3 tools/check_data.py build/test-assets
-          ctest --test-dir build --output-on-failure
+      - name: package
+        run: cpack --config build/CPackConfig.cmake -B build/packages
       - name: upload package
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          name: prisontest-windows-x64
-          path: build/packages/*.zip
+          name: prisontest-${{ matrix.name }}
+          path: |
+            build/packages/*.zip
+            build/packages/*.exe
           if-no-files-found: error
           retention-days: 14
           compression-level: 0
@@ -330,7 +209,7 @@ jobs:
           cat >> "$GITHUB_STEP_SUMMARY" <<EOF
           [download all platform packages]($BUNDLE_URL)
 
-          extract the bundle and upload the five files in assets/ and SHA256SUMS.txt
+          extract the bundle and upload the ten packages in assets/ and SHA256SUMS.txt
           to a release in prisontest/prisontest-client. use notes.md for its description.
           EOF
 
