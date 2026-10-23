@@ -1,0 +1,366 @@
+name: native builds and releases
+
+on:
+  push:
+    branches: ['**']
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: release in this repository, such as v0.1.0; leave empty for packages only
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: native-${{ github.workflow }}-${{ inputs.release_tag || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 5
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      release_tag: ${{ steps.version.outputs.release_tag }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: package version
+        id: version
+        shell: bash
+        env:
+          REQUESTED_TAG: ${{ inputs.release_tag }}
+        run: |
+          if [[ ! -f VERSION || ! -f CMakeLists.txt ]]; then
+            echo 'native builds require the prisoncpp source at the repository root' >&2
+            exit 1
+          fi
+          release_tag=""
+          if [[ "$GITHUB_REF_TYPE" == tag ]]; then
+            release_tag="$GITHUB_REF_NAME"
+          elif [[ "$GITHUB_EVENT_NAME" == workflow_dispatch ]]; then
+            release_tag="$REQUESTED_TAG"
+          fi
+          if [[ -n "$release_tag" ]]; then
+            if [[ ! "$release_tag" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ || ${#release_tag} -gt 40 ]]; then
+              echo 'release tags must use v0.0.0' >&2
+              exit 1
+            fi
+            version="${release_tag#v}"
+          else
+            version=$(cat VERSION)
+            if [[ ! "$version" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+              echo 'VERSION must contain a version such as 0.1.0' >&2
+              exit 1
+            fi
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "release_tag=$release_tag" >> "$GITHUB_OUTPUT"
+
+  unix:
+    needs: prepare
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            name: linux-x64
+          - os: macos-15
+            name: macos-arm64
+          - os: macos-15-intel
+            name: macos-x64
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build pkg-config libsdl2-dev libgl-dev libfreetype-dev libpng-dev libjsoncpp-dev libcurl4-openssl-dev xvfb dpkg-dev
+      - name: macos dependencies
+        if: runner.os == 'macOS'
+        run: |
+          brew install ninja pkg-config sdl2-compat freetype libpng jsoncpp curl
+          echo "PKG_CONFIG_PATH=$(brew --prefix curl)/lib/pkgconfig" >> "$GITHUB_ENV"
+      - name: build
+        env:
+          PRISON_VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DPRISON_VERSION="$PRISON_VERSION"
+          cmake --build build --parallel 2
+      - name: install and package
+        run: |
+          cmake --install build --prefix "$RUNNER_TEMP/prisontest"
+          cpack --config build/CPackConfig.cmake -B build/packages
+      - name: installed client check
+        timeout-minutes: 2
+        env:
+          PACKAGE_ROOT: ${{ runner.temp }}/prisontest
+          PRISON_TRACE_STARTUP: "1"
+        run: |
+          python3 -u - <<'PY'
+          import os
+          import subprocess
+          import sys
+          from pathlib import Path
+
+          root = Path(os.environ["PACKAGE_ROOT"])
+          temporary = Path(os.environ["RUNNER_TEMP"])
+          macos = os.environ["RUNNER_OS"] == "macOS"
+          environment = os.environ.copy()
+          if macos:
+              package, = (Path(os.environ["GITHUB_WORKSPACE"]) / "build/packages").glob("*.zip")
+              extracted = temporary / "macos-check"
+              subprocess.run(["ditto", "-x", "-k", str(package), str(extracted)], check=True)
+              app, = extracted.rglob("prisontest.app")
+              root = app.parent
+              sdl3 = app / "Contents/Frameworks/libSDL3.dylib"
+              if not sdl3.is_file() or sdl3.resolve().parent != sdl3.parent.resolve():
+                  sys.exit("::error::the macos package must contain the SDL3 runtime used by sdl2-compat")
+              subprocess.run(["codesign", "--verify", "--deep", "--strict", str(app)], check=True)
+              environment["DYLD_PRINT_LIBRARIES"] = "1"
+          if os.environ["RUNNER_OS"] == "Linux":
+              package, = (Path(os.environ["GITHUB_WORKSPACE"]) / "build/packages").glob("*.deb")
+              dependencies = subprocess.check_output(["dpkg-deb", "-f", str(package), "Depends"], text=True)
+              print(f"deb dependencies: {dependencies.strip()}")
+              if "libjsoncpp" in dependencies:
+                  sys.exit("::error::the deb must use its bundled JsonCpp library")
+              extracted = temporary / "deb-check"
+              subprocess.run(["dpkg-deb", "-x", str(package), str(extracted)], check=True)
+              root = extracted / "usr"
+              libraries = subprocess.check_output(["ldd", str(root / "bin/prisontest")], text=True)
+              jsoncpp = [line.split()[2] for line in libraries.splitlines()
+                         if line.strip().startswith("libjsoncpp.so")]
+              if len(jsoncpp) != 1 or Path(jsoncpp[0]).resolve().parent != root / "lib/prisoncpp":
+                  sys.exit("::error::the client did not resolve its bundled JsonCpp library\n" + libraries)
+              print(f"bundled JsonCpp: {jsoncpp[0]}")
+          executable = root / ("prisontest.app/Contents/MacOS/prisontest"
+                               if macos else "bin/prisontest")
+          print(f"checking installed client: {executable}")
+          startup_log = temporary / "native-check/startup.log"
+          startup_log.parent.mkdir(parents=True, exist_ok=True)
+          with startup_log.open("w") as output:
+              try:
+                  process = subprocess.Popen([
+                      str(executable), "--headless", "--save-dir", str(temporary / "native-check/saves"),
+                      "--dev", "--command", "/givecrystal 2 1 token 10"
+                  ], cwd=temporary, env=environment, stdout=output, stderr=subprocess.STDOUT)
+              except OSError as error:
+                  print(f"::error::could not launch the installed client: {error}", file=sys.stderr)
+                  sys.exit(1)
+          try:
+              status = process.wait(timeout=90)
+          except subprocess.TimeoutExpired:
+              print("::error::installed headless client did not exit within 90 seconds", file=sys.stderr)
+              try:
+                  if macos:
+                      report = temporary / "native-check/macos-hang.txt"
+                      report.parent.mkdir(parents=True, exist_ok=True)
+                      try:
+                          subprocess.run(["/usr/bin/sample", str(process.pid), "5", "-file", str(report)],
+                                         timeout=15, check=False)
+                      except (OSError, subprocess.TimeoutExpired) as error:
+                          print(f"could not sample the stalled client: {error}", file=sys.stderr)
+                      if report.is_file():
+                          print(report.read_text(errors="replace").split("\nBinary Images:", 1)[0])
+              finally:
+                  process.kill()
+                  process.wait(timeout=5)
+              status = 124
+          startup = startup_log.read_text(errors="replace")
+          for line in startup.splitlines():
+              if not line.startswith("dyld[") or "libSDL" in line:
+                  print(line)
+          if macos and status == 0:
+              if not any(line.startswith("dyld[") and line.endswith(str(sdl3.resolve()))
+                         for line in startup.splitlines()):
+                  sys.exit("::error::the client did not load SDL3 from the packaged app")
+              print(f"bundled SDL3: {sdl3}")
+          if status:
+              print(f"::error::installed client exited with status {status}", file=sys.stderr)
+          sys.exit(status if status >= 0 else 128 - status)
+          PY
+      - name: check downloaded game data and core
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          import shutil
+          from pathlib import Path
+
+          cache = Path(os.environ["RUNNER_TEMP"]) / "native-check/asset-cache"
+          pack = json.loads((cache / "current.json").read_text())["pack"]
+          shutil.copytree(cache / pack, "build/test-assets")
+          PY
+          python3 tools/check_data.py build/test-assets
+          ctest --test-dir build --output-on-failure
+      - name: graphical checks
+        if: runner.os == 'Linux'
+        env:
+          LIBGL_ALWAYS_SOFTWARE: "1"
+        run: xvfb-run -a ./build/ui_test "$GITHUB_WORKSPACE/build/test-assets" "$RUNNER_TEMP/ui-checks"
+      - name: upload macos diagnostics
+        if: failure() && runner.os == 'macOS'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: native-check-${{ matrix.name }}
+          path: |
+            ${{ runner.temp }}/native-check/macos-hang.txt
+            ${{ runner.temp }}/native-check/startup.log
+          if-no-files-found: ignore
+          retention-days: 14
+      - name: upload packages
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: prisontest-${{ matrix.name }}
+          path: |
+            build/packages/*.tar.gz
+            build/packages/*.deb
+            build/packages/*.zip
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 0
+
+  windows:
+    needs: prepare
+    name: windows-x64
+    runs-on: windows-2022
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: msys2/setup-msys2@ec48f7c5447b3140e2b088413ae3a55687bccb6e # v2
+        with:
+          msystem: UCRT64
+          update: true
+          install: >-
+            git
+            mingw-w64-ucrt-x86_64-gcc
+            mingw-w64-ucrt-x86_64-cmake
+            mingw-w64-ucrt-x86_64-ninja
+            mingw-w64-ucrt-x86_64-pkgconf
+            mingw-w64-ucrt-x86_64-python
+            mingw-w64-ucrt-x86_64-SDL2
+            mingw-w64-ucrt-x86_64-freetype
+            mingw-w64-ucrt-x86_64-libpng
+            mingw-w64-ucrt-x86_64-jsoncpp
+            mingw-w64-ucrt-x86_64-curl
+      - name: build
+        env:
+          PRISON_VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DPRISON_VERSION="$PRISON_VERSION"
+          cmake --build build --parallel 2
+      - name: install and package
+        run: |
+          cmake --install build --prefix "$RUNNER_TEMP/prisontest"
+          cpack --config build/CPackConfig.cmake -B build/packages
+      - name: installed client without msys on path
+        shell: pwsh
+        run: |
+          $env:PATH = "$env:SystemRoot\System32;$env:SystemRoot"
+          Set-Location $env:RUNNER_TEMP
+          & "$env:RUNNER_TEMP/prisontest/bin/prisontest.exe" --headless --save-dir "$env:RUNNER_TEMP/native-check/saves" --dev --command '/givecrystal 2 1 token 10'
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: check downloaded game data and core
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          import shutil
+          from pathlib import Path
+
+          cache = Path(os.environ["RUNNER_TEMP"]) / "native-check/asset-cache"
+          pack = json.loads((cache / "current.json").read_text())["pack"]
+          shutil.copytree(cache / pack, "build/test-assets")
+          PY
+          python3 tools/check_data.py build/test-assets
+          ctest --test-dir build --output-on-failure
+      - name: upload package
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: prisontest-windows-x64
+          path: build/packages/*.zip
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 0
+
+  packages:
+    needs: [prepare, unix, windows]
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    env:
+      PACKAGE_TAG: v${{ needs.prepare.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          pattern: prisontest-*
+          path: artifacts
+      - name: collect packages and checksums
+        run: python3 tools/prepare_release.py "$PACKAGE_TAG" artifacts release
+      - name: upload release bundle
+        id: bundle
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: prisontest-packages
+          path: release/
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 0
+      - name: download instructions
+        env:
+          BUNDLE_URL: ${{ steps.bundle.outputs.artifact-url }}
+        run: |
+          cat >> "$GITHUB_STEP_SUMMARY" <<EOF
+          [download all platform packages]($BUNDLE_URL)
+
+          extract the bundle and upload the five files in assets/ and SHA256SUMS.txt
+          to a release in prisontest/prisontest-client. use notes.md for its description.
+          EOF
+
+  release:
+    needs: [prepare, packages]
+    if: needs.prepare.outputs.release_tag != '' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: prisontest-packages
+          path: release
+      - name: publish in this repository
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json isDraft > release/current.json; then
+            if [[ "$(jq -r .isDraft release/current.json)" != true ]]; then
+              echo 'this release is already published; keeping its packages unchanged'
+              exit 0
+            fi
+          else
+            gh release create "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --draft \
+              --title "prisontest $RELEASE_TAG" --notes-file release/notes.md
+          fi
+          gh release upload "$RELEASE_TAG" release/assets/* --repo "$GITHUB_REPOSITORY" --clobber
+          gh release edit "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --draft=false --latest
