@@ -100,7 +100,8 @@ ctest --test-dir build --output-on-failure
 the audit rejects duplicate keys/ids, non-finite numbers, broken rank/block
 pairing, invalid costs/colors/unlocks, missing terrain textures and malformed
 help entries. it checks the current structure; gameplay formula and transfer
-behavior remain covered by the C++ tests. the github workflow runs both.
+behavior remain covered by the local C++ tests. the github workflow only builds
+and packages the client.
 
 the cached `help.json` works offline. the optional help API can update articles
 and descriptions only. the native client retains local command categories, syntax, aliases

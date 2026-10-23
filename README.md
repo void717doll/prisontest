@@ -8,6 +8,9 @@ this is the standalone C++ client, built with SDL2 and OpenGL.
 [downloads](https://github.com/prisontest/prisontest-client/releases) are kept
 in the public client repository.
 
+packages: linux deb, rpm, AppImage and tar.gz; windows x64 and win32 installers and zips;
+macos apple silicon and intel apps.
+
 ## build
 
 requires a C++17 compiler, CMake 3.21 or newer, SDL2, OpenGL, FreeType, libpng,
@@ -56,7 +59,7 @@ that can be skipped.
 the core checks use a downloaded asset pack:
 
 ```sh
-cmake -S . -B build -DPRISON_TEST_ASSETS=/path/to/asset-pack
+cmake -S . -B build -DBUILD_TESTING=ON -DPRISON_TEST_ASSETS=/path/to/asset-pack
 cmake --build build --parallel 2
 python3 tools/check_data.py /path/to/asset-pack
 ctest --test-dir build --output-on-failure

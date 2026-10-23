@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""collect the five client packages and checksums for a release."""
+"""collect client packages and checksums for a release."""
 
 import argparse
 import hashlib
@@ -11,7 +11,12 @@ import shutil
 PACKAGES = (
     ("linux-x64", "tar.gz"),
     ("linux-x64", "deb"),
+    ("linux-x64", "rpm"),
+    ("linux-x64", "AppImage"),
     ("windows-x64", "zip"),
+    ("windows-x64", "exe"),
+    ("windows-x86", "zip"),
+    ("windows-x86", "exe"),
     ("macos-arm64", "zip"),
     ("macos-x64", "zip"),
 )
@@ -42,20 +47,21 @@ def prepare(tag, artifacts, output):
     (assets / "SHA256SUMS.txt").write_text("\n".join(checksums) + "\n", encoding="utf-8")
     (output / "notes.md").write_text(f"""prisontest {tag}
 
-- windows: extract the zip and run `prisontest.cmd`.
-- linux: install the deb, or extract the tar.gz and run `usr/bin/prisontest`.
+- windows: choose x64 or x86 (win32) and run the .exe installer. for a portable copy, extract the zip and run `prisontest.cmd`.
+- linux: run the AppImage, install the deb/rpm, or extract the tar.gz and run `usr/bin/prisontest`.
 - macos: extract the zip and open `prisontest.app`. choose apple silicon or intel for your mac.
 
 the linux tar.gz needs SDL2, OpenGL, FreeType, libpng and libcurl from your
-package manager. the deb declares these dependencies; install it with
-`sudo apt install ./prisontest-{tag}-linux-x64.deb`. JsonCpp is bundled in both
-linux packages. macos builds are ad-hoc signed and not notarized; windows builds
+package manager. install the deb with `sudo apt install ./prisontest-{tag}-linux-x64.deb`,
+or the rpm with `sudo dnf install ./prisontest-{tag}-linux-x64.rpm`.
+for the AppImage, run `chmod +x prisontest-{tag}-linux-x64.AppImage` first.
+JsonCpp is bundled in all linux packages. macos builds are ad-hoc signed and not notarized; windows builds
 are not signed.
 
-assets download from https://assets.prisontest.com/ and stay cached for offline
+the first launch requires internet. assets download from https://assets.prisontest.com/ and stay cached for offline
 play. existing worlds remain in the normal per-user save directory.
 
-SHA256SUMS.txt contains checksums for all five packages. use the named client
+SHA256SUMS.txt contains checksums for all ten packages. use the named client
 packages above; github's automatic source archives are not playable builds.
 """, encoding="utf-8")
     print(f"release: staged {len(sources)} packages and checksums in {assets}")

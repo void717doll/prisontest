@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""check the shared gameplay tables before building a package."""
+"""check the shared gameplay tables before publishing asset updates."""
 
 import json
 import math

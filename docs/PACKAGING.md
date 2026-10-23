@@ -1,7 +1,7 @@
 # desktop builds
 
 `.github/workflows/prisoncpp.yml` builds this native source on branch pushes,
-pull requests, `v*` tags and manual runs. every successful run uploads all five
+pull requests, `v*` tags and manual runs. every successful run uploads all ten
 packages, checksums and release notes as the `prisontest-packages` artifact.
 version tags or an explicit `release_tag` also publish a release in this same
 repository after every platform succeeds. the workflow does not upload to the
@@ -14,13 +14,13 @@ public client repository.
    enter a new version such as `v0.1.1` to also create a release here.
 3. when the run succeeds, download `prisontest-packages` from its artifacts or
    summary link. versioned runs also attach each package to this repo's release.
-4. extract the artifact and upload the five packages in `assets/` plus
+4. extract the artifact and upload the ten packages in `assets/` plus
    `SHA256SUMS.txt` to `prisontest/prisontest-client` manually. copy `notes.md`
    into the public release description.
 
 artifacts expire after 14 days; release attachments remain available. each
 platform also uploads its own artifact, even if another platform fails later.
-the combined bundle and release require all four platform builds to pass.
+the combined bundle and release require all five platform builds to pass.
 
 releases use the built-in `GITHUB_TOKEN`, with `contents: write` granted only
 to the release job. no cross-repository token or secret is needed. new tags
@@ -33,52 +33,25 @@ run this workflow here, at the `prisoncpp` repository root.
 
 ## platform builds
 
-new runs wait for an active run in the same concurrency group instead of canceling
-it. github can still replace an older pending run with a newer one. build jobs
-retain their 30-minute limit. the linux/macos installed-client check has its own
-90-second process deadline, including the first asset download, and reports
-launch failures, exit status or a timeout.
-the surrounding step has a two-minute limit. startup stages are printed through
-`PRISON_TRACE_STARTUP=1`. a macos timeout captures a five-second `sample` report
-before killing the process, then uploads it as `native-check-macos-arm64` or
-`native-check-macos-x64`. the log shows the call graph; the artifact keeps the
-full report and startup output.
-
-after a startup or workflow fix, start a new **Run workflow** on `main`.
-**Re-run jobs** keeps the original commit and workflow, so it cannot pick up
-new fixes. see [github reruns](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/re-run-workflows-and-jobs).
-
-macos resolves bundled resources from `_NSGetExecutablePath` and
-`Contents/Resources`, so headless launches do not enter SDL's Cocoa bundle lookup.
-the diagnostic trace distinguishes resource lookup, data loading, mine setup and
-process shutdown. a timeout alone does not establish which stage stalled.
-
-`Error: The operation was canceled` alone does not identify the cause. check the
-run summary for a job timeout, explicit cancellation or a superseding run; the
-printed `if` line from older workflows only selects the installed executable.
-see [github concurrency](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency).
-
-| target | runner | package |
+| target | runner | packages |
 | --- | --- | --- |
-| linux x64 | ubuntu 22.04 | deb and tar.gz with a private JsonCpp library |
-| windows x64 | windows 2022, MSYS2 UCRT64 | zip with required runtime DLLs and `prisontest.cmd` |
+| linux x64 | ubuntu 22.04 | deb, rpm, AppImage and tar.gz |
+| windows x64 | windows 2022, MSYS2 UCRT64 | .exe installer and portable zip |
+| windows x86 (win32) | windows 2022, MSYS2 MINGW32 | 32-bit .exe installer and portable zip |
 | macos arm64 | macos 15 | zip containing `prisontest.app` and its libraries |
 | macos x64 | macos 15 intel | zip containing `prisontest.app` and its libraries |
 
-each job builds and packages the client, then checks the installed executable
-from another directory. that first launch downloads the assets. the job audits
-the downloaded json files and uses that same pack for the core suites.
-windows also removes
-MSYS2 from the test process's PATH, so missing packaged DLLs fail that check.
-linux extracts the deb and checks its library metadata and JsonCpp resolution
-before launching that packaged client.
-macos extracts the zip, verifies the app signature and checks that SDL3 actually
-loads from inside the extracted app.
+the workflow only builds and packages. it configures `BUILD_TESTING=OFF`, does
+not run the client or tests, and does not download game assets. asset-server
+availability and data revisions do not affect packaging.
+
+new runs wait for an active run in the same concurrency group. build jobs have
+a 30-minute limit. after changing the workflow, start a new **Run workflow**;
+rerunning an old job keeps its original commit.
+
 the executable is `prisontest` on linux and macos, and `prisontest.exe` on windows.
-linux runs the rendered UI checks under Xvfb with software OpenGL. macos/windows
-rendering still needs testing on those systems. the macos bundle is ad-hoc
-signed for its relocated libraries; it is not notarized. the windows binary is
-not signed.
+macos apps are ad-hoc signed for their relocated libraries and are not notarized.
+windows executables are not signed.
 
 build jobs use pinned actions with read-only repository permissions. packages
 contain the client, required libraries, app icon, resource list, documentation
@@ -102,7 +75,7 @@ game and does not prevent the machine's owner from editing files or saves.
 ## local dependencies
 
 linux build dependencies are listed in [the native readme](../README.md).
-both linux packages carry the matching JsonCpp library under `lib/prisoncpp`;
+the linux packages carry the matching JsonCpp library under `lib/prisoncpp`;
 the executable finds it relative to its own location. this avoids requiring
 Ubuntu's `libjsoncpp25` on Debian releases that provide `libjsoncpp26`.
 its [upstream license](https://github.com/open-source-parsers/jsoncpp/blob/1.9.6/LICENSE)
@@ -111,7 +84,17 @@ is installed under `share/prisoncpp/licenses`.
 install a downloaded deb with `sudo apt install ./prisontest-v0.1.0-linux-x64.deb`,
 using its actual filename. apt installs the remaining runtime dependencies;
 `dpkg -i` alone does not fetch them. the tar.gz needs those system libraries too;
-it is not an AppImage. do not symlink different JsonCpp sonames to each other.
+use the AppImage to bundle those dependencies. do not symlink different
+JsonCpp sonames to each other.
+
+install the rpm with `sudo dnf install ./prisontest-v0.1.0-linux-x64.rpm`, using
+its actual filename. rpm dependencies are generated from the linked libraries;
+the private JsonCpp library is excluded from system provides and requirements.
+
+make the AppImage executable with `chmod +x prisontest-v0.1.0-linux-x64.AppImage`,
+then run it. the icon and runtime libraries are bundled; game assets still download
+on first launch. [linuxdeploy](https://github.com/linuxdeploy/linuxdeploy) builds
+this package with a pinned release and checksum.
 
 on macos:
 
@@ -126,24 +109,40 @@ beside SDL2, where the compatibility library looks for it. both libraries'
 licenses are included under `Contents/Resources/licenses`. builds using the
 original SDL2 do not need SDL3.
 
-on windows, use an MSYS2 UCRT64 shell:
+on windows x64, use an MSYS2 UCRT64 shell:
 
 ```sh
 pacman -S --needed mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-cmake mingw-w64-ucrt-x86_64-ninja mingw-w64-ucrt-x86_64-pkgconf mingw-w64-ucrt-x86_64-SDL2 mingw-w64-ucrt-x86_64-freetype mingw-w64-ucrt-x86_64-libpng mingw-w64-ucrt-x86_64-jsoncpp mingw-w64-ucrt-x86_64-curl
 ```
 
+for win32, use a MINGW32 shell and replace `mingw-w64-ucrt-x86_64-` with
+`mingw-w64-i686-` in those package names. [MSYS2 environments](https://www.msys2.org/docs/environments/)
+list the target architectures.
+
+windows installers use [NSIS](https://nsis.sourceforge.io/Download), available
+with `choco install nsis --yes`. each installer includes the runtime DLLs and
+adds start-menu and desktop shortcuts. saves and downloaded assets stay in the
+user's data directory when the client is uninstalled.
+
 then, on any target:
 
 ```sh
-cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF
 cmake --build build --parallel 2
 cpack --config build/CPackConfig.cmake -B build/packages
 ```
 
-to run the checks, point `PRISON_TEST_ASSETS` at a complete downloaded pack:
+on linux, install `rpm` and `dpkg-dev` for the rpm and deb generators. the
+AppImage also needs `curl`, `file` and `desktop-file-utils`:
 
 ```sh
-cmake -S . -B build -DPRISON_TEST_ASSETS=/path/to/asset-pack
+sh tools/package_appimage.sh build
+```
+
+to run checks locally, enable testing and point `PRISON_TEST_ASSETS` at a complete downloaded pack:
+
+```sh
+cmake -S . -B build -DBUILD_TESTING=ON -DPRISON_TEST_ASSETS=/path/to/asset-pack
 cmake --build build --parallel 2
 python3 tools/check_data.py /path/to/asset-pack
 ctest --test-dir build --output-on-failure
@@ -159,8 +158,7 @@ use `-DPRISON_CA_BUNDLE=/path/to/cacert.pem` to supply another bundle location.
 
 Python 3 is needed for the static data audit, not to run the game. CMake 3.21 or
 newer is required. packages appear in `build/packages/`. macos builds
-must run on a mac; windows packages use the native UCRT64 compiler, not MSYS's
-POSIX compatibility compiler.
+must run on a mac; windows packages use the native UCRT64 or MINGW32 compiler.
 
 references: [github runner images](https://github.com/actions/runner-images),
 [MSYS2 action](https://github.com/msys2/setup-msys2),
