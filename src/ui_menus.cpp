@@ -983,7 +983,7 @@ void UI::Impl::confirm() {
         }
         Result result = game.itemAction(confirmAction, confirmArgs);
         if (result.ok)
-            setPage("inventory");
+            setPage(confirmAction == "pet_food" ? "pets" : "inventory");
         apply(result);
     });
     button({box.x + 42 + (box.w - 70) / 2, box.y + box.h - 85, (box.w - 70) / 2, 38}, "Cancel", [this] {
@@ -1003,6 +1003,8 @@ void UI::Impl::confirm() {
                 destination = "expeditions";
             else if (confirmAction == "shaft_leave")
                 destination = "shaft";
+            else if (confirmAction == "pet_food")
+                destination = "pets";
         }
         setPage(destination);
     });

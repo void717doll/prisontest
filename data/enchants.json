@@ -109,8 +109,8 @@
     "partfinder": {
       "label": "Part Finder",
       "color": "#5ee6ff",
-      "base_cost": 1500,
-      "step": 0.45,
+      "base_cost": 1000000,
+      "step": 25.0,
       "max": 1000,
       "required_pickaxe_level": 10
     },

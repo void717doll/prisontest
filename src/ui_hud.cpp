@@ -87,7 +87,7 @@ void UI::Impl::hud() {
                 ++ready;
         LoreLine hatchery{{"Hatchery: ", foreground},
                           {std::to_string(eggs.size()), {1, 0.8f, 0.2f, 1}},
-                          {" Hatching", foreground}};
+                          {" hatching", foreground}};
         if (ready > 0) {
             hatchery.push_back({" (", foreground});
             hatchery.push_back({std::to_string(ready), {0.3f, 0.9f, 0.3f, 1}});

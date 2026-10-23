@@ -310,6 +310,8 @@ Rect UI::Impl::panel(const std::string& title, float width, float height) {
     button({box.x + box.w - 84, box.y + 10, 70, 32}, "Done", [this] {
         if (page == "itemviewer" || page == "theme")
             setPage("settings");
+        else if (page == "pet_food" || (page == "confirm" && confirmAction == "pet_food"))
+            setPage("pets");
         else
             setPage(ctx.playing ? "" : "title");
     });

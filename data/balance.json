@@ -16,6 +16,8 @@
   "resetmine_cooldown_seconds": 10,
   "prestige_cost_growth_per_level": 0.1,
   "prestige_cost_growth_power": 7.0,
+  "prestige_cost_multiplier": 2.0,
+  "prestige_cost_multiplier_per_level": 1.5,
   "rank_cost_late_start_ratio": 0.84,
   "rank_cost_late_max_mult": 1.5,
   "rank_cost_late_curve_power": 1.05,

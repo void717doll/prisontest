@@ -183,7 +183,10 @@ void UI::Impl::event(const SDL_Event& event) {
         return;
     }
     if (key == SDLK_ESCAPE) {
-        setPage(ctx.playing ? (page.empty() ? "pause" : "") : "title");
+        if (page == "pet_food" || (page == "confirm" && confirmAction == "pet_food"))
+            setPage("pets");
+        else
+            setPage(ctx.playing ? (page.empty() ? "pause" : "") : "title");
         return;
     }
     if (!field.empty()) {

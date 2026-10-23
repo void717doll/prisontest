@@ -899,7 +899,12 @@ double Game::rankCost(int index) const {
     return scaledCost(*this, std::max(base, std::floor(currency(*this, base * multiplier))));
 }
 double Game::prestigeCost() const {
-    return std::max(1.0, rankCost(static_cast<int>(data.ranks.size()) - 1));
+    const double multiplier =
+        std::max(1.0, field(data.balance, "prestige_cost_multiplier", 2) +
+                          field(state, "total_prestige") *
+                              field(data.balance, "prestige_cost_multiplier_per_level", 1.5));
+    const double cost = rankCost(static_cast<int>(data.ranks.size()) - 1) * multiplier;
+    return std::max(1.0, std::floor(currency(*this, cost)));
 }
 
 Result Game::rankUp(bool maximum) {

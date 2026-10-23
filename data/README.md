@@ -23,6 +23,15 @@ items. rank order, paired mine blocks, pouch capacities and crystal slot count
 also have matching limits in code. changing those structures requires updating
 their consumers and migrations, not just editing a number.
 
+`prestige_cost_multiplier` starts the prestige fee at twice the current rank Z
+price. `prestige_cost_multiplier_per_level` adds 1.5 for each lifetime prestige,
+on top of the existing rank cost growth. the first three prestige fees are about
+14.75, 50.29 and 132.09 billion money. fees stay within the currency cap.
+
+Part Finder uses a 1 million base cost and a 25.0 level step with the normal
+enchant progression and step scaling. its first level costs 338,000 tokens;
+the upgrade from level 100 to 101 costs about 15.91 billion tokens.
+
 `source_systems.json` contains native-only `vault` prices: `page_base_cost` is
 the second page's price, and `page_cost_multiplier` scales each later purchase.
 the first extra page costs 100 trillion money; each subsequent page costs six
