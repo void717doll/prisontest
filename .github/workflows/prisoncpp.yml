@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: release in this repository, such as v0.1.0; leave empty for packages only
+        description: optional release tag, such as v0.1.0; leave empty to use VERSION
         type: string
         default: ""
 
@@ -35,6 +35,7 @@ jobs:
         shell: bash
         env:
           REQUESTED_TAG: ${{ inputs.release_tag }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: |
           if [[ ! -f VERSION || ! -f CMakeLists.txt ]]; then
             echo 'native builds require the prisoncpp source at the repository root' >&2
@@ -58,9 +59,18 @@ jobs:
               echo 'VERSION must contain a version such as 0.1.0' >&2
               exit 1
             fi
+            if [[ "$GITHUB_EVENT_NAME" == workflow_dispatch ||
+                  ( "$GITHUB_EVENT_NAME" == push && "$GITHUB_REF" == "refs/heads/$DEFAULT_BRANCH" ) ]]; then
+              release_tag="v$version"
+            fi
           fi
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "release_tag=$release_tag" >> "$GITHUB_OUTPUT"
+          if [[ -n "$release_tag" ]]; then
+            echo "release: $release_tag will publish after all packages succeed" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo 'packages only: releases run on default-branch pushes, version tags and manual runs' >> "$GITHUB_STEP_SUMMARY"
+          fi
 
   unix:
     needs: prepare

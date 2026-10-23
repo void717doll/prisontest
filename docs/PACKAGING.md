@@ -3,17 +3,18 @@
 `.github/workflows/prisoncpp.yml` builds this native source on branch pushes,
 pull requests, `v*` tags and manual runs. every successful run uploads all ten
 packages, checksums and release notes as the `prisontest-packages` artifact.
-version tags or an explicit `release_tag` also publish a release in this same
-repository after every platform succeeds. the workflow does not upload to the
+pushes to the default branch, version tags and manual runs also publish a release
+in this same repository after every platform succeeds. pull requests and pushes
+to other branches only upload artifacts. the workflow does not upload to the
 public client repository.
 
 ## download packages
 
 1. open this source repo's **Actions → native builds and releases → Run workflow**.
-2. choose the branch. leave `release_tag` empty for downloadable artifacts, or
-   enter a new version such as `v0.1.1` to also create a release here.
+2. choose the branch. leave `release_tag` empty to release the version in `VERSION`,
+   or enter a new version such as `v0.1.5` to override it.
 3. when the run succeeds, download `prisontest-packages` from its artifacts or
-   summary link. versioned runs also attach each package to this repo's release.
+   summary link. manual runs also attach each package to this repo's release.
 4. extract the artifact and upload the ten packages in `assets/` plus
    `SHA256SUMS.txt` to `prisontest/prisontest-client` manually. copy `notes.md`
    into the public release description.
