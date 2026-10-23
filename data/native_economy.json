@@ -1,0 +1,400 @@
+{
+  "data_revision": 2,
+  "currencies": {
+    "tokens": {
+      "label": "Tokens",
+      "category": "Token Enchants",
+      "color": "#ffcc44"
+    },
+    "rubies": {
+      "label": "Rubys",
+      "category": "Ruby Enchants",
+      "color": "#f06478"
+    },
+    "sapphires": {
+      "label": "Sapphires",
+      "category": "Sapphire Enchants",
+      "color": "#669dff"
+    }
+  },
+  "order": [
+    "ruby_greed",
+    "sapphire_greed",
+    "fuel_finder",
+    "drill",
+    "jackpot",
+    "hyper_surge",
+    "adrenaline",
+    "rage",
+    "credit_finder",
+    "rewind",
+    "energizer",
+    "overdrive"
+  ],
+  "defs": {
+    "ruby_greed": {
+      "label": "RubyGreed",
+      "color": "#f06478",
+      "currency": "tokens",
+      "cost_curve": "linear",
+      "base_cost": 250000000,
+      "step": 12500000,
+      "max": 1000,
+      "required_pickaxe_level": 40,
+      "description": "Finds Rubys while manually mining. Higher levels improve the chance."
+    },
+    "sapphire_greed": {
+      "label": "SapphireGreed",
+      "color": "#669dff",
+      "currency": "rubies",
+      "cost_curve": "linear",
+      "base_cost": 250000000000000,
+      "step": 10000000000000,
+      "max": 1000,
+      "required_pickaxe_level": 150,
+      "description": "Finds Sapphires while manually mining. Higher levels improve the chance.",
+      "late_cost_scaling": {
+        "start": 100,
+        "multiplier": 1.0,
+        "power": 2.0
+      }
+    },
+    "fuel_finder": {
+      "label": "FuelFinder",
+      "color": "#afb6c5",
+      "currency": "rubies",
+      "cost_curve": "linear",
+      "base_cost": 50000000000000,
+      "step": 1000000000000,
+      "max": 1000,
+      "required_pickaxe_level": 100,
+      "description": "Finds coal-like Robot Fuel while manually mining. Each piece supplies 250 fuel.",
+      "late_cost_scaling": {
+        "start": 100,
+        "multiplier": 1.0,
+        "power": 2.0
+      }
+    },
+    "drill": {
+      "label": "Drill",
+      "color": "#ffb02e",
+      "currency": "rubies",
+      "cost_curve": "linear",
+      "base_cost": 50000000000000,
+      "step": 1000000000000,
+      "max": 2000,
+      "required_pickaxe_level": 40,
+      "description": "Drills down to the bottom of the mine. The shaft widens at levels 500 and 1500.",
+      "late_cost_scaling": {
+        "start": 100,
+        "multiplier": 1.0,
+        "power": 2.0
+      }
+    },
+    "jackpot": {
+      "label": "Jackpot",
+      "color": "#ee61d7",
+      "currency": "sapphires",
+      "cost_curve": "linear",
+      "base_cost": 24000000000000000,
+      "step": 120000000000000,
+      "max": 1000,
+      "required_pickaxe_level": 2250,
+      "description": "Manual mining can uncover fuel, crystals, parts, eggs, automine time or a rare robot.",
+      "late_cost_scaling": {
+        "start": 100,
+        "multiplier": 1.0,
+        "power": 2.0
+      }
+    },
+    "timefinder": {
+      "currency": "rubies",
+      "cost_curve": "linear",
+      "base_cost": 100000000000000,
+      "step": 25000000000000,
+      "late_cost_scaling": {
+        "start": 10,
+        "multiplier": 1.0,
+        "power": 2.0
+      }
+    },
+    "jackhammer": {
+      "currency": "rubies",
+      "cost_curve": "linear",
+      "base_cost": 250000000000000,
+      "step": 5000000000000,
+      "late_cost_scaling": {
+        "start": 100,
+        "multiplier": 1.0,
+        "power": 2.0
+      }
+    },
+    "veinminer": {
+      "currency": "sapphires",
+      "cost_curve": "linear",
+      "base_cost": 1500000000000000,
+      "step": 30000000000000,
+      "late_cost_scaling": {
+        "start": 100,
+        "multiplier": 1.0,
+        "power": 2.0
+      }
+    },
+    "hyper_surge": {
+      "label": "Hyper Surge",
+      "color": "#ffaa00",
+      "currency": "rubies",
+      "cost_curve": "linear",
+      "base_cost": 2000000000000000,
+      "step": 10000000000000,
+      "max": 1000,
+      "required_pickaxe_level": 1000,
+      "description": "For 20s: 1.5x mining income, double feeding EXP and 1 pet EXP per 20 manual blocks.",
+      "late_cost_scaling": {
+        "start": 100,
+        "multiplier": 1.0,
+        "power": 2.0
+      }
+    },
+    "adrenaline": {
+      "label": "Adrenaline",
+      "color": "#ff5555",
+      "currency": "sapphires",
+      "cost_curve": "linear",
+      "base_cost": 12000000000000000,
+      "step": 90000000000000,
+      "max": 1000,
+      "required_pickaxe_level": 1750,
+      "description": "Doubles the boost from your active pet for 20 seconds.",
+      "late_cost_scaling": {
+        "start": 100,
+        "multiplier": 1.0,
+        "power": 2.0
+      }
+    },
+    "rage": {
+      "label": "Rage",
+      "color": "#ff3333",
+      "currency": "rubies",
+      "cost_curve": "linear",
+      "base_cost": 5000000000000000,
+      "step": 20000000000000,
+      "max": 1000,
+      "required_pickaxe_level": 2500,
+      "description": "Triples ordinary area-enchant trigger chances for 15 seconds. Rare endgame rolls stay rare.",
+      "late_cost_scaling": {
+        "start": 100,
+        "multiplier": 1.0,
+        "power": 2.0
+      }
+    },
+    "credit_finder": {
+      "label": "Credit Finder",
+      "color": "#55cc55",
+      "currency": "sapphires",
+      "cost_curve": "linear",
+      "base_cost": 30000000000000000,
+      "step": 150000000000000,
+      "max": 1000,
+      "required_pickaxe_level": 3000,
+      "description": "Very rarely finds one point for the Point Shop while manually mining.",
+      "late_cost_scaling": {
+        "start": 100,
+        "multiplier": 1.0,
+        "power": 2.0
+      }
+    },
+    "rewind": {
+      "label": "Rewind",
+      "color": "#55ffff",
+      "currency": "sapphires",
+      "cost_curve": "linear",
+      "base_cost": 48000000000000000,
+      "step": 240000000000000,
+      "max": 1000,
+      "required_pickaxe_level": 3500,
+      "description": "Pays the last 8 seconds of mined money and tokens again, once. No repeated or item rewards.",
+      "late_cost_scaling": {
+        "start": 100,
+        "multiplier": 1.0,
+        "power": 2.0
+      }
+    },
+    "energizer": {
+      "label": "Energizer",
+      "color": "#ffff55",
+      "currency": "sapphires",
+      "cost_curve": "linear",
+      "base_cost": 60000000000000000,
+      "step": 300000000000000,
+      "max": 1000,
+      "required_pickaxe_level": 4250,
+      "description": "Activates one random owned area or timed-boost enchant. Unlocks and cooldowns still apply.",
+      "late_cost_scaling": {
+        "start": 100,
+        "multiplier": 1.0,
+        "power": 2.0
+      }
+    },
+    "overdrive": {
+      "label": "Overdrive",
+      "color": "#ff5555",
+      "currency": "rubies",
+      "cost_curve": "linear",
+      "base_cost": 15000000000000000,
+      "step": 50000000000000,
+      "max": 1000,
+      "required_pickaxe_level": 5000,
+      "description": "Doubles pickaxe EXP from mining for 30 seconds.",
+      "late_cost_scaling": {
+        "start": 100,
+        "multiplier": 1.0,
+        "power": 2.0
+      }
+    }
+  },
+  "effects": {
+    "ruby_greed": {
+      "chance_per_level": 2.5e-05,
+      "chance_cap": 0.025,
+      "amount": 1000000
+    },
+    "sapphire_greed": {
+      "chance_per_level": 5e-06,
+      "chance_cap": 0.005,
+      "amount": 1000000
+    },
+    "fuel_finder": {
+      "chance_per_level": 2e-06,
+      "chance_cap": 0.002
+    },
+    "drill": {
+      "drill_proc_base": 0.0001,
+      "drill_proc_per_level": 2e-05,
+      "drill_proc_cap": 0.04
+    },
+    "jackpot": {
+      "chance_per_level": 2.5e-08,
+      "chance_cap": 2.5e-05,
+      "duration": 0,
+      "cooldown": 300
+    },
+    "hyper_surge": {
+      "chance_per_level": 3.3333333333333334e-08,
+      "chance_cap": 3.3333333333333335e-05,
+      "duration": 20,
+      "cooldown": 300,
+      "multiplier": 1.5,
+      "pet_xp_multiplier": 2,
+      "pet_blocks_per_xp": 20
+    },
+    "adrenaline": {
+      "chance_per_level": 2e-08,
+      "chance_cap": 2e-05,
+      "duration": 20,
+      "cooldown": 360,
+      "multiplier": 2
+    },
+    "rage": {
+      "chance_per_level": 1.6666666666666667e-08,
+      "chance_cap": 1.6666666666666667e-05,
+      "duration": 15,
+      "cooldown": 360,
+      "multiplier": 3
+    },
+    "credit_finder": {
+      "chance_per_level": 1e-08,
+      "chance_cap": 1e-05,
+      "duration": 0,
+      "cooldown": 600
+    },
+    "rewind": {
+      "chance_per_level": 5e-09,
+      "chance_cap": 5e-06,
+      "duration": 0,
+      "cooldown": 900,
+      "income_seconds": 8
+    },
+    "energizer": {
+      "chance_per_level": 1.25e-08,
+      "chance_cap": 1.25e-05,
+      "duration": 0,
+      "cooldown": 600,
+      "activates": [
+        "explosive",
+        "jackhammer",
+        "veinminer",
+        "drill",
+        "hyper_surge",
+        "adrenaline",
+        "rage",
+        "overdrive"
+      ]
+    },
+    "overdrive": {
+      "chance_per_level": 2.5e-08,
+      "chance_cap": 2.5e-05,
+      "duration": 30,
+      "cooldown": 600,
+      "multiplier": 2
+    }
+  },
+  "robots": {
+    "max_level": 4000,
+    "boost_per_level": 0.001,
+    "multiplier_cap": 5,
+    "fuel_per_item": 250,
+    "fuel_capacity": 1000000000,
+    "fuel_level_step": 1000,
+    "drop_pick_level": 40,
+    "drop_chance": 2e-05,
+    "upgrade_ruby_base": 5,
+    "upgrade_ruby_step": 10,
+    "upgrade_sapphire_start": 100,
+    "upgrade_sapphire_step": 100,
+    "jackpot_loot": [
+      {
+        "id": "robot_fuel",
+        "weight": 50,
+        "count": 4
+      },
+      {
+        "id": "crystal",
+        "weight": 20,
+        "count": 1
+      },
+      {
+        "id": "pick_part",
+        "weight": 15,
+        "count": 1
+      },
+      {
+        "id": "pet_egg",
+        "weight": 8,
+        "count": 1
+      },
+      {
+        "id": "automine_time",
+        "weight": 6,
+        "count": 1,
+        "duration": 600
+      },
+      {
+        "id": "robot",
+        "weight": 1,
+        "count": 1
+      }
+    ],
+    "upgrade_cost_multiplier": 625000000
+  },
+  "endgame": [
+    "hyper_surge",
+    "adrenaline",
+    "jackpot",
+    "rage",
+    "credit_finder",
+    "rewind",
+    "energizer",
+    "overdrive"
+  ]
+}

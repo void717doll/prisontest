@@ -1,0 +1,269 @@
+{
+  "order": [
+    "efficiency",
+    "speed",
+    "haste",
+    "jump",
+    "hatchery",
+    "fortune",
+    "greed",
+    "token_greed",
+    "crystalfinder",
+    "partfinder",
+    "timefinder",
+    "lucky",
+    "combo",
+    "experienced",
+    "showoff",
+    "explosive",
+    "jackhammer",
+    "veinminer"
+  ],
+  "defs": {
+    "efficiency": {
+      "label": "Efficiency",
+      "color": "#7ed0ff",
+      "base_cost": 109,
+      "step": 0.675,
+      "max": 100
+    },
+    "speed": {
+      "label": "Speed",
+      "color": "#ededed",
+      "base_cost": 650,
+      "step": 0.95,
+      "max": 10
+    },
+    "haste": {
+      "label": "Haste",
+      "color": "#ededed",
+      "base_cost": 650,
+      "step": 0.95,
+      "max": 10
+    },
+    "jump": {
+      "label": "Jump Boost",
+      "color": "#ededed",
+      "base_cost": 1200,
+      "step": 1.8,
+      "max": 5
+    },
+    "hatchery": {
+      "label": "Hatchery",
+      "color": "#8dff95",
+      "base_cost": 100000,
+      "step": 575.5,
+      "max": 5
+    },
+    "fortune": {
+      "label": "Fortune",
+      "color": "#4fc24e",
+      "base_cost": 219,
+      "step": 11.25,
+      "step_scaling": {
+        "100": 0.5,
+        "500": 1.5,
+        "1000": 3.0,
+        "5000": 7.0,
+        "10000": 14.0,
+        "20000": 28.0
+      },
+      "max": 10000,
+      "late_cost_scaling": {
+        "start": 250,
+        "multiplier": 100.0,
+        "power": 2.0
+      }
+    },
+    "greed": {
+      "label": "Greed",
+      "color": "#4fc24e",
+      "base_cost": 109375,
+      "step": 520.0,
+      "max": 3000
+    },
+    "token_greed": {
+      "label": "Token Greed",
+      "color": "#4fc24e",
+      "base_cost": 153,
+      "step": 1.069,
+      "step_scaling": {
+        "100": 0.8,
+        "250": 2.0,
+        "500": 8.5,
+        "1000": 24.0,
+        "2500": 40.0,
+        "5000": 80.0,
+        "10000": 160.0
+      },
+      "max": 10000
+    },
+    "crystalfinder": {
+      "label": "Crystal Finder",
+      "color": "#7ad3ff",
+      "base_cost": 1800,
+      "step": 1.75,
+      "max": 1000,
+      "required_pickaxe_level": 10
+    },
+    "partfinder": {
+      "label": "Part Finder",
+      "color": "#5ee6ff",
+      "base_cost": 1500,
+      "step": 0.45,
+      "max": 1000,
+      "required_pickaxe_level": 10
+    },
+    "timefinder": {
+      "label": "Time Finder",
+      "color": "#c9705f",
+      "base_cost": 100000000,
+      "step": 50,
+      "max": 100,
+      "required_pickaxe_level": 100
+    },
+    "lucky": {
+      "label": "Lucky",
+      "color": "#ffe066",
+      "base_cost": 5000000,
+      "step": 900,
+      "max": 100,
+      "required_pickaxe_level": 75
+    },
+    "combo": {
+      "label": "Combo",
+      "color": "#4fc24e",
+      "base_cost": 131250,
+      "step": 196.875,
+      "max": 50,
+      "required_pickaxe_level": 10
+    },
+    "experienced": {
+      "label": "Experienced",
+      "color": "#4eb8c2",
+      "base_cost": 25000,
+      "step": 68.0,
+      "max": 2000,
+      "required_pickaxe_level": 25
+    },
+    "showoff": {
+      "label": "Showoff",
+      "color": "#ff66d9",
+      "base_cost": 25000,
+      "step": 10.5,
+      "max": -1
+    },
+    "explosive": {
+      "label": "Explosive",
+      "color": "#ff5f5f",
+      "base_cost": 1200,
+      "step": 85.0,
+      "max": 5000,
+      "required_pickaxe_level": 25
+    },
+    "jackhammer": {
+      "label": "Jackhammer",
+      "color": "#ffb24d",
+      "base_cost": 1000000,
+      "step": 1200,
+      "step_scaling": {
+        "50": 1.0,
+        "100": 2.0,
+        "250": 4.0,
+        "500": 8.0,
+        "750": 16.0
+      },
+      "max": 1000,
+      "required_pickaxe_level": 175
+    },
+    "veinminer": {
+      "label": "Veinminer",
+      "color": "#58e1a8",
+      "base_cost": 250000000,
+      "step": 800,
+      "step_scaling": {
+        "25": 1.5,
+        "50": 3.0,
+        "100": 6.0,
+        "250": 12.0,
+        "500": 24.0,
+        "750": 48.0
+      },
+      "max": 1000,
+      "required_pickaxe_level": 300
+    }
+  },
+  "max_buy_amount": 20000,
+  "step_scaling": {
+    "10": 0.703,
+    "50": 1.125,
+    "100": 1.828,
+    "500": 3.938,
+    "1000": 8.719,
+    "5000": 14.063,
+    "10000": 28.406
+  },
+  "progression_scaling": {
+    "tier1_base": 0.338,
+    "tier1_per_level": 0.001875,
+    "tier2_base": 0.525,
+    "tier2_per_level": 0.0005,
+    "tier3_base": 0.975,
+    "tier3_per_level": 0.000938,
+    "tier4_base": 4.725,
+    "tier4_sqrt_scale": 0.075
+  },
+  "effects": {
+    "egg_drop": {
+      "blocks_per_drop": 7500
+    },
+    "crystalfinder": {
+      "max_level": 1000,
+      "blocks_per_drop_base": 9000,
+      "blocks_per_drop_min": 2200,
+      "blocks_per_level": 12
+    },
+    "partfinder": {
+      "max_level": 1000,
+      "blocks_per_drop_base": 10000,
+      "blocks_per_drop_min": 2500,
+      "blocks_per_level": 8
+    },
+    "timefinder": {
+      "order_after": "tokengreed",
+      "enchant": {
+        "label": "Time Finder",
+        "color": "#c9705f",
+        "base_cost": 100000000,
+        "step": 50,
+        "max": 100,
+        "required_pickaxe_level": 100
+      },
+      "blocks_per_drop_base": 50000,
+      "blocks_per_drop_min": 5000,
+      "blocks_per_level": 500,
+      "drops_seconds": [
+        600
+      ]
+    },
+    "explosive": {
+      "explosive_radius_lvl1_max": 2499,
+      "explosive_radius_lvl2_min": 2500,
+      "explosive_proc_scale": 0.17
+    },
+    "jackhammer": {
+      "jackhammer_proc_base": 0.001,
+      "jackhammer_proc_per_level": 8e-06,
+      "jackhammer_proc_cap": 0.015,
+      "jackhammer_batch_size": 350,
+      "jackhammer_batch_delay": 0
+    },
+    "veinminer": {
+      "veinminer_proc_base": 3e-05,
+      "veinminer_proc_per_level": 1.2e-06,
+      "veinminer_proc_cap": 0.003,
+      "virtual_block_ratio": 0.2,
+      "virtual_block_cap": 5000
+    }
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "data_revision": 2,
+  "resonance": {
+    "minimum_tier": 5,
+    "sets": [
+      {"id": "prosperity", "label": "Prosperity", "kinds": ["money", "money", "money"], "money": 0.04, "description": "Three Sell crystals: +4% sell income."},
+      {"id": "treasury", "label": "Treasury", "kinds": ["token", "token", "token"], "token": 0.04, "description": "Three Token crystals: +4% token income."},
+      {"id": "insight", "label": "Insight", "kinds": ["xp", "xp", "xp"], "xp": 0.04, "description": "Three EXP crystals: +4% pickaxe EXP."},
+      {"id": "harmony", "label": "Harmony", "kinds": ["money", "token", "xp"], "money": 0.02, "token": 0.02, "xp": 0.02, "description": "One of each boost: +2% sell, tokens and pickaxe EXP."}
+    ]
+  },
+  "mutations": {
+    "chance": 0.0005,
+    "traits": [
+      {"id": "efficient", "label": "Thrifty", "color": "#e8bc66", "fuel_saving": 0.05, "description": "Saves 5% of robot fuel while equipped."},
+      {"id": "brood", "label": "Broodkeeper", "color": "#ef9fbf", "eggs": 0.05, "description": "+5% ordinary egg discovery chance while manually mining."},
+      {"id": "studious", "label": "Studious", "color": "#84d7ef", "xp": 0.03, "description": "+3% pickaxe EXP while equipped."}
+    ]
+  },
+  "guardians": {
+    "label": "Stone Guardian",
+    "color": "#bc66df",
+    "required_pickaxe_level": 1000,
+    "chance": 0.00002,
+    "health": 120,
+    "duration": 180,
+    "cooldown": 1800,
+    "strike_seconds": 0.25,
+    "points": 3
+  }
+}

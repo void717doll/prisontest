@@ -1,0 +1,845 @@
+{
+  "version": 1,
+  "title": "Help",
+  "sections": [
+    {
+      "id": "start",
+      "title": "Getting started",
+      "pages": [
+        {
+          "id": "tutorial",
+          "title": "Getting started",
+          "body": [
+            "New worlds offer a short tutorial for mining, inventory, enchants and rank-up. Choose Skip Tutorial to play without it.",
+            "Progress is saved with the world. Open /tutorial or Tutorial in the pause menu to see the next step, skip, or restart. Existing and development worlds can opt in."
+          ],
+          "keywords": [
+            "tutorial",
+            "start",
+            "skip",
+            "controls"
+          ]
+        },
+        {
+          "id": "welcome",
+          "title": "Mining and currencies",
+          "body": [
+            "Mine blocks to earn money, tokens and pickaxe EXP. Spend money on ranks, tokens on enchants, and points in /pointshop.",
+            "Open /pickaxe for your tool, /inventory for items, and /settings for display and gameplay options."
+          ],
+          "keywords": [
+            "new",
+            "start",
+            "money",
+            "tokens",
+            "points",
+            "controls"
+          ]
+        },
+        {
+          "id": "progression",
+          "title": "Ranks and prestige",
+          "body": [
+            "Use /rankup to buy the next rank, or /rankupmax for every rank you can afford. At rank Z, open /prestige to review the cost.",
+            "Prestige keeps your pickaxe and items. Finishing the prestige cycle advances rebirth and opens more mine content. The menu shows your next requirement."
+          ],
+          "keywords": [
+            "rank",
+            "rankup",
+            "rebirth",
+            "resetmine"
+          ]
+        },
+        {
+          "id": "discoveries",
+          "title": "Rare ore pockets",
+          "body": [
+            "Fresh mines can contain very rare crystal ore pockets. Mining them awards crystals at your current drop tier."
+          ],
+          "keywords": [
+            "pocket",
+            "crystal",
+            "ore",
+            "rare"
+          ]
+        },
+        {
+          "id": "guardians",
+          "title": "Mine guardians",
+          "body": [
+            "Stone Guardians rarely awaken while manually mining with an advanced pickaxe. Open /guardian and choose Go to Guardian to reach one.",
+            "Mine the bright arm, then the other arm, then the head. The boss bar shows its health, exposed weak point and time left. Defeating it awards Point Shop points.",
+            "Menus and offline time pause the fight. Leaving or refilling ends it without rewards. Devmode can summon one with /test guardian."
+          ],
+          "keywords": ["guardian", "boss", "weak point", "fight", "bossbar"]
+        },
+        {
+          "id": "rebirth_mines",
+          "title": "Rebirth mines and upgrades",
+          "body": [
+            "Rebirth opens new regions in /mines. Each has its own ore layout; changing regions refills your mine.",
+            "/mineupgrades offers permanent ore and pocket upgrades. Purchases survive prestige and take effect on a fresh refill.",
+            "More ore means more token blocks and fewer money blocks. Pocket upgrades improve rewards when a discovery appears."
+          ],
+          "keywords": ["mines", "rebirth", "upgrades", "density"]
+        },
+        {
+          "id": "contracts",
+          "title": "Mining contracts",
+          "body": [
+            "Accept a goal in /contracts, make progress by playing, then return to claim Point Shop points.",
+            "Contracts do not expire. Saving, prestige and rebirth keep your accepted goal; cancelling loses its progress."
+          ],
+          "keywords": ["contract", "goals", "points", "mining"]
+        },
+        {
+          "id": "shaft",
+          "title": "Challenge shafts",
+          "body": [
+            "After your first prestige, /shaft opens challenge floors with changing mining conditions. Clear the displayed block target to earn rewards and descend.",
+            "Your normal mine is saved while exploring. Use /shaft to return; an unfinished floor loses its progress. Saving keeps your active run and depth record.",
+            "Automining and manual refills are disabled in shafts. Each floor lists any other restrictions before you enter."
+          ],
+          "keywords": ["shaft", "challenge", "depth", "floors", "endless", "records"]
+        }
+      ]
+    },
+    {
+      "id": "tool",
+      "title": "Pickaxe",
+      "pages": [
+        {
+          "id": "enchants",
+          "title": "Enchants and EXP",
+          "body": [
+            "Open /enchant to buy upgrades, grouped by Tokens, Rubys and Sapphires. Pickaxe EXP unlocks more enchants and crystal slots.",
+            "Drag token enchant books or Liquid EXP onto your pickaxe. Gem enchants must be bought with their own currency.",
+            "Use /enchantcolor to change lore colours, or /enchantcolor off to restore the defaults."
+          ],
+          "keywords": [
+            "fortune",
+            "token greed",
+            "experienced",
+            "books",
+            "level"
+          ]
+        },
+        {
+          "id": "gems",
+          "title": "Rubys and Sapphires",
+          "body": [
+            "Buy RubyGreed with tokens to find Rubys while manually mining. Spend Rubys on SapphireGreed to start finding Sapphires.",
+            "Gem upgrades are long-term purchases. /enchant shows each unlock, currency and price before purchase. Area enchants, bombs and automining do not roll gems or robot fuel.",
+            "Drill digs toward the mine floor. FuelFinder supplies robots, and Jackpot can uncover items. Bought upgrades and gem balances survive prestige and rebirth."
+          ],
+          "keywords": [
+            "ruby",
+            "rubies",
+            "rubys",
+            "sapphire",
+            "sapphires",
+            "rubygreed",
+            "sapphiregreed",
+            "drill",
+            "jackpot",
+            "fuel"
+          ]
+        },
+        {
+          "id": "endgame_enchants",
+          "title": "Endgame enchants",
+          "body": [
+            "Late pickaxe levels unlock rare effects: Hyper Surge helps pet EXP, Adrenaline improves pet boosts, Rage speeds up area triggers, and Overdrive improves pickaxe EXP.",
+            "Rewind repeats recent income, Energizer activates an owned effect, Credit Finder finds shop points, and Jackpot finds items.",
+            "These trigger rarely and have cooldowns. Active timed effects appear as boss bars; /boosts shows the full list and /enchant shows unlocks and costs."
+          ],
+          "keywords": [
+            "hyper surge",
+            "adrenaline",
+            "rage",
+            "rewind",
+            "energizer",
+            "overdrive",
+            "credit finder",
+            "jackpot",
+            "cooldown",
+            "endgame"
+          ]
+        },
+        {
+          "id": "crystals",
+          "title": "Crystals and dust",
+          "body": [
+            "Identify a crystal by using it or right-clicking it in inventory, then drag it into an unlocked slot in /crystals.",
+            "Convert spare crystals into dust. Use matching dust to preview crafting a higher-tier crystal.",
+            "The first three crystal slots can resonate when they hold identified crystals of one tier, T5 or higher. Match their boost types or use one of each. /resonance shows the combinations and your active bonus."
+          ],
+          "keywords": [
+            "crystal",
+            "dust",
+            "craft",
+            "slots",
+            "resonance"
+          ]
+        },
+        {
+          "id": "parts",
+          "title": "Parts and tool prestige",
+          "body": [
+            "Identify a part, then equip it in the matching Head, Binding or Rod slot in /parts.",
+            "Equip all three parts at the required tier to prestige the parts. This consumes that set and advances the tool tier; it is separate from rank prestige."
+          ],
+          "keywords": [
+            "parts",
+            "head",
+            "rod",
+            "binding",
+            "pickaxe prestige"
+          ]
+        },
+        {
+          "id": "rename",
+          "title": "Rename Tokens",
+          "body": [
+            "Buy a Rename Token in /pointshop. Hold your pickaxe or pouch, open /rename, preview the name and confirm.",
+            "Hex colours such as &#b895d9Amethyst Pick work in names. Escape cancels without spending the token."
+          ],
+          "keywords": [
+            "rename",
+            "names",
+            "colors",
+            "colour",
+            "tokens"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "items",
+      "title": "Items and pets",
+      "pages": [
+        {
+          "id": "storage",
+          "title": "Inventory and pouches",
+          "body": [
+            "Drag items between inventory, equipment and storage. Matching items stack while keeping their metadata.",
+            "Right-click a held pouch to open it. /pv opens your vault, where you can buy and name extra pages.",
+            "/salvage, /bin and /trash turn eligible items into tokens."
+          ],
+          "keywords": [
+            "pouch",
+            "vault",
+            "inventory",
+            "bin",
+            "trash",
+            "salvage"
+          ]
+        },
+        {
+          "id": "robots",
+          "title": "Robots and fuel",
+          "body": [
+            "Rare mining drops and Jackpot can find sell, EXP or token robots. Equip one of each in /robots.",
+            "FuelFinder supplies Robot Fuel. Drag fuel onto a robot or choose Load Fuel. Robots only boost mining while fueled; idle and offline time do not burn fuel.",
+            "Upgrades cost gems and increase both the boost and fuel demand. Review costs in /robots. Returning a robot keeps its level and fuel."
+          ],
+          "keywords": [
+            "robot",
+            "robots",
+            "fuel",
+            "fuelfinder",
+            "sellboost",
+            "expboost",
+            "tokenboost"
+          ]
+        },
+        {
+          "id": "pets",
+          "title": "Pets and hatchery",
+          "body": [
+            "Use an egg or drag it into /pets to start hatching. Mining advances it; drag a ready pet out to claim it. Equip a pet for its boost and feed it when ready.",
+            "/petmerge combines eligible pets. Rare hatch mutations can save robot fuel, improve egg discovery or add pickaxe EXP. Only the active pet grants its trait.",
+            "Traits stay with pets through storage and expeditions. Merging inherits the most common parent trait, or rolls for one if no parent has a mutation."
+          ],
+          "keywords": [
+            "pet",
+            "egg",
+            "hatchery",
+            "food",
+            "merge",
+            "mutation"
+          ]
+        },
+        {
+          "id": "expeditions",
+          "title": "Pet expeditions",
+          "body": [
+            "Send spare pets through /expeditions for points, food and eggs. Species and unlocked regions determine their routes.",
+            "Mining advances trips. Return to collect a finished trip, or recall the pet early without rewards. Full inventory keeps the pet and rewards safely stored."
+          ],
+          "keywords": ["expedition", "pets", "species", "points", "spare pets", "trip"]
+        },
+        {
+          "id": "boosts",
+          "title": "Multipliers and rewards",
+          "body": [
+            "Use multiplier items to activate them. /boosts shows your equipment bonuses and active effects; matching multipliers extend their duration.",
+            "/endmulti returns your active sell multiplier as an item. /combinemulti combines matching sell multipliers into a stronger one.",
+            "/rewards lists mining milestones. Mining income appears in a one-minute chat summary."
+          ],
+          "keywords": [
+            "boost",
+            "multiplier",
+            "money",
+            "rewards",
+            "summary"
+          ]
+        },
+        {
+          "id": "autominer",
+          "title": "Autominer",
+          "body": [
+            "Use Automine Time items to add time, then open /autominer or /am. Buy speed upgrades in its menu.",
+            "/am start starts automining; /am stop stops it. Higher speeds consume more stored time. Manual digging and mine bombs are disabled while automining."
+          ],
+          "keywords": [
+            "autominer",
+            "automine",
+            "bps",
+            "time"
+          ]
+        },
+        {
+          "id": "filter",
+          "title": "Item filter",
+          "body": [
+            "Hold the item you want to filter and open /filter. Add a rule for keeping, salvaging, applying or moving matching items to the vault.",
+            "Rules apply only to automatic drops. Manual transfers, equipment returns, purchases and crafted items stay in inventory."
+          ],
+          "keywords": [
+            "cleaner",
+            "filter",
+            "automation",
+            "vault"
+          ]
+        },
+        {
+          "id": "pointshop",
+          "title": "Point Shop",
+          "body": [
+            "Spend mining points in /pointshop on eggs, multipliers, automine time, Liquid EXP, rename tokens and pouches.",
+            "The shop shows each item's price in points."
+          ],
+          "keywords": [
+            "points",
+            "shop",
+            "egg",
+            "pouch",
+            "experience"
+          ]
+        },
+        {
+          "id": "minebombs",
+          "title": "Mine bombs",
+          "body": [
+            "Hold a Mine Bomb and left-click to throw it. It explodes on impact or after its fuse; higher tiers clear a wider area.",
+            "Bombs pay money and tokens from removed blocks, without pickaxe EXP or area-enchant triggers. They cannot be thrown while automining or during a refill."
+          ],
+          "keywords": [
+            "bomb",
+            "explosion",
+            "throw",
+            "tier"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "display",
+      "title": "Display",
+      "pages": [
+        {
+          "id": "settings",
+          "title": "Settings and HUD",
+          "body": [
+            "/settings opens the world settings. Title and pause Settings include volume, GUI scale, FOV, Hand view, Tool angle, Left hand and key bindings.",
+            "Right Shift opens the HUD editor; F8 also works. Crosshair, held-item name and tool progress stay fixed. Escape closes menus directly to gameplay.",
+            "/scoreboard [on|off|toggle], or /sc, controls scoreboard visibility. This is saved with the world."
+          ],
+          "keywords": [
+            "gui",
+            "scale",
+            "sound",
+            "controls",
+            "hud",
+            "left hand",
+            "fov"
+          ]
+        }
+      ]
+    }
+  ],
+  "commands": [
+    {
+      "command": "autominer",
+      "category": "Mining",
+      "description": "Open UI, start/stop, or set BPS.",
+      "usage": "/autominer [start|stop|upgrade|bps <1-10>]",
+      "aliases": [
+        "am",
+        "automine"
+      ]
+    },
+    {
+      "command": "balance",
+      "category": "Ranks & Prestige",
+      "description": "Show your money, tokens and points.",
+      "usage": "/balance",
+      "aliases": [
+        "bal"
+      ]
+    },
+    {
+      "command": "boosts",
+      "category": "Pickaxe",
+      "description": "Show where your active boosts come from.",
+      "usage": "/boosts"
+    },
+    {
+      "command": "clear",
+      "category": "Settings & Chat",
+      "description": "Clear the local chat messages.",
+      "usage": "/clear"
+    },
+    {
+      "command": "crystals",
+      "category": "Pickaxe",
+      "description": "Open crystals UI.",
+      "usage": "/crystals"
+    },
+    {
+      "command": "enchant",
+      "category": "Pickaxe",
+      "description": "Open enchant categories and buy levels using their displayed currency.",
+      "usage": "/enchant"
+    },
+    {
+      "command": "filter",
+      "category": "Items & Storage",
+      "description": "Manage held-item rules for automatic drops.",
+      "usage": "/filter",
+      "aliases": [
+        "cleaner"
+      ]
+    },
+    {
+      "command": "hatchery",
+      "category": "Pets & Robots",
+      "description": "Open hatchery UI.",
+      "usage": "/hatchery"
+    },
+    {
+      "command": "help",
+      "category": "Settings & Chat",
+      "description": "Search help articles and the commands available in this world.",
+      "usage": "/help [search]",
+      "aliases": [
+        "wiki",
+        "info",
+        "mods"
+      ]
+    },
+    {
+      "command": "inventory",
+      "category": "Items & Storage",
+      "description": "Open your inventory.",
+      "usage": "/inventory"
+    },
+    {
+      "command": "parts",
+      "category": "Pickaxe",
+      "description": "Open pickaxe parts UI.",
+      "usage": "/parts"
+    },
+    {
+      "command": "petmerge",
+      "category": "Pets & Robots",
+      "description": "Preview an eligible pet merge before confirming.",
+      "usage": "/petmerge"
+    },
+    {
+      "command": "pets",
+      "category": "Pets & Robots",
+      "description": "Open pets UI.",
+      "usage": "/pets"
+    },
+    {
+      "command": "pickaxe",
+      "category": "Pickaxe",
+      "description": "Open the pickaxe menu.",
+      "usage": "/pickaxe"
+    },
+    {
+      "command": "pointshop",
+      "category": "Items & Storage",
+      "description": "Open point shop UI.",
+      "usage": "/pointshop",
+      "aliases": [
+        "ps",
+        "shop"
+      ]
+    },
+    {
+      "command": "prestige",
+      "category": "Ranks & Prestige",
+      "description": "Prestige after reaching max rank.",
+      "usage": "/prestige"
+    },
+    {
+      "command": "mines",
+      "category": "Mining",
+      "description": "Choose a rebirth mine and view its ore layout in the native client.",
+      "usage": "/mines"
+    },
+    {
+      "command": "mineupgrades",
+      "category": "Mining",
+      "description": "Buy permanent ore density and pocket size upgrades in the native client.",
+      "usage": "/mineupgrades"
+    },
+    {
+      "command": "guardian",
+      "category": "Mining",
+      "description": "View mine guardian encounters and defeats, or leave a fight in the native client.",
+      "usage": "/guardian [leave]"
+    },
+    {
+      "command": "resonance",
+      "category": "Pickaxe",
+      "description": "View crystal combinations and your active resonance bonus in the native client.",
+      "usage": "/resonance"
+    },
+    {
+      "command": "sets",
+      "category": "Pickaxe",
+      "description": "Save or equip three named combinations of owned parts, crystals and a pet in the native client.",
+      "usage": "/sets"
+    },
+    {
+      "command": "shaft",
+      "category": "Mining",
+      "description": "Enter challenge floors, view depth records, descend or return to your mine in the native client.",
+      "usage": "/shaft"
+    },
+    {
+      "command": "contracts",
+      "category": "Mining",
+      "description": "Choose a non-expiring goal for points in the native client.",
+      "usage": "/contracts"
+    },
+    {
+      "command": "expeditions",
+      "category": "Pets & Robots",
+      "description": "Send spare pets for supplies while mining in the native client.",
+      "usage": "/expeditions"
+    },
+    {
+      "command": "pv",
+      "category": "Items & Storage",
+      "description": "Open your player vault. The native client supports buying and naming extra pages.",
+      "usage": "/pv [page]"
+    },
+    {
+      "command": "rank",
+      "category": "Ranks & Prestige",
+      "description": "Show rank status.",
+      "usage": "/rank"
+    },
+    {
+      "command": "rankup",
+      "category": "Ranks & Prestige",
+      "description": "Spend money to rank up.",
+      "usage": "/rankup [max]"
+    },
+    {
+      "command": "rankupmax",
+      "category": "Ranks & Prestige",
+      "description": "Rank up as much as you can afford.",
+      "usage": "/rankupmax"
+    },
+    {
+      "command": "rename",
+      "category": "Items & Storage",
+      "description": "Rename the held pickaxe or pouch using one Rename Token.",
+      "usage": "/rename"
+    },
+    {
+      "command": "resetmine",
+      "category": "Mining",
+      "description": "Reset your mine and return to the mine entry.",
+      "usage": "/resetmine",
+      "aliases": [
+        "rm"
+      ]
+    },
+    {
+      "command": "rewards",
+      "category": "Pickaxe",
+      "description": "View block milestones and their rewards.",
+      "usage": "/rewards"
+    },
+    {
+      "command": "salvage",
+      "category": "Items & Storage",
+      "description": "Choose items to convert into salvage tokens.",
+      "usage": "/salvage",
+      "aliases": [
+        "scrap",
+        "trash",
+        "bin"
+      ]
+    },
+    {
+      "command": "settings",
+      "category": "Settings & Chat",
+      "description": "Open message and proc settings.",
+      "usage": "/settings"
+    },
+    {
+      "command": "endmulti",
+      "category": "Items & Storage",
+      "description": "End the sell multiplier that expires soonest and return its remaining time as an item.",
+      "usage": "/endmulti"
+    },
+    {
+      "command": "combinemulti",
+      "category": "Items & Storage",
+      "description": "Combine four matching sell multiplier items: double strength up to 25× and triple duration.",
+      "usage": "/combinemulti"
+    },
+    {
+      "command": "enchantcolor",
+      "category": "Pickaxe",
+      "description": "Set held pickaxe enchant colors with two #RRGGBB colors, or toggle them with on/off (true/false). Off keeps your saved colors and displays the defaults.",
+      "usage": "/enchantcolor <#RRGGBB> <#RRGGBB> or <on|off|true|false>"
+    },
+    {
+      "command": "scoreboard",
+      "category": "Settings & Chat",
+      "description": "Show, hide or toggle the scoreboard. Alias: /sc.",
+      "usage": "/scoreboard [on|off|toggle]",
+      "aliases": [
+        "sc"
+      ]
+    },
+    {
+      "command": "test",
+      "category": "Devmode",
+      "description": "Open item, pickaxe and mine editors, progression actions and stress controls, or summon a guardian.",
+      "usage": "/test [mine [max|normal|0-50]|guardian|stress <mine|resetmine|rankup|prestige|stop|status>]",
+      "devmode": true
+    },
+    {
+      "command": "givecrystal",
+      "category": "Devmode",
+      "description": "Give crystals with optional boost and percentage.",
+      "usage": "/givecrystal <tier> [count] [sell|token|exp] [percent]",
+      "devmode": true,
+      "aliases": [
+        "grantcrystal"
+      ]
+    },
+    {
+      "command": "givedust",
+      "category": "Devmode",
+      "description": "Give crystal dust of the selected tier.",
+      "usage": "/givedust <tier> [count]",
+      "devmode": true
+    },
+    {
+      "command": "givepart",
+      "category": "Devmode",
+      "description": "Give a pickaxe part with a selected tier, slot and boost.",
+      "usage": "/givepart <sell|token|exp> <tier> [head|binding|rod] [percent] [count]",
+      "devmode": true,
+      "aliases": [
+        "grantpart"
+      ]
+    },
+    {
+      "command": "giveegg",
+      "category": "Devmode",
+      "description": "Give eggs of the selected rarity.",
+      "usage": "/giveegg [count] [rarity]",
+      "devmode": true,
+      "aliases": [
+        "grantpetegg",
+        "grantegg",
+        "givepetegg"
+      ]
+    },
+    {
+      "command": "givepet",
+      "category": "Devmode",
+      "description": "Give a pet of the selected species and rarity.",
+      "usage": "/givepet <rarity|type> [type|rarity]",
+      "devmode": true,
+      "aliases": [
+        "grantpet"
+      ]
+    },
+    {
+      "command": "givebook",
+      "category": "Devmode",
+      "description": "Give enchant books.",
+      "usage": "/givebook <enchant> <count>",
+      "devmode": true,
+      "aliases": [
+        "grantbook"
+      ]
+    },
+    {
+      "command": "givexp",
+      "category": "Devmode",
+      "description": "Give Liquid EXP items.",
+      "usage": "/givexp <EXP> <count>",
+      "devmode": true,
+      "aliases": [
+        "grantliquidxp",
+        "grantlquidxp",
+        "giveliquidxp"
+      ]
+    },
+    {
+      "command": "givetime",
+      "category": "Devmode",
+      "description": "Give Automine Time items.",
+      "usage": "/givetime <duration> [count]",
+      "devmode": true,
+      "aliases": [
+        "granttime"
+      ]
+    },
+    {
+      "command": "givemultiplier",
+      "category": "Devmode",
+      "description": "Give sell multipliers with a selected strength and duration.",
+      "usage": "/givemultiplier <multiplier> <duration> [count]",
+      "devmode": true,
+      "aliases": [
+        "grantmulti",
+        "grantmultiplier",
+        "givesellmultiplier"
+      ]
+    },
+    {
+      "command": "robots",
+      "category": "Pets & Robots",
+      "description": "Equip, fuel and upgrade SellBoost, EXPBoost and TokenBoost robots in the native client.",
+      "usage": "/robots"
+    },
+    {
+      "command": "giverobot",
+      "category": "Devmode",
+      "description": "Give a robot with an optional level in the native client.",
+      "usage": "/giverobot <sell|token|exp> [level]",
+      "devmode": true
+    },
+    {
+      "command": "givefuel",
+      "category": "Devmode",
+      "description": "Give Robot Fuel in the native client.",
+      "usage": "/givefuel [count]",
+      "devmode": true
+    },
+    {
+      "command": "giverubies",
+      "category": "Devmode",
+      "description": "Add Rubys in the native client.",
+      "usage": "/giverubies <amount>",
+      "devmode": true
+    },
+    {
+      "command": "givesapphires",
+      "category": "Devmode",
+      "description": "Add Sapphires in the native client.",
+      "usage": "/givesapphires <amount>",
+      "devmode": true
+    },
+    {
+      "command": "givefood",
+      "category": "Devmode",
+      "description": "Give pet food.",
+      "usage": "/givefood [count]",
+      "devmode": true
+    },
+    {
+      "command": "grantrename",
+      "category": "Devmode",
+      "description": "Give Rename Tokens.",
+      "usage": "/grantrename [count]",
+      "devmode": true,
+      "aliases": [
+        "giverename"
+      ]
+    },
+    {
+      "command": "givebomb",
+      "category": "Devmode",
+      "description": "Give Mine Bombs of the selected tier.",
+      "usage": "/givebomb <tier> <count>",
+      "devmode": true,
+      "aliases": [
+        "grantbomb"
+      ]
+    },
+    {
+      "command": "givepouch",
+      "category": "Devmode",
+      "description": "Give empty pouches.",
+      "usage": "/givepouch <small|medium|large> [count]",
+      "devmode": true,
+      "aliases": [
+        "grantbag",
+        "givebag"
+      ]
+    },
+    {
+      "command": "picklevel",
+      "category": "Devmode",
+      "description": "Change the pickaxe level.",
+      "usage": "/picklevel [give|take|set] <amount>",
+      "devmode": true,
+      "aliases": [
+        "picklvl"
+      ]
+    },
+    {
+      "command": "pickprestige",
+      "category": "Devmode",
+      "description": "Set parts prestige.",
+      "usage": "/pickprestige <1-1000>",
+      "devmode": true
+    },
+    {
+      "command": "pickname",
+      "category": "Devmode",
+      "description": "Set the pickaxe name without spending a token.",
+      "usage": "/pickname <name>",
+      "devmode": true
+    },
+    {
+      "command": "pickenchant",
+      "category": "Devmode",
+      "description": "Set an enchant level on the pickaxe.",
+      "usage": "/pickenchant <enchant> <level>",
+      "devmode": true
+    },
+    {
+      "command": "tutorial",
+      "category": "Settings & Chat",
+      "description": "Start, resume or skip the getting-started tutorial.",
+      "usage": "/tutorial [start|skip|restart]"
+    }
+  ]
+}

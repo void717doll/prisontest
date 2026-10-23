@@ -36,11 +36,11 @@ for macos and windows dependencies, packages and the release workflow.
 
 ## assets and saves
 
-textures, sounds, fonts and game data come from
-`https://assets.prisontest.com/`. only the app icon is kept in this repository
-and release packages. the first launch needs an internet connection; downloaded
-assets are cached for later launches and offline play. `resources.txt` lists
-the files the client downloads.
+the asset files are kept in `ui/`, `textures/`, `sounds/`, `fonts/` and `data/`
+at the repository root. the client downloads them from `https://assets.prisontest.com/`
+on launch and caches them for offline play. release packages include only the
+app icon, so the first launch needs an internet connection. `resources.txt`
+lists the files the client downloads.
 
 on linux, saves and the asset cache live under `~/.local/share/prisoncpp/`,
 or `$XDG_DATA_HOME/prisoncpp/` when set. windows uses
@@ -56,16 +56,16 @@ that can be skipped.
 
 ## development
 
-the core checks use a downloaded asset pack:
+the core checks can use the repository's asset files:
 
 ```sh
-cmake -S . -B build -DBUILD_TESTING=ON -DPRISON_TEST_ASSETS=/path/to/asset-pack
+cmake -S . -B build -DBUILD_TESTING=ON -DPRISON_TEST_ASSETS="$PWD"
 cmake --build build --parallel 2
-python3 tools/check_data.py /path/to/asset-pack
+python3 tools/check_data.py .
 ctest --test-dir build --output-on-failure
 ```
 
-`--assets /path/to/asset-pack` runs the client with local files and skips
+`--assets "$PWD"` runs the client with the repository's files and skips
 downloads. [asset hosting](docs/ASSETS.md) covers the file layout and cache;
 [game data](data/README.md) describes the gameplay tables.
 

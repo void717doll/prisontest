@@ -1,0 +1,11 @@
+[
+  {"name":"A","cost":0},{"name":"B","cost":1500},{"name":"C","cost":3900},
+  {"name":"D","cost":7500},{"name":"E","cost":12748},{"name":"F","cost":19500},
+  {"name":"G","cost":27748},{"name":"H","cost":37500},{"name":"I","cost":75000},
+  {"name":"J","cost":150000},{"name":"K","cost":300000},{"name":"L","cost":600000},
+  {"name":"M","cost":600000},{"name":"N","cost":1200000},{"name":"O","cost":2400000},
+  {"name":"P","cost":4800000},{"name":"Q","cost":9600000},{"name":"R","cost":19200000},
+  {"name":"S","cost":38400000},{"name":"T","cost":76800000},{"name":"U","cost":153600000},
+  {"name":"V","cost":307200000},{"name":"W","cost":614400000},{"name":"X","cost":1228800000},
+  {"name":"Y","cost":2457600000},{"name":"Z","cost":4915200000}
+]

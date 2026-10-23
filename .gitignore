@@ -35,16 +35,3 @@ prompts/
 .windsurfrules
 copilot-instructions.md
 .github/instructions/
-
-/ui/*
-!/ui/prisontest_icon.png
-/textures/
-/fonts/*
-!/fonts/LICENSE-DejaVu.txt
-/sounds/*
-!/sounds/README.md
-!/sounds/prison/
-/sounds/prison/*
-!/sounds/prison/README.md
-/data/*
-!/data/README.md

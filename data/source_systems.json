@@ -1,0 +1,482 @@
+{
+  "data_revision": 2,
+  "points_blocks_per_point": 10000,
+  "pouch_slots": {
+    "small": 18,
+    "medium": 27,
+    "large": 54
+  },
+  "autominer": {
+    "default_bps": 3,
+    "max_bps": 10,
+    "time_cost_per_bps_step": 2,
+    "upgrade_base_cost": 1000000000,
+    "upgrade_step": 250
+  },
+  "pets": {
+    "max_hatchery_slots": 6,
+    "exp_per_level": 100,
+    "growth_per_level": 0.035,
+    "growth_softcap_level": 30,
+    "max_level": 75,
+    "active_boost_cap_pct": 650,
+    "tiers": [
+      {
+        "id": "common",
+        "label": "Common",
+        "color": "#44c767",
+        "weight": 90,
+        "hatch_blocks": 25000,
+        "boost_min": 1,
+        "boost_max": 5,
+        "food_value": 1,
+        "feed_cooldown": 1800
+      },
+      {
+        "id": "uncommon",
+        "label": "Uncommon",
+        "color": "#2d8cff",
+        "weight": 50,
+        "hatch_blocks": 50000,
+        "boost_min": 10,
+        "boost_max": 25,
+        "food_value": 2,
+        "feed_cooldown": 3600
+      },
+      {
+        "id": "rare",
+        "label": "Rare",
+        "color": "#ff4db8",
+        "weight": 25,
+        "hatch_blocks": 75000,
+        "boost_min": 25,
+        "boost_max": 50,
+        "food_value": 3,
+        "feed_cooldown": 5400
+      },
+      {
+        "id": "legendary",
+        "label": "Legendary",
+        "color": "#ffd700",
+        "weight": 1,
+        "hatch_blocks": 150000,
+        "boost_min": 50,
+        "boost_max": 150,
+        "food_value": 4,
+        "feed_cooldown": 10800
+      },
+      {
+        "id": "mythical",
+        "label": "Mythical",
+        "color": "#a35bff",
+        "weight": 0.01,
+        "hatch_blocks": 450000,
+        "boost_min": 175,
+        "boost_max": 350,
+        "food_value": 6,
+        "feed_cooldown": 21600
+      },
+      {
+        "id": "overpowered",
+        "label": "OVERPOWERED",
+        "color": "#71EA5B",
+        "gradient": [
+          "#71EA5B",
+          "#9CE265",
+          "#C8DA6E",
+          "#F3D278",
+          "#F3A56B",
+          "#F3775D",
+          "#F34A50",
+          "#F31C42",
+          "#DB3E80",
+          "#C35FBD",
+          "#AB81FB"
+        ],
+        "weight": 0,
+        "hatch_blocks": 1000000,
+        "boost_min": 500,
+        "boost_max": 950,
+        "food_value": 10,
+        "feed_cooldown": 32400,
+        "hatchable": false,
+        "merge_only": true
+      }
+    ],
+    "moods": [
+      "Joyful",
+      "Happy",
+      "Cheerful",
+      "Sunny",
+      "Smiley",
+      "Delighted",
+      "Playful",
+      "Jolly",
+      "Bubbly",
+      "Gleeful",
+      "Chipper",
+      "Bright",
+      "Merry",
+      "Lively",
+      "Peppy",
+      "Upbeat",
+      "Radiant",
+      "Hopeful",
+      "Calm",
+      "Serene",
+      "Peaceful",
+      "Cozy",
+      "Gentle",
+      "Kind",
+      "Friendly",
+      "Warm",
+      "Sweet",
+      "Grateful",
+      "Thankful",
+      "Blessed",
+      "Lucky",
+      "Proud",
+      "Brave",
+      "Curious",
+      "Clever",
+      "Shiny",
+      "Sparkly",
+      "Cuddly",
+      "Snuggly",
+      "Bouncy",
+      "Wiggly",
+      "Fuzzy",
+      "Fluffy",
+      "Silly",
+      "Goofy",
+      "Dreamy",
+      "Charming",
+      "Lovely",
+      "Eager",
+      "Zesty",
+      "Confident",
+      "Optimistic",
+      "Dandy",
+      "Snappy",
+      "Festive"
+    ],
+    "types": [
+      "Rabbit",
+      "Turtle",
+      "Fox",
+      "Wolf",
+      "Bear",
+      "Panda",
+      "Deer",
+      "Moose",
+      "Horse",
+      "Donkey",
+      "Llama",
+      "Goat",
+      "Sheep",
+      "Cow",
+      "Pig",
+      "Chicken",
+      "Duck",
+      "Goose",
+      "Turkey",
+      "Swan",
+      "Parrot",
+      "Owl",
+      "Hawk",
+      "Eagle",
+      "Falcon",
+      "Penguin",
+      "Seal",
+      "Otter",
+      "Dolphin",
+      "Whale",
+      "Shark",
+      "Frog",
+      "Toad",
+      "Lizard",
+      "Gecko",
+      "Iguana",
+      "Snake",
+      "Crocodile",
+      "Alligator",
+      "Elephant",
+      "Rhino",
+      "Hippo",
+      "Giraffe",
+      "Zebra",
+      "Camel",
+      "Buffalo",
+      "Bison",
+      "Boar",
+      "Hedgehog",
+      "Hamster",
+      "Squirrel",
+      "Chipmunk",
+      "Raccoon",
+      "Badger",
+      "Mole",
+      "Beaver",
+      "Koala",
+      "Kangaroo",
+      "Peacock",
+      "Toucan"
+    ]
+  },
+  "reward_milestones": [
+    {
+      "blocks": 50,
+      "tokens": 2500,
+      "money": 5000
+    },
+    {
+      "blocks": 100,
+      "tokens": 5000,
+      "money": 10000
+    },
+    {
+      "blocks": 250,
+      "tokens": 15000,
+      "money": 25000
+    },
+    {
+      "blocks": 500,
+      "tokens": 30000,
+      "money": 50000
+    },
+    {
+      "blocks": 1000,
+      "tokens": 75000,
+      "money": 0
+    },
+    {
+      "blocks": 5000,
+      "tokens": 200000,
+      "money": 0
+    },
+    {
+      "blocks": 10000,
+      "tokens": 500000,
+      "money": 0
+    },
+    {
+      "blocks": 20000,
+      "tokens": 1000000,
+      "money": 0
+    },
+    {
+      "blocks": 30000,
+      "tokens": 5000000,
+      "money": 0
+    },
+    {
+      "blocks": 40000,
+      "tokens": 10000000,
+      "money": 0
+    },
+    {
+      "blocks": 50000,
+      "tokens": 20000000,
+      "money": 0
+    },
+    {
+      "blocks": 75000,
+      "tokens": 50500000,
+      "money": 0
+    },
+    {
+      "blocks": 100000,
+      "tokens": 75000000,
+      "money": 0
+    },
+    {
+      "blocks": 150000,
+      "tokens": 125000000,
+      "money": 0
+    },
+    {
+      "blocks": 250000,
+      "tokens": 10000000000,
+      "money": 0
+    },
+    {
+      "blocks": 500000,
+      "tokens": 25000000000,
+      "money": 0
+    },
+    {
+      "blocks": 1000000,
+      "tokens": 100000000000,
+      "money": 0
+    }
+  ],
+  "salvage": {
+    "base_min": 500,
+    "base_max": 2500,
+    "tier_ranges": [
+      [
+        5000,
+        250000
+      ],
+      [
+        25000,
+        500000
+      ],
+      [
+        50000,
+        1000000
+      ],
+      [
+        100000,
+        2000000
+      ],
+      [
+        250000,
+        4000000
+      ],
+      [
+        500000,
+        7000000
+      ],
+      [
+        1000000,
+        10000000
+      ],
+      [
+        1500000,
+        15000000
+      ],
+      [
+        2000000,
+        20000000
+      ],
+      [
+        3000000,
+        30000000
+      ]
+    ],
+    "max_tokens_per_redeem": 500000000,
+    "salvage_tier_cap": 25,
+    "eligible_items": [
+      "crystal",
+      "crystal_dust",
+      "pick_part",
+      "liquid_xp",
+      "pet_egg",
+      "minebomb",
+      "multiplier",
+      "automine_time",
+      "enchant_book",
+      "rename_token"
+    ]
+  },
+  "lucky": {
+    "base_chance": 0.0004,
+    "per_level_chance": 0.0001,
+    "chance_cap": 0.015,
+    "cooldown_seconds": 8,
+    "token_cache_scale_per_level": 0.011,
+    "token_cache_money_ratio": 0.6,
+    "token_cache_max_tokens": 200000,
+    "token_weight": 20,
+    "crystal_weight": 8,
+    "part_weight": 16,
+    "minebomb_weight": 40,
+    "pet_egg_weight": 3,
+    "multiplier_weight": 10,
+    "automine_weight": 10,
+    "book_weight": 2,
+    "multiplier_amount_base": 1.2,
+    "multiplier_amount_per_level": 0.03,
+    "multiplier_amount_cap": 4.0,
+    "multiplier_duration_base": 1200,
+    "multiplier_duration_per_level": 35,
+    "automine_duration_base": 600,
+    "automine_duration_per_level": 30,
+    "timefinder_weight": 20,
+    "partfinder_weight": 15,
+    "crystalfinder_weight": 8,
+    "eggfinder_weight": 3,
+    "enchantfinder_weight": 2
+  },
+  "regions": [
+    {"id": "quarry", "label": "Quarry", "color": "#bcb7aa", "rebirth": 0, "layout": "scattered", "ore_offset": 0, "ore_bonus": 0, "description": "Scattered ore in the original mine."},
+    {"id": "frost", "label": "Frost Mine", "color": "#91cdd9", "rebirth": 1, "layout": "seams", "ore_offset": 2, "ore_bonus": 0.04, "description": "Long ore seams, with ore from two ranks ahead."},
+    {"id": "caverns", "label": "Deep Mine", "color": "#b9a9d6", "rebirth": 3, "layout": "seams", "ore_offset": 4, "ore_bonus": 0.06, "description": "Deep ore seams, with ore from four ranks ahead."},
+    {"id": "ember", "label": "Ember Mine", "color": "#e9a170", "rebirth": 5, "layout": "bands", "ore_offset": 6, "ore_bonus": 0.08, "description": "Dense ore layers, with ore from six ranks ahead."}
+  ],
+  "mine_upgrades": [
+    {"id": "ore_density", "label": "Ore Density", "description": "+2 percentage points of ore per level. More tokens, less money.", "levels": [
+      {"money": 1e15, "points": 250, "rebirth": 0},
+      {"money": 5e17, "points": 1000, "rebirth": 1},
+      {"money": 5e19, "points": 4000, "rebirth": 2},
+      {"money": 1e21, "points": 10000, "rebirth": 3},
+      {"money": 2.5e22, "points": 25000, "rebirth": 5}
+    ]},
+    {"id": "pocket_size", "label": "Ore Pockets", "description": "+1 block in each rare pocket per level.", "levels": [
+      {"money": 2.5e17, "points": 500, "rebirth": 1},
+      {"money": 5e20, "points": 5000, "rebirth": 3}
+    ]}
+  ],
+  "shaft": {
+    "required_prestige": 1,
+    "base_blocks": 900,
+    "blocks_per_band": 150,
+    "max_blocks": 2000,
+    "clear_points": 2,
+    "milestone_interval": 10,
+    "conditions": [
+      {"id": "hardstone", "label": "Hard Stone", "description": "Slower breaking. Bombs and area enchants work.", "dig_scale": 1.6, "speed_scale": 1.0, "ore_bonus": 0.0, "procs": true, "bombs": true},
+      {"id": "steady", "label": "Steady Hands", "description": "No bombs or area enchants on this floor.", "dig_scale": 1.0, "speed_scale": 1.0, "ore_bonus": 0.0, "procs": false, "bombs": false},
+      {"id": "heavy", "label": "Heavy Ground", "description": "Slower movement and breaking.", "dig_scale": 1.2, "speed_scale": 0.65, "ore_bonus": 0.0, "procs": true, "bombs": true},
+      {"id": "veins", "label": "Token Veins", "description": "More token ore, fewer money blocks, slower breaking.", "dig_scale": 1.3, "speed_scale": 1.0, "ore_bonus": 0.15, "procs": true, "bombs": true}
+    ]
+  },
+  "contracts": [
+    {"id": "mining", "label": "Mining Work", "kind": "blocks", "goal": 25000, "points": 7},
+    {"id": "ore", "label": "Ore Shipment", "kind": "ores", "goal": 5000, "points": 11},
+    {"id": "hatchery", "label": "Hatchery Work", "kind": "hatches", "goal": 2, "points": 11}
+  ],
+  "expeditions": {
+    "slots": 3,
+    "routes": [
+      {"id": "quarry", "blocks": 25000, "species": [], "loot": {"id": "pet_food", "count": 4, "food_value": 1}, "points": 4},
+      {"id": "frost", "blocks": 50000, "species": ["Rabbit", "Fox", "Wolf", "Bear", "Deer", "Moose", "Penguin", "Seal"], "loot": {"id": "pet_egg", "count": 1, "tier_id": "uncommon"}, "points": 5},
+      {"id": "caverns", "blocks": 75000, "species": ["Owl", "Badger", "Mole", "Raccoon", "Hedgehog", "Hamster", "Beaver"], "loot": {"id": "pet_food", "count": 8, "food_value": 1}, "points": 6},
+      {"id": "ember", "blocks": 100000, "species": ["Lizard", "Gecko", "Iguana", "Snake", "Crocodile", "Alligator", "Camel", "Rhino"], "loot": {"id": "pet_egg", "count": 1, "tier_id": "rare"}, "points": 8}
+    ]
+  },
+  "vault": {
+    "page_base_cost": 100000000000000,
+    "page_cost_multiplier": 6
+  },
+  "discoveries": {
+    "pocket_chance": 0.002,
+    "pocket_blocks": 5,
+    "pocket_color": "#83d7e8",
+    "themes": [
+      "Ice", "Blue Slate", "Sapphire", "Amethyst", "Fluorite", "Lepidolite",
+      "Rose Quartz", "Rhodonite", "Red Sandstone", "Copper", "Amber", "Citrine",
+      "Sulfur", "Olivine", "Moss Stone", "Jade", "Malachite", "Turquoise",
+      "Aquamarine", "Blue Quartz", "Iolite", "Violet Slate", "Purple Fluorite",
+      "Kunzite", "Pink Granite", "Coralstone"
+    ]
+  },
+  "enchant_book_whitelist": [
+    "token_greed",
+    "fortune",
+    "greed",
+    "lucky",
+    "jackhammer",
+    "veinminer",
+    "experienced",
+    "crystalfinder",
+    "timefinder"
+  ],
+  "part_specializations": [
+    {"id": "plain", "label": "Plain", "description": "Normal part. No tradeoff.", "modifiers": {}},
+    {"id": "brood", "label": "Brood", "description": "+20% manual egg chance, -15% tokens per part.", "modifiers": {"eggs": 0.2, "token": -0.15}},
+    {"id": "prospector", "label": "Prospector", "description": "+15% tokens, -15% money per part.", "modifiers": {"token": 0.15, "money": -0.15}},
+    {"id": "scholar", "label": "Scholar", "description": "+15% EXP, -15% manual egg chance per part.", "modifiers": {"xp": 0.15, "eggs": -0.15}}
+  ]
+}

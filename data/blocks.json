@@ -1,0 +1,12 @@
+{
+  "default": {"money": 10, "xp": 1, "token_ore": false},
+  "blocks": [
+    {"id":"stone","money":10,"xp":1,"token_ore":false},
+    {"id":"coal","money":16,"xp":1,"token_ore":false},
+    {"id":"iron","money":26,"xp":2,"token_ore":false},
+    {"id":"gold","money":40,"xp":2,"token_ore":false},
+    {"id":"diamond","money":75,"xp":3,"token_ore":false},
+    {"id":"emerald","money":120,"xp":4,"token_ore":false},
+    {"id":"token_ore","money":25,"xp":2,"token_ore":true}
+  ]
+}

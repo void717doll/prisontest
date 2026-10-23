@@ -1,7 +1,7 @@
 # asset hosting
 
 the native client checks `https://assets.prisontest.com/` on each normal launch.
-publish the existing filenames under these directories:
+publish the files from these repository directories at the asset host's root:
 
 | cache folder | path on the host |
 | --- | --- |
@@ -14,8 +14,9 @@ publish the existing filenames under these directories:
 the renderer, audio loader, cache and downloads use these same relative paths, including
 `https://assets.prisontest.com/fonts/DejaVuSans-Bold.ttf` and
 `https://assets.prisontest.com/ui/prisontest_header.png`. download errors show
-the requested URL. assets are excluded from git and release packages except for
-`ui/prisontest_icon.png`, which is kept for the app and desktop launcher.
+the requested URL. all runtime assets are stored in git. release packages include
+only `ui/prisontest_icon.png`, used by the app and desktop launcher; the remaining
+assets download into the launch cache.
 
 keep subdirectories, including `sounds/prison/`. the host needs HTTPS and direct
 file responses. no API, directory listing, zip archive or server-side manifest
@@ -29,7 +30,7 @@ the client sends conditional GET requests and reuses a file on HTTP 304.
 HTTP 200 replaces it only after the full asset set has downloaded and passed
 file checks. publish complete sets together, especially related json tables.
 
-run `python3 tools/check_data.py /path/to/asset-pack` before publishing data changes.
+run `python3 tools/check_data.py .` from the repository root before publishing data changes.
 publish the `data/` files together. `source_systems.json`,
 `native_economy.json` and `native_content.json` must carry `data_revision: 2`.
 older or mixed revisions are rejected both in cached packs and new downloads.

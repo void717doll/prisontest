@@ -2,8 +2,9 @@
 
 the client reads these json files through `src/common.cpp`. they are hosted at
 `https://assets.prisontest.com/data/` and downloaded into the launch cache.
-they are not stored in git or included in packages. use `--assets /path/to/asset-pack`
-to preview a local copy before publishing changes.
+the source tables are stored here in git and excluded from client packages.
+use `--assets "$PWD"` from the repository root to preview edits before publishing
+the complete `data/` folder to the asset host.
 
 | file | contents |
 | --- | --- |
@@ -93,7 +94,7 @@ mining counters rather than offline timers.
 run the static audit after editing:
 
 ```sh
-python3 tools/check_data.py /path/to/asset-pack
+python3 tools/check_data.py .
 ctest --test-dir build --output-on-failure
 ```
 

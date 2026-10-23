@@ -1,0 +1,492 @@
+{
+  "arena_half": 50,
+  "arena_y_min": -100,
+  "arena_y_max": 12,
+  "mine_min": {
+    "x": -12,
+    "y": -8,
+    "z": -12
+  },
+  "mine_max": {
+    "x": 12,
+    "y": -1,
+    "z": 12
+  },
+  "spawn": {
+    "x": 0,
+    "y": 2,
+    "z": 18
+  },
+  "regen_delay": 10,
+  "rich_chance": 5,
+  "blocks": [
+    {
+      "id": "tier_a_smooth",
+      "description": "Tier A Smooth",
+      "value": 3,
+      "sell_value": 10,
+      "weight": 5,
+      "unlock_rank": "A",
+      "tile": "prisontest_stone.png^[multiply:#57d1ff^[colorize:#0f1218:70"
+    },
+    {
+      "id": "tier_a_ore",
+      "description": "Tier A Ore",
+      "value": 4,
+      "sell_value": 0,
+      "weight": 1,
+      "unlock_rank": "A",
+      "tile": "prisontest_stone.png^[multiply:#57d1ff^[colorize:#0f1218:70^(prisontest_ore.png^[multiply:#ffffff^[opacity:118)^(prisontest_ore.png^[multiply:#327994^[opacity:92)"
+    },
+    {
+      "id": "tier_b_smooth",
+      "description": "Tier B Smooth",
+      "value": 4,
+      "sell_value": 16,
+      "weight": 5,
+      "unlock_rank": "B",
+      "tile": "prisontest_stone.png^[multiply:#6aa9ff^[colorize:#0f1218:70"
+    },
+    {
+      "id": "tier_b_ore",
+      "description": "Tier B Ore",
+      "value": 5,
+      "sell_value": 0,
+      "weight": 1,
+      "unlock_rank": "B",
+      "tile": "prisontest_stone.png^[multiply:#6aa9ff^[colorize:#0f1218:70^(prisontest_ore.png^[multiply:#ffffff^[opacity:118)^(prisontest_ore.png^[multiply:#3d6294^[opacity:92)"
+    },
+    {
+      "id": "tier_c_smooth",
+      "description": "Tier C Smooth",
+      "value": 5,
+      "sell_value": 16,
+      "weight": 5,
+      "unlock_rank": "C",
+      "tile": "prisontest_stone.png^[multiply:#7d8cff^[colorize:#0f1218:70"
+    },
+    {
+      "id": "tier_c_ore",
+      "description": "Tier C Ore",
+      "value": 6,
+      "sell_value": 0,
+      "weight": 1,
+      "unlock_rank": "C",
+      "tile": "prisontest_stone.png^[multiply:#7d8cff^[colorize:#0f1218:70^(prisontest_ore.png^[multiply:#ffffff^[opacity:118)^(prisontest_ore.png^[multiply:#485194^[opacity:92)"
+    },
+    {
+      "id": "tier_d_smooth",
+      "description": "Tier D Smooth",
+      "value": 6,
+      "sell_value": 20,
+      "weight": 5,
+      "unlock_rank": "D",
+      "tile": "prisontest_stone.png^[multiply:#9b78ff^[colorize:#0f1218:70"
+    },
+    {
+      "id": "tier_d_ore",
+      "description": "Tier D Ore",
+      "value": 7,
+      "sell_value": 0,
+      "weight": 1,
+      "unlock_rank": "D",
+      "tile": "prisontest_stone.png^[multiply:#9b78ff^[colorize:#0f1218:70^(prisontest_ore.png^[multiply:#ffffff^[opacity:118)^(prisontest_ore.png^[multiply:#5a4694^[opacity:92)"
+    },
+    {
+      "id": "tier_e_smooth",
+      "description": "Tier E Smooth",
+      "value": 7,
+      "sell_value": 26,
+      "weight": 5,
+      "unlock_rank": "E",
+      "tile": "prisontest_stone.png^[multiply:#be6fff^[colorize:#0f1218:70"
+    },
+    {
+      "id": "tier_e_ore",
+      "description": "Tier E Ore",
+      "value": 8,
+      "sell_value": 0,
+      "weight": 1,
+      "unlock_rank": "E",
+      "tile": "prisontest_stone.png^[multiply:#be6fff^[colorize:#0f1218:70^(prisontest_ore.png^[multiply:#ffffff^[opacity:118)^(prisontest_ore.png^[multiply:#6e4094^[opacity:92)"
+    },
+    {
+      "id": "tier_f_smooth",
+      "description": "Tier F Smooth",
+      "value": 9,
+      "sell_value": 30,
+      "weight": 5,
+      "unlock_rank": "F",
+      "tile": "prisontest_stone.png^[multiply:#e26ce8^[colorize:#0f1218:70"
+    },
+    {
+      "id": "tier_f_ore",
+      "description": "Tier F Ore",
+      "value": 10,
+      "sell_value": 0,
+      "weight": 1,
+      "unlock_rank": "F",
+      "tile": "prisontest_stone.png^[multiply:#e26ce8^[colorize:#0f1218:70^(prisontest_ore.png^[multiply:#ffffff^[opacity:118)^(prisontest_ore.png^[multiply:#833f87^[opacity:92)"
+    },
+    {
+      "id": "tier_g_smooth",
+      "description": "Tier G Smooth",
+      "value": 11,
+      "sell_value": 40,
+      "weight": 5,
+      "unlock_rank": "G",
+      "tile": "prisontest_stone.png^[multiply:#ff73bf^[colorize:#0f1218:70"
+    },
+    {
+      "id": "tier_g_ore",
+      "description": "Tier G Ore",
+      "value": 13,
+      "sell_value": 0,
+      "weight": 1,
+      "unlock_rank": "G",
+      "tile": "prisontest_stone.png^[multiply:#ff73bf^[colorize:#0f1218:70^(prisontest_ore.png^[multiply:#ffffff^[opacity:118)^(prisontest_ore.png^[multiply:#94436f^[opacity:92)"
+    },
+    {
+      "id": "tier_h_smooth",
+      "description": "Tier H Smooth",
+      "value": 14,
+      "sell_value": 50,
+      "weight": 5,
+      "unlock_rank": "H",
+      "tile": "prisontest_stone.png^[multiply:#ff7f98^[colorize:#0f1218:70"
+    },
+    {
+      "id": "tier_h_ore",
+      "description": "Tier H Ore",
+      "value": 16,
+      "sell_value": 0,
+      "weight": 1,
+      "unlock_rank": "H",
+      "tile": "prisontest_stone.png^[multiply:#ff7f98^[colorize:#0f1218:70^(prisontest_ore.png^[multiply:#ffffff^[opacity:118)^(prisontest_ore.png^[multiply:#944a58^[opacity:92)"
+    },
+    {
+      "id": "tier_i_smooth",
+      "description": "Tier I Smooth",
+      "value": 17,
+      "sell_value": 60,
+      "weight": 5,
+      "unlock_rank": "I",
+      "tile": "prisontest_stone.png^[multiply:#ff8f79^[colorize:#0f1218:70"
+    },
+    {
+      "id": "tier_i_ore",
+      "description": "Tier I Ore",
+      "value": 20,
+      "sell_value": 0,
+      "weight": 1,
+      "unlock_rank": "I",
+      "tile": "prisontest_stone.png^[multiply:#ff8f79^[colorize:#0f1218:70^(prisontest_ore.png^[multiply:#ffffff^[opacity:118)^(prisontest_ore.png^[multiply:#945346^[opacity:92)"
+    },
+    {
+      "id": "tier_j_smooth",
+      "description": "Tier J Smooth",
+      "value": 21,
+      "sell_value": 74,
+      "weight": 5,
+      "unlock_rank": "J",
+      "tile": "prisontest_stone.png^[multiply:#ffa36a^[colorize:#0f1218:70"
+    },
+    {
+      "id": "tier_j_ore",
+      "description": "Tier J Ore",
+      "value": 24,
+      "sell_value": 0,
+      "weight": 1,
+      "unlock_rank": "J",
+      "tile": "prisontest_stone.png^[multiply:#ffa36a^[colorize:#0f1218:70^(prisontest_ore.png^[multiply:#ffffff^[opacity:118)^(prisontest_ore.png^[multiply:#945f3d^[opacity:92)"
+    },
+    {
+      "id": "tier_k_smooth",
+      "description": "Tier K Smooth",
+      "value": 26,
+      "sell_value": 92,
+      "weight": 5,
+      "unlock_rank": "K",
+      "tile": "prisontest_stone.png^[multiply:#ffbb62^[colorize:#0f1218:70"
+    },
+    {
+      "id": "tier_k_ore",
+      "description": "Tier K Ore",
+      "value": 30,
+      "sell_value": 0,
+      "weight": 1,
+      "unlock_rank": "K",
+      "tile": "prisontest_stone.png^[multiply:#ffbb62^[colorize:#0f1218:70^(prisontest_ore.png^[multiply:#ffffff^[opacity:118)^(prisontest_ore.png^[multiply:#946c39^[opacity:92)"
+    },
+    {
+      "id": "tier_l_smooth",
+      "description": "Tier L Smooth",
+      "value": 33,
+      "sell_value": 118,
+      "weight": 5,
+      "unlock_rank": "L",
+      "tile": "prisontest_stone.png^[multiply:#ffd061^[colorize:#0f1218:70"
+    },
+    {
+      "id": "tier_l_ore",
+      "description": "Tier L Ore",
+      "value": 38,
+      "sell_value": 0,
+      "weight": 1,
+      "unlock_rank": "L",
+      "tile": "prisontest_stone.png^[multiply:#ffd061^[colorize:#0f1218:70^(prisontest_ore.png^[multiply:#ffffff^[opacity:118)^(prisontest_ore.png^[multiply:#947938^[opacity:92)"
+    },
+    {
+      "id": "tier_m_smooth",
+      "description": "Tier M Smooth",
+      "value": 40,
+      "sell_value": 146,
+      "weight": 5,
+      "unlock_rank": "M",
+      "tile": "prisontest_stone.png^[multiply:#f3e76a^[colorize:#0f1218:70"
+    },
+    {
+      "id": "tier_m_ore",
+      "description": "Tier M Ore",
+      "value": 46,
+      "sell_value": 0,
+      "weight": 1,
+      "unlock_rank": "M",
+      "tile": "prisontest_stone.png^[multiply:#f3e76a^[colorize:#0f1218:70^(prisontest_ore.png^[multiply:#ffffff^[opacity:118)^(prisontest_ore.png^[multiply:#8d863d^[opacity:92)"
+    },
+    {
+      "id": "tier_n_smooth",
+      "description": "Tier N Smooth",
+      "value": 50,
+      "sell_value": 180,
+      "weight": 5,
+      "unlock_rank": "N",
+      "tile": "prisontest_stone.png^[multiply:#c9e06f^[colorize:#0f1218:70"
+    },
+    {
+      "id": "tier_n_ore",
+      "description": "Tier N Ore",
+      "value": 57,
+      "sell_value": 0,
+      "weight": 1,
+      "unlock_rank": "N",
+      "tile": "prisontest_stone.png^[multiply:#c9e06f^[colorize:#0f1218:70^(prisontest_ore.png^[multiply:#ffffff^[opacity:118)^(prisontest_ore.png^[multiply:#758240^[opacity:92)"
+    },
+    {
+      "id": "tier_o_smooth",
+      "description": "Tier O Smooth",
+      "value": 62,
+      "sell_value": 224,
+      "weight": 5,
+      "unlock_rank": "O",
+      "tile": "prisontest_stone.png^[multiply:#98d976^[colorize:#0f1218:70"
+    },
+    {
+      "id": "tier_o_ore",
+      "description": "Tier O Ore",
+      "value": 71,
+      "sell_value": 0,
+      "weight": 1,
+      "unlock_rank": "O",
+      "tile": "prisontest_stone.png^[multiply:#98d976^[colorize:#0f1218:70^(prisontest_ore.png^[multiply:#ffffff^[opacity:118)^(prisontest_ore.png^[multiply:#587e44^[opacity:92)"
+    },
+    {
+      "id": "tier_p_smooth",
+      "description": "Tier P Smooth",
+      "value": 78,
+      "sell_value": 282,
+      "weight": 5,
+      "unlock_rank": "P",
+      "tile": "prisontest_stone.png^[multiply:#6fd08b^[colorize:#0f1218:70"
+    },
+    {
+      "id": "tier_p_ore",
+      "description": "Tier P Ore",
+      "value": 90,
+      "sell_value": 0,
+      "weight": 1,
+      "unlock_rank": "P",
+      "tile": "prisontest_stone.png^[multiply:#6fd08b^[colorize:#0f1218:70^(prisontest_ore.png^[multiply:#ffffff^[opacity:118)^(prisontest_ore.png^[multiply:#407951^[opacity:92)"
+    },
+    {
+      "id": "tier_q_smooth",
+      "description": "Tier Q Smooth",
+      "value": 96,
+      "sell_value": 350,
+      "weight": 5,
+      "unlock_rank": "Q",
+      "tile": "prisontest_stone.png^[multiply:#58c8a5^[colorize:#0f1218:70"
+    },
+    {
+      "id": "tier_q_ore",
+      "description": "Tier Q Ore",
+      "value": 110,
+      "sell_value": 0,
+      "weight": 1,
+      "unlock_rank": "Q",
+      "tile": "prisontest_stone.png^[multiply:#58c8a5^[colorize:#0f1218:70^(prisontest_ore.png^[multiply:#ffffff^[opacity:118)^(prisontest_ore.png^[multiply:#337460^[opacity:92)"
+    },
+    {
+      "id": "tier_r_smooth",
+      "description": "Tier R Smooth",
+      "value": 120,
+      "sell_value": 436,
+      "weight": 5,
+      "unlock_rank": "R",
+      "tile": "prisontest_stone.png^[multiply:#54c1be^[colorize:#0f1218:70"
+    },
+    {
+      "id": "tier_r_ore",
+      "description": "Tier R Ore",
+      "value": 138,
+      "sell_value": 0,
+      "weight": 1,
+      "unlock_rank": "R",
+      "tile": "prisontest_stone.png^[multiply:#54c1be^[colorize:#0f1218:70^(prisontest_ore.png^[multiply:#ffffff^[opacity:118)^(prisontest_ore.png^[multiply:#31706e^[opacity:92)"
+    },
+    {
+      "id": "tier_s_smooth",
+      "description": "Tier S Smooth",
+      "value": 149,
+      "sell_value": 538,
+      "weight": 5,
+      "unlock_rank": "S",
+      "tile": "prisontest_stone.png^[multiply:#63b7d4^[colorize:#0f1218:70"
+    },
+    {
+      "id": "tier_s_ore",
+      "description": "Tier S Ore",
+      "value": 171,
+      "sell_value": 0,
+      "weight": 1,
+      "unlock_rank": "S",
+      "tile": "prisontest_stone.png^[multiply:#63b7d4^[colorize:#0f1218:70^(prisontest_ore.png^[multiply:#ffffff^[opacity:118)^(prisontest_ore.png^[multiply:#396a7b^[opacity:92)"
+    },
+    {
+      "id": "tier_t_smooth",
+      "description": "Tier T Smooth",
+      "value": 185,
+      "sell_value": 668,
+      "weight": 5,
+      "unlock_rank": "T",
+      "tile": "prisontest_stone.png^[multiply:#7fabcf^[colorize:#0f1218:70"
+    },
+    {
+      "id": "tier_t_ore",
+      "description": "Tier T Ore",
+      "value": 213,
+      "sell_value": 0,
+      "weight": 1,
+      "unlock_rank": "T",
+      "tile": "prisontest_stone.png^[multiply:#7fabcf^[colorize:#0f1218:70^(prisontest_ore.png^[multiply:#ffffff^[opacity:118)^(prisontest_ore.png^[multiply:#4a6378^[opacity:92)"
+    },
+    {
+      "id": "tier_u_smooth",
+      "description": "Tier U Smooth",
+      "value": 229,
+      "sell_value": 828,
+      "weight": 5,
+      "unlock_rank": "U",
+      "tile": "prisontest_stone.png^[multiply:#9ca0cc^[colorize:#0f1218:70"
+    },
+    {
+      "id": "tier_u_ore",
+      "description": "Tier U Ore",
+      "value": 263,
+      "sell_value": 0,
+      "weight": 1,
+      "unlock_rank": "U",
+      "tile": "prisontest_stone.png^[multiply:#9ca0cc^[colorize:#0f1218:70^(prisontest_ore.png^[multiply:#ffffff^[opacity:118)^(prisontest_ore.png^[multiply:#5a5d76^[opacity:92)"
+    },
+    {
+      "id": "tier_v_smooth",
+      "description": "Tier V Smooth",
+      "value": 285,
+      "sell_value": 1032,
+      "weight": 5,
+      "unlock_rank": "V",
+      "tile": "prisontest_stone.png^[multiply:#b297c8^[colorize:#0f1218:70"
+    },
+    {
+      "id": "tier_v_ore",
+      "description": "Tier V Ore",
+      "value": 328,
+      "sell_value": 0,
+      "weight": 1,
+      "unlock_rank": "V",
+      "tile": "prisontest_stone.png^[multiply:#b297c8^[colorize:#0f1218:70^(prisontest_ore.png^[multiply:#ffffff^[opacity:118)^(prisontest_ore.png^[multiply:#675874^[opacity:92)"
+    },
+    {
+      "id": "tier_w_smooth",
+      "description": "Tier W Smooth",
+      "value": 354,
+      "sell_value": 1284,
+      "weight": 5,
+      "unlock_rank": "W",
+      "tile": "prisontest_stone.png^[multiply:#c290c2^[colorize:#0f1218:70"
+    },
+    {
+      "id": "tier_w_ore",
+      "description": "Tier W Ore",
+      "value": 407,
+      "sell_value": 0,
+      "weight": 1,
+      "unlock_rank": "W",
+      "tile": "prisontest_stone.png^[multiply:#c290c2^[colorize:#0f1218:70^(prisontest_ore.png^[multiply:#ffffff^[opacity:118)^(prisontest_ore.png^[multiply:#715471^[opacity:92)"
+    },
+    {
+      "id": "tier_x_smooth",
+      "description": "Tier X Smooth",
+      "value": 439,
+      "sell_value": 1594,
+      "weight": 5,
+      "unlock_rank": "X",
+      "tile": "prisontest_stone.png^[multiply:#cf8cb9^[colorize:#0f1218:70"
+    },
+    {
+      "id": "tier_x_ore",
+      "description": "Tier X Ore",
+      "value": 505,
+      "sell_value": 0,
+      "weight": 1,
+      "unlock_rank": "X",
+      "tile": "prisontest_stone.png^[multiply:#cf8cb9^[colorize:#0f1218:70^(prisontest_ore.png^[multiply:#ffffff^[opacity:118)^(prisontest_ore.png^[multiply:#78516b^[opacity:92)"
+    },
+    {
+      "id": "tier_y_smooth",
+      "description": "Tier Y Smooth",
+      "value": 546,
+      "sell_value": 1980,
+      "weight": 5,
+      "unlock_rank": "Y",
+      "tile": "prisontest_stone.png^[multiply:#d98ead^[colorize:#0f1218:70"
+    },
+    {
+      "id": "tier_y_ore",
+      "description": "Tier Y Ore",
+      "value": 628,
+      "sell_value": 0,
+      "weight": 1,
+      "unlock_rank": "Y",
+      "tile": "prisontest_stone.png^[multiply:#d98ead^[colorize:#0f1218:70^(prisontest_ore.png^[multiply:#ffffff^[opacity:118)^(prisontest_ore.png^[multiply:#7e5264^[opacity:92)"
+    },
+    {
+      "id": "tier_z_smooth",
+      "description": "Tier Z Smooth",
+      "value": 678,
+      "sell_value": 2460,
+      "weight": 5,
+      "unlock_rank": "Z",
+      "tile": "prisontest_stone.png^[multiply:#e1979f^[colorize:#0f1218:70"
+    },
+    {
+      "id": "tier_z_ore",
+      "description": "Tier Z Ore",
+      "value": 780,
+      "sell_value": 0,
+      "weight": 1,
+      "unlock_rank": "Z",
+      "tile": "prisontest_stone.png^[multiply:#e1979f^[colorize:#0f1218:70^(prisontest_ore.png^[multiply:#ffffff^[opacity:118)^(prisontest_ore.png^[multiply:#82585c^[opacity:92)"
+    }
+  ]
+}
