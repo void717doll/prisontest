@@ -50,6 +50,8 @@ void UI::Impl::settingsChanged() {
 void UI::Impl::setPage(const std::string& name) {
     if (name != "pet_food" && name != "confirm")
         petFoodSelection.clear();
+    if (name != "bin" && name != "confirm")
+        partSelection.clear();
     if (ctx.playing)
         game.returnStoredItems();
     if (page == "tutorial" && name.empty() && game.state["tutorial"].get("status", "") == "new") {
@@ -321,6 +323,8 @@ Rect UI::Impl::panel(const std::string& title, float width, float height) {
             setPage("pets");
         else if (page == "confirm" && confirmAction == "pet_food")
             setPage(confirmArgs.get("pets", Json()).isArray() ? "pet_food" : "pets");
+        else if (page == "confirm" && confirmAction == "salvage_parts")
+            setPage("bin");
         else
             setPage(ctx.playing ? "" : "title");
     });
@@ -356,6 +360,8 @@ void UI::Impl::slot(Rect box, const std::string& container, int index, const Jso
     bool selected = selectedContainer == container && selectedIndex == index;
     if (page == "pet_food" && container == "inventory")
         selected = petFoodSelection.count(index) != 0;
+    else if (page == "bin" && container == "inventory")
+        selected = partSelection.count(index) != 0;
     if (active && (selected || box.contains(mouseX, mouseY)))
         draw.border(box, foreground, selected ? 2 : 1);
     draw.item({box.x + 4, box.y + 4, box.w - 8, box.h - 8}, value,
@@ -395,6 +401,8 @@ void UI::Impl::paint() {
     hud();
     if (page == "title")
         title();
+    else if (page == "credits")
+        credits();
     else if (page == "worlds" || page == "create")
         worlds();
     else if (page == "import")
@@ -443,10 +451,8 @@ void UI::Impl::paint() {
         expeditions();
     else if (page == "combinemulti")
         combineMultipliers();
-    else if (page == "bin")
-        bin();
-    else if (page == "pet_food")
-        petFood();
+    else if (page == "bin" || page == "pet_food")
+        itemSelection();
     else if (page == "filter")
         filter();
     else if (page == "pointshop")

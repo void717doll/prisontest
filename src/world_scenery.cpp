@@ -5,6 +5,7 @@ namespace prison {
 using namespace world_detail;
 
 void Mine::buildScenery() {
+    plants_.clear();
     const float minX = minimum_.x - .5f, maxX = maximum_.x + .5f, minZ = minimum_.z - .5f,
                 maxZ = maximum_.z + .5f;
     const float bottom = minimum_.y - 1.5f, top = maximum_.y + 1.5f;
@@ -145,7 +146,7 @@ void Mine::buildSurroundings(float left, float right, float back, float front) {
     ground(left, front, right, outerFront);
 
     auto pine = [&](float x, float y, float z, float height) {
-        add({x - .35f, y, z - .35f}, {x + .35f, y + height - 1, z + .35f}, TerrainTimberTile);
+        add({x - .35f, y, z - .35f}, {x + .35f, y + height - 1, z + .35f}, TerrainTreeTile);
         for (int layer = 0; layer < 4; ++layer) {
             const float half = 2.6f - layer * .6f;
             const float low = y + height - 6 + layer * 1.5f;
@@ -182,5 +183,25 @@ void Mine::buildSurroundings(float left, float right, float back, float front) {
                 add({x - 2, y, z}, {x + 2, y + .75f, z + .75f}, TerrainTimberTile);
             }
     }
+    int seed = 4000;
+    auto flora = [&](float x1, float z1, float x2, float z2) {
+        for (float x = x1 + 1.5f; x < x2 - 1.5f; x += 2.5f)
+            for (float z = z1 + 1.5f; z < z2 - 1.5f; z += 2.5f) {
+                seed += 5;
+                if (random(seed) < .45f)
+                    continue;
+                const bool flower = random(seed + 1) < .3f;
+                const int first = flower ? TerrainFlowerTile : TerrainTallGrassTile;
+                const int variants = flower ? TerrainFlowerVariants : TerrainTallGrassVariants;
+                const int tile = first + int(random(seed + 2) * variants);
+                const float height = flower ? .7f : .9f;
+                plants_.push_back({{x + random(seed + 3) - .5f, .5f, z + random(seed + 4) - .5f},
+                                   height, tile});
+            }
+    };
+    flora(outerLeft, outerBack, left, outerFront);
+    flora(right, outerBack, outerRight, outerFront);
+    flora(left, outerBack, right, back);
+    flora(left, front, right, outerFront);
 }
 } // namespace prison

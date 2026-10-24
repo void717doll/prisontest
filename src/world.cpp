@@ -48,6 +48,8 @@ void boxMesh(std::vector<Vertex>& vertices, Vec3 low, Vec3 high, int tile) {
         int faceTile = tile;
         if (tile == TerrainTimberTile && side >= 4)
             faceTile = TerrainTimberEndTile;
+        else if (tile == TerrainTreeTile && side >= 4)
+            faceTile = TerrainTreeEndTile;
         else if (tile == TerrainGrassTile && side != 4)
             faceTile = side == 5 ? TerrainDirtTile : TerrainGrassSideTile;
         const int a = side < 2 ? 0 : side < 4 ? 2 : 0;
@@ -434,6 +436,20 @@ void Mine::buildShell() {
     shellMesh_.vertices.clear();
     for (const auto& box : shell_)
         boxMesh(shellMesh_.vertices, box.low, box.high, box.tile);
+    for (const auto& plant : plants_) {
+        const Vec3 centre = plant.position + Vec3{0, plant.height * .5f, 0};
+        const auto start = shellMesh_.vertices.size();
+        face(shellMesh_.vertices, centre, 0, plant.tile, {plant.height, plant.height, 0});
+        face(shellMesh_.vertices, centre, 1, plant.tile, {plant.height, plant.height, 0});
+        face(shellMesh_.vertices, centre, 2, plant.tile, {0, plant.height, plant.height});
+        face(shellMesh_.vertices, centre, 3, plant.tile, {0, plant.height, plant.height});
+        for (auto i = start; i < shellMesh_.vertices.size(); ++i) {
+            auto& vertex = shellMesh_.vertices[i];
+            const float x = vertex.x - centre.x, z = vertex.z - centre.z;
+            vertex.x = centre.x + (x - z) * .70710678f;
+            vertex.z = centre.z + (x + z) * .70710678f;
+        }
+    }
     shellMesh_.revision = nextMeshRevision();
 }
 std::string Mine::dig(Cell c) {

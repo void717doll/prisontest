@@ -22,6 +22,12 @@ constexpr int TerrainRockTile = 62;
 constexpr int TerrainDirtTile = 63;
 constexpr int TerrainTimberEndTile = 64;
 constexpr int TerrainGrassSideTile = 65;
+constexpr int TerrainTreeTile = 66;
+constexpr int TerrainTreeEndTile = 67;
+constexpr int TerrainTallGrassTile = 68;
+constexpr int TerrainTallGrassVariants = 3;
+constexpr int TerrainFlowerTile = 71;
+constexpr int TerrainFlowerVariants = 3;
 struct Vertex {
     float x, y, z, u, v, r, g, b;
 };
@@ -143,6 +149,11 @@ class Mine {
         Vec3 low, high;
         int tile = TerrainBedrockTile;
     };
+    struct Plant {
+        Vec3 position;
+        float height;
+        int tile;
+    };
     struct Blast {
         Cell centre, low, high, cursor;
         int radius;
@@ -168,6 +179,7 @@ class Mine {
     std::vector<ChunkMesh> chunks_;
     ChunkMesh shellMesh_;
     std::vector<Box> shell_;
+    std::vector<Plant> plants_;
     std::vector<Box> guardianBoxes_;
     std::deque<std::size_t> dirty_;
     std::vector<bool> dirtyFlags_;

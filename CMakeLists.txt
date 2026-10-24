@@ -54,7 +54,7 @@ if(PRISON_CLIENT)
         add_test(NAME help COMMAND help_test "${PRISON_TEST_ASSETS}")
         add_executable(ui_test tests/ui_test.cpp ${PRISON_UI_SOURCES} src/render.cpp src/settings.cpp)
         target_link_libraries(ui_test PRIVATE prison_core SDL2::SDL2 OpenGL::GL PNG::PNG Freetype::Freetype)
-        target_compile_definitions(ui_test PRIVATE SDL_MAIN_HANDLED)
+        target_compile_definitions(ui_test PRIVATE SDL_MAIN_HANDLED PRISON_VERSION="${PROJECT_VERSION}")
         target_compile_options(ui_test PRIVATE -Wall -Wextra -Wpedantic)
     endif()
     execute_process(COMMAND git rev-parse --short HEAD
@@ -68,7 +68,7 @@ if(PRISON_CLIENT)
     target_link_libraries(prisoncpp PRIVATE prison_core SDL2::SDL2 OpenGL::GL
         PNG::PNG Freetype::Freetype PkgConfig::CURL)
     target_compile_definitions(prisoncpp PRIVATE SDL_MAIN_HANDLED
-        PRISON_BUILD_HASH="${PRISON_HASH}")
+        PRISON_BUILD_HASH="${PRISON_HASH}" PRISON_VERSION="${PROJECT_VERSION}")
     target_compile_options(prisoncpp PRIVATE -Wall -Wextra -Wpedantic)
     include(cmake/Packaging.cmake)
 endif()

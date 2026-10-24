@@ -24,10 +24,29 @@ void UI::Impl::title() {
     float y = std::max(210.f, draw.height() * 0.42f);
     pageButton({x, y, 300, 38}, "Singleplayer", "worlds");
     pageButton({x, y + 48, 300, 38}, "Settings", "settings");
-    button({x, y + 96, 300, 38}, "Quit", [this] { action("quit"); });
-    draw.text(12, draw.height() - 25, "Prisontest: " + ctx.buildHash, foreground, 13);
-    const std::string credit = "Concept by Pramsing, then adapted by r0t";
-    draw.text(draw.width() - draw.textWidth(credit, 13) - 12, draw.height() - 25, credit, foreground, 13);
+    pageButton({x, y + 96, 300, 38}, "Credits", "credits");
+    button({x, y + 144, 300, 38}, "Quit", [this] { action("quit"); });
+    draw.text(12, draw.height() - 25, "prisontest " PRISON_VERSION, foreground, 13);
+}
+
+void UI::Impl::credits() {
+    Rect box = panel("Credits", 620, 520);
+    Rect list{box.x + 24, box.y + 62, box.w - 48, box.h - 86};
+    beginScroll(list);
+    float y = list.y - scroll;
+    const std::pair<const char*, const char*> entries[] = {
+        {"Pramsing", "Original concept."},
+        {"r0t", "Adaptation of the original concept."},
+        {"Luanti", "Engine used by the original Prisontest game and a reference for this client."},
+        {"Minetest Game", "Scenery and flower textures by its community artists. Full attribution is "
+                          "included in ASSET_CREDITS.md and the texture licenses."},
+        {"Minecraft and Roblox", "Their OP Prison game modes inspired the mining and progression."},
+        {"Codex", "Help with coding and development."}};
+    for (const auto& [name, contribution] : entries) {
+        label(list.x, y, name, 17);
+        y = paragraph(list.x, y + 25, list.w - 8, contribution, 14) + 18;
+    }
+    endScroll(y);
 }
 
 void UI::Impl::worlds() {
@@ -386,9 +405,10 @@ void UI::Impl::equipment() {
                 }
         });
     }
-    pageButton({box.x + 24, box.y + 286, 170, 30}, "Equipment Sets", "equipment_sets");
-    if (page == "crystals")
+    if (page == "crystals") {
+        pageButton({box.x + 24, box.y + 286, 170, 30}, "Equipment Sets", "equipment_sets");
         pageButton({box.x + 210, box.y + 286, 160, 30}, "Resonance", "resonance");
+    }
     inventory(box);
 }
 
@@ -933,12 +953,14 @@ void UI::Impl::expeditions() {
 void UI::Impl::confirm() {
     const bool petBatch = page == "confirm" && confirmAction == "pet_food" &&
                           confirmArgs.isMember("pets") && confirmArgs["pets"].isArray();
+    const bool partBatch = page == "confirm" && confirmAction == "salvage_parts" &&
+                           confirmArgs.isMember("parts") && confirmArgs["parts"].isArray();
     const bool dust = page == "confirm" && confirmAction == "crystal_dust";
     const bool craft = page == "confirm" && confirmAction == "crystal_craft";
     const auto total = confirmArgs.get("count", 0).asInt64();
     const bool bulk = (dust && !confirmArgs["item"].get("identified", false).asBool() && total > 0) ||
                       (craft && total >= 8);
-    Rect box = panel("Confirm", 530, petBatch ? 440 : 330);
+    Rect box = panel("Confirm", 530, petBatch || partBatch ? 440 : 330);
     std::string text;
     if (page == "prestige" || page == "confirm_prestige")
         text = "Prestige for " + compact(game.prestigeCost()) + " money? Your rank returns to A.";
@@ -975,6 +997,12 @@ void UI::Impl::confirm() {
         const auto count = confirmArgs["pets"].size();
         text = "Convert " + std::to_string(count) + (count == 1 ? " pet into " : " pets into ") +
                std::to_string(food) + " pet food? This cannot be undone.";
+    } else if (partBatch) {
+        std::int64_t count = 0;
+        for (const auto& row : confirmArgs["parts"])
+            count += row["item"].get("count", 1).asInt();
+        text = "Salvage " + std::to_string(count) + (count == 1 ? " part" : " parts") +
+               " for tokens? This cannot be undone.";
     } else if (confirmAction == "pet_food")
         text = "Convert this pet into food?";
     else if (confirmAction == "combinemulti")
@@ -983,11 +1011,12 @@ void UI::Impl::confirm() {
     else
         text = "Confirm this action?";
     paragraph(box.x + 28, box.y + 85, box.w - 56, text, 17);
-    if (petBatch) {
+    if (petBatch || partBatch) {
+        const auto& selected = confirmArgs[petBatch ? "pets" : "parts"];
         const float x = box.x + (box.w - 9 * 40) / 2;
-        for (unsigned i = 0; i < confirmArgs["pets"].size(); ++i)
+        for (unsigned i = 0; i < selected.size(); ++i)
             slot({x + (i % 9) * 40, box.y + 160 + (i / 9) * 40, 38, 38}, "preview", int(i),
-                 confirmArgs["pets"][i]["item"]);
+                 selected[i]["item"]);
     } else if (bulk) {
         const int tier = confirmArgs["item"].get("tier", 1).asInt();
         std::string details = (dust ? "Dust All: " : "Craft All: ") + std::to_string(total) +
@@ -998,7 +1027,7 @@ void UI::Impl::confirm() {
                        (dust ? "returned." : "left over.");
         paragraph(box.x + 28, box.y + 142, box.w - 56, details, 15);
     }
-    auto convert = [this, petBatch](bool all) {
+    auto convert = [this, petBatch, partBatch](bool all) {
         if (page == "confirm" && confirmAction == "shaft_leave") {
             action("shaft", "leave");
             return;
@@ -1018,6 +1047,9 @@ void UI::Impl::confirm() {
             if (petBatch) {
                 petFoodSelection.clear();
                 setPage("pet_food");
+            } else if (partBatch) {
+                partSelection.clear();
+                setPage("bin");
             } else
                 setPage(confirmAction == "pet_food" ? "pets" : "inventory");
         }
@@ -1030,7 +1062,7 @@ void UI::Impl::confirm() {
     if (bulk)
         button({box.x + 42 + width, y, width, 38}, dust ? "Dust All" : "Craft All",
                [convert] { convert(true); });
-    button({box.x + box.w - 28 - width, y, width, 38}, "Cancel", [this, petBatch] {
+    button({box.x + box.w - 28 - width, y, width, 38}, "Cancel", [this, petBatch, partBatch] {
         std::string destination = "inventory";
         if (page == "confirm") {
             if (confirmAction == "vault_buy")
@@ -1049,56 +1081,59 @@ void UI::Impl::confirm() {
                 destination = "shaft";
             else if (confirmAction == "pet_food")
                 destination = petBatch ? "pet_food" : "pets";
+            else if (partBatch)
+                destination = "bin";
         }
         setPage(destination);
     });
 }
 
-void UI::Impl::bin() {
-    Rect box = panel("Bin", 690, 445);
-    paragraph(box.x + 26, box.y + 69, box.w - 52, "Click an item to salvage the stack for tokens.");
-    inventory(box);
-}
-
-void UI::Impl::petFood() {
-    Rect box = panel("Make Pet Food", 690, 445);
+void UI::Impl::itemSelection() {
+    const bool parts = page == "bin";
+    auto& selection = parts ? partSelection : petFoodSelection;
+    Rect box = panel(parts ? "Bin" : "Make Pet Food", 690, 445);
     const auto& items = game.state["inventory_slots"];
-    std::int64_t food = 0;
-    for (auto it = petFoodSelection.begin(); it != petFoodSelection.end();) {
+    std::int64_t total = 0;
+    for (auto it = selection.begin(); it != selection.end();) {
         if (it->first >= int(items.size()) || items[it->first] != it->second)
-            it = petFoodSelection.erase(it);
+            it = selection.erase(it);
         else {
-            food += game.petFoodValue(it->second);
+            total += parts ? it->second.get("count", 1).asInt() : game.petFoodValue(it->second);
             ++it;
         }
     }
     paragraph(box.x + 26, box.y + 69, box.w - 52,
-              "Select pets to turn into food. Nothing is consumed until you confirm.");
+              parts ? "Select parts to review before salvaging. Other items are salvaged when clicked."
+                    : "Select pets to turn into food. Nothing is consumed until you confirm.");
     label(box.x + 26, box.y + 112,
-          std::to_string(petFoodSelection.size()) + " selected · " + std::to_string(food) + " pet food");
-    button({box.x + 26, box.y + 150, 110, 34}, "Select All", [this] {
+          parts ? std::to_string(total) + (total == 1 ? " part selected" : " parts selected")
+                : std::to_string(selection.size()) + " selected · " + std::to_string(total) + " pet food");
+    button({box.x + 26, box.y + 150, 110, 34}, "Select All", [this, parts] {
+        auto& selection = parts ? partSelection : petFoodSelection;
         const auto& items = game.state["inventory_slots"];
         for (int i = 1; i < int(items.size()); ++i)
-            if (items[i]["id"] == "pet")
-                petFoodSelection[i] = items[i];
+            if (items[i]["id"] == (parts ? "pick_part" : "pet"))
+                selection[i] = items[i];
     });
-    button({box.x + 146, box.y + 150, 80, 34}, "Clear", [this] { petFoodSelection.clear(); },
-           !petFoodSelection.empty());
+    button({box.x + 146, box.y + 150, 80, 34}, "Clear",
+           [this, parts] { (parts ? partSelection : petFoodSelection).clear(); }, !selection.empty());
     button(
-        {box.x + box.w - 166, box.y + 150, 140, 34}, "Convert Selected",
-        [this] {
-            confirmAction = "pet_food";
+        {box.x + box.w - 166, box.y + 150, 140, 34}, parts ? "Salvage Selected" : "Convert Selected",
+        [this, parts] {
+            const auto& selection = parts ? partSelection : petFoodSelection;
+            const char* key = parts ? "parts" : "pets";
+            confirmAction = parts ? "salvage_parts" : "pet_food";
             confirmArgs = Json();
-            confirmArgs["pets"] = Json(::Json::arrayValue);
-            for (const auto& selected : petFoodSelection) {
+            confirmArgs[key] = Json(::Json::arrayValue);
+            for (const auto& selected : selection) {
                 Json row;
                 row["index"] = selected.first;
                 row["item"] = selected.second;
-                confirmArgs["pets"].append(row);
+                confirmArgs[key].append(row);
             }
             setPage("confirm");
         },
-        !petFoodSelection.empty());
+        !selection.empty());
     inventory(box);
 }
 

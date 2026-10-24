@@ -1,12 +1,16 @@
 # asset credits
 
-the scenery textures in `textures/luanti` were copied unchanged from lunarchy's
-`games/devtest/mods/basenodes/textures`, including its `dirt_with_grass` subfolder.
-`default_dirt.png` comes from `games/devtest/mods/unittests/textures`, which
-replaces the marked dirt placeholder when Luanti loads devtest.
-these are Luanti textures, licensed under CC BY-SA 3.0; the upstream
-[media license and attribution](textures/luanti/LICENSE.txt) are included.
-the renderer tints stone for metal and sand for lamps, and layers grass over dirt.
+the scenery textures in `textures/luanti` are copied unchanged from the supplied
+Minetest Game `default` and `flowers` mods. the renderer layers the grass-side
+overlay over dirt. no generated artwork is used for these scenery materials.
+
+- terrain, wood and lamps: [original authors](textures/luanti/README-default.md)
+  and [media license](textures/luanti/LICENSE.txt). most are CC BY-SA 3.0;
+  `default_gravel.png` is CC0 1.0, as listed in the original attribution.
+- flowers: [original authors](textures/luanti/README-flowers.md) and
+  [CC BY-SA 3.0 license](textures/luanti/LICENSE-flowers.txt).
+
+the source attribution files are included with the textures in release packages.
 
 the bundled DejaVu fonts retain their [license](fonts/LICENSE-DejaVu.txt).
 the three `stone_break_*.wav` sounds are original procedural effects made by

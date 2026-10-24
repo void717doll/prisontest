@@ -1,112 +1,158 @@
+License of source code
+----------------------
 
-License of Luanti textures and sounds
----------------------------------------
+GNU Lesser General Public License, version 2.1
+Copyright (C) 2011-2018 celeron55, Perttu Ahola <celeron55@gmail.com>
+Copyright (C) 2011-2018 Various Minetest Game developers and contributors
 
-This applies to textures and sounds contained in the main Luanti
-distribution.
+This program is free software; you can redistribute it and/or modify it under the terms
+of the GNU Lesser General Public License as published by the Free Software Foundation;
+either version 2.1 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+See the GNU Lesser General Public License for more details:
+https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html
+
+
+Licenses of media (textures, models and sounds)
+-----------------------------------------------
 
 Attribution-ShareAlike 3.0 Unported (CC BY-SA 3.0)
+Copyright (C) 2010-2023:
+
+  celeron55, Perttu Ahola <celeron55@gmail.com>
+  Cisoun
+  G4JC
+  VanessaE
+  RealBadAngel
+  Calinou
+  MirceaKitsune
+  Jordach
+  PilzAdam
+  jojoa1997
+  InfinityProject
+  Splizard
+  Zeg9
+  paramat
+  BlockMen
+  sofar
+  Neuromancer
+  Gambit
+  asl97
+  KevDoy
+  Mito551
+  GreenXenith
+  kaeza
+  kilbith
+  tobyplowy
+  CloudyProton
+  TumeniNodes
+  Mossmanikin
+  random-geek
+  Extex101
+  An0n3m0us
+  Lopano
+
+You are free to:
+Share — copy and redistribute the material in any medium or format.
+Adapt — remix, transform, and build upon the material for any purpose, even commercially.
+The licensor cannot revoke these freedoms as long as you follow the license terms.
+
+Under the following terms:
+
+Attribution — You must give appropriate credit, provide a link to the license, and
+indicate if changes were made. You may do so in any reasonable manner, but not in any way
+that suggests the licensor endorses you or your use.
+
+ShareAlike — If you remix, transform, or build upon the material, you must distribute
+your contributions under the same license as the original.
+
+No additional restrictions — You may not apply legal terms or technological measures that
+legally restrict others from doing anything the license permits.
+
+Notices:
+
+You do not have to comply with the license for elements of the material in the public
+domain or where your use is permitted by an applicable exception or limitation.
+No warranties are given. The license may not give you all of the permissions necessary
+for your intended use. For example, other rights such as publicity, privacy, or moral
+rights may limit how you use the material.
+
+For more details:
 http://creativecommons.org/licenses/by-sa/3.0/
 
-textures/base/pack/refresh.png is under the Apache 2 license
-https://www.apache.org/licenses/LICENSE-2.0.html
-
-Textures by Zughy are under CC BY-SA 4.0
-https://creativecommons.org/licenses/by-sa/4.0/
-
-Textures by cx384 are under CC BY-SA 4.0
-https://creativecommons.org/licenses/by-sa/4.0/
-
-Media files by DS are under CC BY-SA 4.0
-https://creativecommons.org/licenses/by-sa/4.0/
-
-textures/base/pack/server_public.png is under CC-BY 4.0, taken from Twitter's Twemoji set
-https://creativecommons.org/licenses/by/4.0/
-
-Authors of media files
 -----------------------
-Everything not listed in here:
-Copyright (C) 2010-2012 celeron55, Perttu Ahola <celeron55@gmail.com>
 
-ShadowNinja:
-  textures/base/pack/smoke_puff.png
+Attribution 3.0 Unported (CC BY 3.0)
 
-paramat:
-  textures/base/pack/next_icon.png
-  textures/base/pack/prev_icon.png
-  textures/base/pack/clear.png
-  textures/base/pack/search.png
+Copyright (C) 2009 cmusounddesign
+Copyright (C) 2010 Tomlija
+Copyright (C) 2010 lsprice
+Copyright (C) 2014 sonictechtonic
+Copyright (C) 2015 yadronoff
+Copyright (C) 2007 HerbertBoland
+Copyright (C) 2006 AGFX
 
-rubenwardy, paramat:
-  textures/base/pack/start_icon.png
-  textures/base/pack/end_icon.png
+You are free to:
+Share — copy and redistribute the material in any medium or format.
+Adapt — remix, transform, and build upon the material for any purpose, even commercially.
+The licensor cannot revoke these freedoms as long as you follow the license terms.
 
-erle:
-  misc/luanti-icon-24x24.png
-  misc/luanti-icon.ico
-  misc/luanti.svg
-  textures/base/pack/logo.png
+Under the following terms:
 
-JRottm:
-  textures/base/pack/player_marker.png
+Attribution — You must give appropriate credit, provide a link to the license, and
+indicate if changes were made. You may do so in any reasonable manner, but not in any way
+that suggests the licensor endorses you or your use.
 
-srifqi:
-  textures/base/pack/chat_hide_btn.png
-  textures/base/pack/chat_show_btn.png
-  textures/base/pack/joystick_bg.png
-  textures/base/pack/joystick_center.png
-  textures/base/pack/joystick_off.png
-  textures/base/pack/minimap_btn.png
+No additional restrictions — You may not apply legal terms or technological measures that
+legally restrict others from doing anything the license permits.
 
-Zughy:
-  textures/base/pack/cdb_downloading.png
-  textures/base/pack/cdb_queued.png
-  textures/base/pack/cdb_update.png
-  textures/base/pack/cdb_update_cropped.png
-  textures/base/pack/settings_btn.png
-  textures/base/pack/settings_info.png
-  textures/base/pack/settings_reset.png
-  textures/base/pack/server_url.png
-  textures/base/pack/server_url_unavailable.png
-  textures/base/pack/server_view_clients.png
-  textures/base/pack/server_view_clients_unavailable.png
+Notices:
 
-cx384:
-  textures/base/pack/server_view_mods.png
-  textures/base/pack/server_view_mods_unavailable.png
+You do not have to comply with the license for elements of the material in the public
+domain or where your use is permitted by an applicable exception or limitation.
+No warranties are given. The license may not give you all of the permissions necessary
+for your intended use. For example, other rights such as publicity, privacy, or moral
+rights may limit how you use the material.
 
-appgurueu:
-  textures/base/pack/server_incompatible.png
+For more details:
+http://creativecommons.org/licenses/by/3.0/
 
-erle, Warr1024, rollerozxa:
-  textures/base/pack/no_screenshot.png
+-----------------------
 
-kilbith:
-  textures/base/pack/server_favorite.png
-  textures/base/pack/progress_bar.png
-  textures/base/pack/progress_bar_bg.png
+CC0 1.0 Universal (CC0 1.0) Public Domain Dedication
 
-SmallJoker:
-  textures/base/pack/server_favorite_delete.png (based on server_favorite.png)
+Iwan Gabovitch
+Ottomaani138
+Ogrebane
+blukotek
+Sevin7
+Yoyodaman234
+Ryding
 
-DS:
-  games/devtest/mods/soundstuff/textures/soundstuff_bigfoot.png
-  games/devtest/mods/soundstuff/textures/soundstuff_jukebox.png
-  games/devtest/mods/soundstuff/textures/soundstuff_racecar.png
-  games/devtest/mods/soundstuff/sounds/soundstuff_sinus.ogg
-  games/devtest/mods/testtools/textures/testtools_branding_iron.png
+No Copyright
 
-grorp:
-  textures/base/pack/exit_btn.png
-  textures/base/pack/menu_header.png
-    using the font "undefined medium" (https://undefined-medium.com/),
-    which is licensed under the SIL Open Font License, Version 1.1
-    modified by DS
-  textures/base/pack/dig_btn.png
-  textures/base/pack/place_btn.png
-    derived by editing the text in aux1_btn.svg
+The person who associated a work with this deed has dedicated the work to the
+public domain by waiving all of his or her rights to the work worldwide under
+copyright law, including all related and neighboring rights, to the extent
+allowed by law.
 
-Material Design, Google (Apache license v2.0):
-  textures/base/pack/contentdb_thumb_up.png
-  textures/base/pack/contentdb_thumb_down.png
-  textures/base/pack/contentdb_neutral.png
+You can copy, modify, distribute and perform the work, even for commercial
+purposes, all without asking permission. See Other Information below.
+
+Other Information:
+
+In no way are the patent or trademark rights of any person affected by CC0, nor
+are the rights that other persons may have in the work or in how the work is
+used, such as publicity or privacy rights.
+
+Unless expressly stated otherwise, the person who associated a work with this
+deed makes no warranties about the work, and disclaims liability for all uses
+of the work, to the fullest extent permitted by applicable law.
+
+When using or citing the work, you should not imply endorsement by the author
+or the affirmer.
+
+For more details:
+https://creativecommons.org/publicdomain/zero/1.0/

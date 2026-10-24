@@ -492,23 +492,27 @@ struct Renderer::Impl {
         }
         const auto scenery = data.root / "textures/luanti";
         const std::pair<int, const char*> materials[] = {
-            {TerrainMasonryTile, "default_cobble.png"},
-            {TerrainPavingTile, "default_gravel.png"},
-            {TerrainTimberTile, "default_pine_tree.png"},
+            {TerrainMasonryTile, "default_stone_brick.png"},
+            {TerrainPavingTile, "default_stone_block.png"},
+            {TerrainTimberTile, "default_wood.png"},
+            {TerrainMetalTile, "default_steel_block.png"},
+            {TerrainLampTile, "default_meselamp.png"},
             {TerrainTrimTile, "default_stone.png"},
             {TerrainGrassTile, "default_grass.png"},
             {TerrainLeavesTile, "default_pine_needles.png"},
             {TerrainRockTile, "default_stone.png"},
             {TerrainDirtTile, "default_dirt.png"},
-            {TerrainTimberEndTile, "default_pine_tree_top.png"}};
+            {TerrainTimberEndTile, "default_wood.png"},
+            {TerrainTreeTile, "default_pine_tree.png"},
+            {TerrainTreeEndTile, "default_pine_tree_top.png"},
+            {TerrainTallGrassTile, "default_grass_2.png"},
+            {TerrainTallGrassTile + 1, "default_grass_3.png"},
+            {TerrainTallGrassTile + 2, "default_grass_4.png"},
+            {TerrainFlowerTile, "flowers_rose.png"},
+            {TerrainFlowerTile + 1, "flowers_dandelion_yellow.png"},
+            {TerrainFlowerTile + 2, "flowers_viola.png"}};
         for (const auto& [tile, file] : materials)
             putTile(tile, loadImage(scenery / file));
-        Image metal = loadImage(scenery / "default_stone.png");
-        tint(metal, hexColor("#252a2e"), .7f);
-        putTile(TerrainMetalTile, metal);
-        Image lamp = loadImage(scenery / "default_sand.png");
-        tint(lamp, hexColor("#ffe6a4"), .4f);
-        putTile(TerrainLampTile, lamp);
         Image grassSide = loadImage(scenery / "default_dirt.png");
         const Image grass = loadImage(scenery / "default_grass_side.png");
         for (std::size_t p = 0; p < grassSide.pixels.size(); p += 4) {

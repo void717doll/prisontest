@@ -70,8 +70,12 @@ build's copy. [game assets](docs/ASSETS.md) covers the file layout and packaging
 
 ## credits and license
 
-prisontest started as a game for [Luanti](https://www.luanti.org/). that version
-is the gameplay reference for this client.
+- Pramsing — original concept.
+- r0t — adaptation of the original concept.
+- [Luanti](https://www.luanti.org/) — the original game's engine and a reference for this client.
+- Minetest Game and its artists — scenery and flower textures.
+- Minecraft and Roblox's OP Prison game modes — mining and progression inspiration.
+- Codex — help with coding and development.
 
-source is licensed under [GPL-3.0](LICENSE). fonts and sounds have their own
+source is licensed under [GPL-3.0](LICENSE). textures, fonts and sounds have their own
 [credits and licenses](ASSET_CREDITS.md).

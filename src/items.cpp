@@ -790,6 +790,36 @@ Result Game::itemAction(const std::string& action, const Json& args) {
         consume(slots, index, count(item));
         return success("Applied to your pickaxe.");
     }
+    if (action == "salvage_parts") {
+        const auto& selected = args["parts"];
+        if (!selected.isArray() || selected.empty() || selected.size() >= slots.size())
+            return fail("Select the parts to salvage first.");
+        bool allowed = false;
+        for (const auto& eligible : data.systems["salvage"]["eligible_items"])
+            if (eligible == "pick_part")
+                allowed = true;
+        if (!allowed)
+            return fail("Parts cannot be salvaged.");
+        std::set<int> seen;
+        std::int64_t total = 0;
+        for (const auto& row : selected) {
+            if (!row.isObject() || !row["index"].isInt())
+                return fail("Choose a part from your inventory.");
+            const int slot = row["index"].asInt();
+            if (slot <= 0 || slot >= int(slots.size()) || !seen.insert(slot).second ||
+                id(slots[slot]) != "pick_part")
+                return fail("Choose a part from your inventory.");
+            if (row["item"] != slots[slot])
+                return fail("A selected part changed. Select it again.");
+            total += count(slots[slot]);
+        }
+        for (const auto& row : selected) {
+            const int slot = row["index"].asInt();
+            salvage(*this, slots[slot]);
+            consume(slots, slot, count(slots[slot]));
+        }
+        return success("Salvaged " + std::to_string(total) + (total == 1 ? " part." : " parts."));
+    }
     if (action == "salvage") {
         if (args.isMember("item") && args["item"] != item)
             return fail("Item changed. Select it again.");

@@ -23,12 +23,14 @@ void UI::Impl::rightClick(const Slot& value) {
     if (value.container == "preview")
         return;
     if (value.container == "inventory") {
-        if (page == "pet_food") {
-            if (value.index > 0 && value.item["id"] == "pet") {
-                if (petFoodSelection.count(value.index))
-                    petFoodSelection.erase(value.index);
+        if (page == "pet_food" || (page == "bin" && value.item["id"] == "pick_part")) {
+            const bool parts = page == "bin";
+            auto& selection = parts ? partSelection : petFoodSelection;
+            if (value.index > 0 && value.item["id"] == (parts ? "pick_part" : "pet")) {
+                if (selection.count(value.index))
+                    selection.erase(value.index);
                 else
-                    petFoodSelection[value.index] = value.item;
+                    selection[value.index] = value.item;
             }
         } else if (page == "bin" && value.index > 0 && value.item.isObject()) {
             Json args;
@@ -197,6 +199,8 @@ void UI::Impl::event(const SDL_Event& event) {
             setPage("pets");
         else if (page == "confirm" && confirmAction == "pet_food")
             setPage(confirmArgs.get("pets", Json()).isArray() ? "pet_food" : "pets");
+        else if (page == "confirm" && confirmAction == "salvage_parts")
+            setPage("bin");
         else
             setPage(ctx.playing ? (page.empty() ? "pause" : "") : "title");
         return;
