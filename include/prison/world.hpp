@@ -184,7 +184,8 @@ class Mine {
     void markAllDirty();
     void buildChunk(std::size_t index);
     void buildShell();
-    void buildScenery(float left, float right, float back, float front);
+    void buildScenery();
+    void buildSurroundings(float left, float right, float back, float front);
     void generateDiscoveries();
     void scheduleReset();
     bool collisionBox(const Box& box) const;
