@@ -20,15 +20,23 @@ void UI::Impl::updateSlider() {
 }
 
 void UI::Impl::rightClick(const Slot& value) {
+    if (value.container == "preview")
+        return;
     if (value.container == "inventory") {
-        if (page == "bin" && value.index > 0 && value.item.isObject()) {
+        if (page == "pet_food") {
+            if (value.index > 0 && value.item["id"] == "pet") {
+                if (petFoodSelection.count(value.index))
+                    petFoodSelection.erase(value.index);
+                else
+                    petFoodSelection[value.index] = value.item;
+            }
+        } else if (page == "bin" && value.index > 0 && value.item.isObject()) {
             Json args;
             args["index"] = value.index;
             args["item"] = value.item;
             apply(game.itemAction("salvage", args));
-        } else if ((page == "pet_food" || page == "combinemulti") && value.index > 0 &&
-                   value.item.isObject()) {
-            confirmAction = page == "combinemulti" ? "combinemulti" : "pet_food";
+        } else if (page == "combinemulti" && value.index > 0 && value.item.isObject()) {
+            confirmAction = "combinemulti";
             confirmArgs = Json();
             confirmArgs["index"] = value.index;
             confirmArgs["item"] = value.item;
@@ -125,6 +133,8 @@ void UI::Impl::event(const SDL_Event& event) {
         for (auto it = slots.rbegin(); it != slots.rend(); ++it)
             if (it->box.contains(mouseX, mouseY)) {
                 Slot value = *it;
+                if (value.container == "preview")
+                    return;
                 if (selectedIndex >= 0 &&
                     (selectedContainer != value.container || selectedIndex != value.index)) {
                     transferTo(value);
@@ -183,8 +193,10 @@ void UI::Impl::event(const SDL_Event& event) {
         return;
     }
     if (key == SDLK_ESCAPE) {
-        if (page == "pet_food" || (page == "confirm" && confirmAction == "pet_food"))
+        if (page == "pet_food")
             setPage("pets");
+        else if (page == "confirm" && confirmAction == "pet_food")
+            setPage(confirmArgs.get("pets", Json()).isArray() ? "pet_food" : "pets");
         else
             setPage(ctx.playing ? (page.empty() ? "pause" : "") : "title");
         return;

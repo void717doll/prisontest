@@ -48,6 +48,8 @@ void UI::Impl::settingsChanged() {
 }
 
 void UI::Impl::setPage(const std::string& name) {
+    if (name != "pet_food" && name != "confirm")
+        petFoodSelection.clear();
     if (ctx.playing)
         game.returnStoredItems();
     if (page == "tutorial" && name.empty() && game.state["tutorial"].get("status", "") == "new") {
@@ -112,6 +114,11 @@ void UI::Impl::setPage(const std::string& name) {
             const int index = confirmArgs["index"].asInt();
             if (index >= 0 && index < int(game.state["inventory_slots"].size()))
                 confirmArgs["item"] = game.state["inventory_slots"][index];
+            if (confirmAction == "crystal_dust" || confirmAction == "crystal_craft") {
+                const auto quote = game.crystalConversionQuote(index);
+                if (quote.isObject())
+                    confirmArgs = quote;
+            }
         }
         page = "confirm";
     }
@@ -310,8 +317,10 @@ Rect UI::Impl::panel(const std::string& title, float width, float height) {
     button({box.x + box.w - 84, box.y + 10, 70, 32}, "Done", [this] {
         if (page == "itemviewer" || page == "theme")
             setPage("settings");
-        else if (page == "pet_food" || (page == "confirm" && confirmAction == "pet_food"))
+        else if (page == "pet_food")
             setPage("pets");
+        else if (page == "confirm" && confirmAction == "pet_food")
+            setPage(confirmArgs.get("pets", Json()).isArray() ? "pet_food" : "pets");
         else
             setPage(ctx.playing ? "" : "title");
     });
@@ -345,6 +354,8 @@ void UI::Impl::slot(Rect box, const std::string& container, int index, const Jso
     draw.rect(box, dim(background, 0.35f));
     draw.border(box, dim(outline, 0.6f));
     bool selected = selectedContainer == container && selectedIndex == index;
+    if (page == "pet_food" && container == "inventory")
+        selected = petFoodSelection.count(index) != 0;
     if (active && (selected || box.contains(mouseX, mouseY)))
         draw.border(box, foreground, selected ? 2 : 1);
     draw.item({box.x + 4, box.y + 4, box.w - 8, box.h - 8}, value,
@@ -363,7 +374,7 @@ void UI::Impl::inventory(Rect box) {
         for (int col = 0; col < 9; ++col) {
             int index = row == 3 ? col : 9 + row * 9 + col;
             slot({x + col * size, y + row * size + (row == 3 ? 5.f : 0.f), size - 2, size - 2}, "inventory",
-                 index, items[index]);
+                 index, items[index], page != "pet_food" || (index > 0 && items[index]["id"] == "pet"));
         }
 }
 
@@ -432,8 +443,10 @@ void UI::Impl::paint() {
         expeditions();
     else if (page == "combinemulti")
         combineMultipliers();
-    else if (page == "bin" || page == "pet_food")
+    else if (page == "bin")
         bin();
+    else if (page == "pet_food")
+        petFood();
     else if (page == "filter")
         filter();
     else if (page == "pointshop")

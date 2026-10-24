@@ -7,6 +7,8 @@ using namespace item_detail;
 
 namespace {
 int limit(const Json& item) {
+    if (id(item) == "pet_food")
+        return 99;
     if (item.get("identified", false).asBool() || !item.get("uid", "").asString().empty())
         return 1;
     const std::string name = id(item);
@@ -19,6 +21,12 @@ int limit(const Json& item) {
 }
 
 Json signature(Json item) {
+    // older food rewards carry metadata that does not change their effect.
+    if (id(item) == "pet_food") {
+        Json food;
+        food["id"] = "pet_food";
+        return food;
+    }
     item.removeMember("count");
     item.removeMember("instance_id");
     if (id(item) == "crystal" || id(item) == "pick_part") {

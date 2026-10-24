@@ -71,6 +71,8 @@ class Game {
     Result useItem(int index);
     Result activateHeld(int index, bool primary);
     Result itemAction(const std::string& action, const Json& args = Json());
+    int petFoodValue(const Json& pet) const;
+    Json crystalConversionQuote(int index) const;
     Json multiplierRecipes() const;
     const Json& pointShopProducts() const;
     std::string filterPattern(const Json& item, bool family = false) const;

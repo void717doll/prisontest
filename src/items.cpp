@@ -405,6 +405,40 @@ Json Game::multiplierRecipes() const {
     return recipes;
 }
 
+int Game::petFoodValue(const Json& pet) const {
+    if (id(pet) != "pet")
+        return 0;
+    return pet.get("food_value", petTier(*this, pet.get("tier_id", "common").asString()).get("food_value", 1))
+        .asInt();
+}
+
+Json Game::crystalConversionQuote(int index) const {
+    const auto& slots = state["inventory_slots"];
+    if (index <= 0 || index >= int(slots.size()))
+        return Json();
+    const auto& item = slots[index];
+    const auto name = id(item);
+    if (name != "crystal" && name != "crystal_dust")
+        return Json();
+    Json quote;
+    quote["index"] = index;
+    quote["item"] = item;
+    quote["slots"] = Json(::Json::arrayValue);
+    ::Json::Int64 total = 0;
+    for (int i = 1; i < int(slots.size()); ++i) {
+        if (id(slots[i]) != name || slots[i].get("tier", 1).asInt() != item.get("tier", 1).asInt() ||
+            (name == "crystal" && slots[i].get("identified", false).asBool()))
+            continue;
+        Json row;
+        row["index"] = i;
+        row["item"] = slots[i];
+        quote["slots"].append(row);
+        total += count(slots[i]);
+    }
+    quote["count"] = total;
+    return quote;
+}
+
 Result Game::itemAction(const std::string& action, const Json& args) {
     if (action == "robot_refuel" || action == "robot_upgrade") {
         const int index = args.get("index", -1).asInt();
@@ -636,33 +670,71 @@ Result Game::itemAction(const std::string& action, const Json& args) {
             operation = "crystal_craft";
         if (operation == "food")
             operation = "pet_food";
-        const std::string expected = operation == "crystal_dust"    ? "crystal"
-                                     : operation == "crystal_craft" ? "crystal_dust"
-                                                                    : "pet";
+        if (operation == "pet_food") {
+            if (args.get("all", false).asBool())
+                return fail("Select the pets to convert first.");
+            Json selected = args["pets"];
+            if (!args.isMember("pets")) {
+                Json row;
+                row["index"] = index;
+                row["item"] = args.get("item", item);
+                selected = Json(::Json::arrayValue);
+                selected.append(row);
+            }
+            if (!selected.isArray() || selected.empty() || selected.size() >= slots.size())
+                return fail("Select the pets to convert first.");
+            Json planned = slots;
+            std::set<int> seen;
+            std::int64_t food = 0;
+            for (const auto& row : selected) {
+                if (!row.isObject() || !row["index"].isInt())
+                    return fail("Choose a pet from your inventory.");
+                const int slot = row["index"].asInt();
+                if (slot <= 0 || slot >= int(slots.size()) || !seen.insert(slot).second ||
+                    id(slots[slot]) != "pet")
+                    return fail("Choose a pet from your inventory.");
+                if (row["item"] != slots[slot])
+                    return fail("A selected pet changed. Select it again.");
+                const int value = petFoodValue(slots[slot]);
+                if (value <= 0)
+                    return fail("This pet cannot be converted into food.");
+                food += value;
+                consume(planned, slot);
+            }
+            if (food > 100000)
+                return fail("Not enough inventory space for the food.");
+            Json output;
+            output["id"] = "pet_food";
+            output["count"] = int(food);
+            if (!insert(planned, output, 1))
+                return fail("Not enough inventory space for the food.");
+            slots = std::move(planned);
+            return success("Converted " + std::to_string(selected.size()) +
+                           (selected.size() == 1 ? " pet into " : " pets into ") +
+                           std::to_string(food) + " pet food.");
+        }
+        if (operation != "crystal_dust" && operation != "crystal_craft")
+            return fail("Unknown conversion.");
+        const std::string expected = operation == "crystal_dust" ? "crystal" : "crystal_dust";
         if (name != expected)
             return fail("Choose an item to convert.");
         if (args.isMember("item") && args["item"] != item)
             return fail("Item changed. Review the conversion again.");
         const bool all = args.get("all", false).asBool();
-        if (all && (operation == "pet_food" || item.get("identified", false).asBool()))
+        if (all && item.get("identified", false).asBool())
             return fail("Bulk conversion is unavailable for this item.");
+        if (all && args.isMember("slots") && args["slots"] != crystalConversionQuote(index)["slots"])
+            return fail("Matching items changed. Review the conversion again.");
         Json planned = slots;
         bool space = false;
         for (unsigned i = 1; i < planned.size(); ++i)
             if (planned[i].isNull())
                 space = true;
-        if (operation != "pet_food" && !space)
+        if (!space)
             return fail("Free an inventory slot first.");
         const int tier = item.get("tier", 1).asInt();
         Json outputs(::Json::arrayValue);
-        if (operation == "pet_food") {
-            consume(planned, index);
-            Json output;
-            output["id"] = "pet_food";
-            output["count"] = item.get(
-                "food_value", petTier(*this, item.get("tier_id", "common").asString()).get("food_value", 1));
-            outputs.append(output);
-        } else if (operation == "crystal_dust" && !all) {
+        if (operation == "crystal_dust" && !all) {
             consume(planned, index);
             Json output;
             output["id"] = "crystal_dust";
@@ -670,19 +742,21 @@ Result Game::itemAction(const std::string& action, const Json& args) {
             output["count"] = 1;
             outputs.append(output);
         } else {
-            int total = 0;
+            ::Json::Int64 total = 0;
             for (unsigned i = 1; i < planned.size(); ++i)
                 if (id(planned[i]) == expected && planned[i].get("tier", 1).asInt() == tier &&
                     (operation != "crystal_dust" || !planned[i].get("identified", false).asBool()))
                     total += count(planned[i]);
             if (operation == "crystal_craft" && total < 4)
                 return fail("You need four matching dust.");
-            const int amount = operation == "crystal_dust" ? total : (all ? total / 4 * 4 : 4);
-            int needed = amount;
+            const auto amount = operation == "crystal_dust" ? total : (all ? total / 4 * 4 : 4);
+            if (amount / 4 > 100000)
+                return fail("Not enough inventory space for the result.");
+            auto needed = amount;
             for (unsigned i = 1; i < planned.size() && needed > 0; ++i)
                 if (id(planned[i]) == expected && planned[i].get("tier", 1).asInt() == tier &&
                     (operation != "crystal_dust" || !planned[i].get("identified", false).asBool())) {
-                    int take = std::min(needed, count(planned[i]));
+                    int take = int(std::min<::Json::Int64>(needed, count(planned[i])));
                     consume(planned, int(i), take);
                     needed -= take;
                 }

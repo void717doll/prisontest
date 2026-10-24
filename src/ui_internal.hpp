@@ -43,6 +43,7 @@ struct UI::Impl {
     float hudOffsetX = 0, hudOffsetY = 0;
     Json confirmArgs;
     std::string confirmAction;
+    std::map<int, Json> petFoodSelection;
     std::vector<std::string> history;
     int historyIndex = 0;
     bool filterFamily = false;
@@ -134,6 +135,7 @@ struct UI::Impl {
     void expeditions();
     void confirm();
     void bin();
+    void petFood();
     void combineMultipliers();
     void saveFilterRule(const std::string& pattern);
     void filter();
