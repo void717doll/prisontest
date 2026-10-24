@@ -36,7 +36,7 @@ void UI::Impl::credits() {
     float y = list.y - scroll;
     const std::pair<const char*, const char*> entries[] = {
         {"Pramsing", "Original concept."},
-        {"r0t", "Adaptation of the original concept."},
+        {"void717doll", "Adaptation of the original concept."},
         {"Luanti", "Engine used by the original Prisontest game and a reference for this client."},
         {"Minetest Game", "Scenery and flower textures by its community artists. Full attribution is "
                           "included in ASSET_CREDITS.md and the texture licenses."},

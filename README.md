@@ -71,7 +71,7 @@ build's copy. [game assets](docs/ASSETS.md) covers the file layout and packaging
 ## credits and license
 
 - Pramsing — original concept.
-- r0t — adaptation of the original concept.
+- void717doll — adaptation of the original concept.
 - [Luanti](https://www.luanti.org/) — the original game's engine and a reference for this client.
 - Minetest Game and its artists — scenery and flower textures.
 - Minecraft and Roblox's OP Prison game modes — mining and progression inspiration.
