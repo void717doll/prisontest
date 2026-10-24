@@ -3,6 +3,62 @@
   "title": "Help",
   "sections": [
     {
+      "id": "professions",
+      "title": "Fishing & farming",
+      "pages": [
+        {
+          "id": "profession_switching",
+          "title": "Separate professions",
+          "body": [
+            "Use /professions, /mining, /fishing or /farming to switch. Each keeps its own money, tokens, rare currencies, tool, enchants, parts, crystals, ranks and vault. Items and boosts cannot move between professions.",
+            "The courtyard is across the bridge behind the mine entrance. Mining refills leave the courtyard and its crops alone. Pets, robots and queued mining rewards stay with mining."
+          ],
+          "keywords": [
+            "professions",
+            "classes",
+            "switch",
+            "wallet",
+            "courtyard"
+          ]
+        },
+        {
+          "id": "fishing",
+          "title": "Fishing",
+          "body": [
+            "With the rod equipped, aim at the pond and right-click to cast. Wait for the bobber to dip and the Bite bar, then right-click again to reel in. Reeling early, switching professions or walking away ends the cast.",
+            "Sell catches and buy bait at the supplies table or /supplies. Larger fish sell for more; rod levels unlock rarer species. /tool opens the same enchants, parts and crystal menus as mining.",
+            "The first visit offers a guide with a Skip button. /tutorial opens it again; /tutorial skip hides the guide."
+          ],
+          "keywords": [
+            "fishing",
+            "rod",
+            "fish",
+            "bait",
+            "pearls",
+            "coral"
+          ]
+        },
+        {
+          "id": "farming",
+          "title": "Farming",
+          "body": [
+            "Right-click an empty plot with your hoe to plant the seed selected in /supplies. The free watering can doubles growth speed. Right-click ripe crops with the hoe to harvest.",
+            "Start with nine plots. Hoe levels unlock carrots, potatoes and two plot expansions. Buy seeds and sell crops at /supplies. Farm coins pay for plots and seeds; farm tokens and gems pay for enchants.",
+            "Crops keep growing while playing another profession and keep their progress when saved. Offline time does not advance growth, and crops never wither. /tutorial can show or skip the guide."
+          ],
+          "keywords": [
+            "farming",
+            "hoe",
+            "seeds",
+            "crops",
+            "water",
+            "amber",
+            "jade"
+          ]
+        }
+      ]
+    },
+    {
       "id": "start",
       "title": "Getting started",
       "pages": [
@@ -380,6 +436,51 @@
     }
   ],
   "commands": [
+    {
+      "command": "professions",
+      "usage": "/professions",
+      "description": "Switch professions; each has separate progress and storage.",
+      "category": "Professions",
+      "aliases": []
+    },
+    {
+      "command": "mining",
+      "usage": "/mining",
+      "description": "Equip your mining tool and return to the mine.",
+      "category": "Professions",
+      "aliases": []
+    },
+    {
+      "command": "fishing",
+      "usage": "/fishing",
+      "description": "Equip your rod and visit the pond.",
+      "category": "Professions",
+      "aliases": []
+    },
+    {
+      "command": "farming",
+      "usage": "/farming",
+      "description": "Equip your hoe and visit the farm.",
+      "category": "Professions",
+      "aliases": []
+    },
+    {
+      "command": "supplies",
+      "usage": "/supplies",
+      "description": "Buy supplies, sell produce and expand your farm.",
+      "category": "Professions",
+      "aliases": []
+    },
+    {
+      "command": "tool",
+      "usage": "/tool",
+      "description": "Open the active profession’s tool, enchants and equipment.",
+      "category": "Professions",
+      "aliases": [
+        "rod",
+        "hoe"
+      ]
+    },
     {
       "command": "autominer",
       "category": "Mining",

@@ -12,6 +12,7 @@ from the repository root to preview edits before rebuilding the client.
 | `mine.json` | mine bounds, spawn, refill timing and the 26 smooth/ore block pairs with source texture expressions |
 | `native_economy.json` | native-only currency labels, enchant price overrides, gem/fuel chances and robot progression |
 | `native_content.json` | native-only guardians, crystal resonance and pet mutations |
+| `professions.json` | fishing and farming currencies, enchants, fish, crops and supplies |
 | `enchants.json` | enchant order, labels, colors, prices, caps, progression scaling and proc parameters |
 | `crystals.json` | the fourteen pickaxe levels that unlock crystal slots |
 | `source_systems.json` | pouches, autominer upgrades, pet tiers, milestones, salvage, lucky drops, book eligibility and native progression |
@@ -160,3 +161,15 @@ remaining timers. their effects define chances, cooldowns, durations and bounded
 boost factors. Jackpot uses this path too. Energizer's allowlist deliberately
 excludes itself, Rewind, Jackpot and Credit Finder; changes cannot enable loops.
 Rewind's eight-second income window is temporary and never records its own bonus.
+
+## professions
+
+`professions.json` lists fishing and farming currencies, enchant overrides,
+fish, crops and supply prices. each profession uses its own game state with the
+same upgrade and inventory code. mining remains the top-level save; fishing and
+farming snapshots live in `professions`. untagged old items belong to mining.
+new profession drops carry a `profession` field, including converted crystals.
+
+crop growth is saved as elapsed game time, capped at maturity. inactive farms
+keep growing while the world is open. switching cancels a cast; its remaining
+bait, all wallets and equipment stay with its profession.

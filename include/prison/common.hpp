@@ -49,8 +49,10 @@ struct MiningReward {
 };
 struct Data {
     std::filesystem::path root;
+    std::string profession = "mining";
     Json balance, ranks, blocks, enchants, crystals, systems, mine, help;
     void load(const std::filesystem::path& sourceRoot);
+    Data forProfession(const std::string& name) const;
 };
 Json readJson(const std::filesystem::path& path, std::size_t maximum = 4 * 1024 * 1024);
 std::string jsonText(const Json& value);

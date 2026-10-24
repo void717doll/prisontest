@@ -282,6 +282,8 @@ Result Game::useItem(int index) {
     if (index == 0)
         return {true, "", "pick"};
     const Json& item = state["inventory_slots"][index];
+    if (!ownsItem(item))
+        return fail("This item belongs to another profession.");
     const auto name = id(item);
     Json args;
     args["index"] = index;
@@ -306,6 +308,8 @@ Result Game::useItem(int index) {
             return fail("Unequip your active pet first.");
         return transfer("inventory", index, "pet", 0);
     }
+    if (name == "fish" || name == "crop" || name == "watering_can")
+        return {true, "", "supplies"};
     if (name == "pet_food")
         return itemAction("feed", args);
     if (name == "robot")
@@ -315,7 +319,7 @@ Result Game::useItem(int index) {
     if (name == "pouch")
         return {true, "", "pouch:" + std::to_string(index)};
     if (name == "enchant_book" || name == "liquid_xp")
-        return success("Drag this item onto your pickaxe.");
+        return success("Drag this item onto your " + toolName() + ".");
     if (name == "automine_time" || name == "multiplier") {
         Json one = item;
         one["count"] = 1;
@@ -325,7 +329,7 @@ Result Game::useItem(int index) {
         return success("Item activated.");
     }
     if (name == "rename_token")
-        return success("Hold a pickaxe or pouch, then use /rename.");
+        return success("Hold your " + toolName() + " or pouch, then use /rename.");
     if (name == "minebomb")
         return success("Hold this bomb and left-click to throw it.");
     return fail("That slot is empty.");
@@ -337,6 +341,8 @@ Result Game::activateHeld(int index, bool primary) {
     if (index == 0)
         return primary ? success() : Result{true, "", "pick"};
     const Json& item = state["inventory_slots"][index];
+    if (!ownsItem(item))
+        return fail("This item belongs to another profession.");
     const std::string name = id(item);
     if (name.empty())
         return success();
@@ -379,7 +385,7 @@ Json Game::multiplierRecipes() const {
     const auto& slots = state["inventory_slots"];
     for (unsigned i = 1; i < slots.size(); ++i) {
         const Json& item = slots[i];
-        if (id(item) != "multiplier" || rewardKind(item.get("boost_type", "sell").asString()) != "money")
+        if (!ownsItem(item) || id(item) != "multiplier" || rewardKind(item.get("boost_type", "sell").asString()) != "money")
             continue;
         const double amount = item.get("amount", 1).asDouble(), duration = item.get("duration", 0).asDouble();
         if (!std::isfinite(amount) || !std::isfinite(duration) || amount < 1 || duration <= 0)
@@ -406,6 +412,18 @@ Json Game::multiplierRecipes() const {
 }
 
 Result Game::itemAction(const std::string& action, const Json& args) {
+    if (args["item"].isObject() && !ownsItem(args["item"]))
+        return fail("This item belongs to another profession.");
+    if (args["index"].isInt()) {
+        const int index = args["index"].asInt();
+        if (index > 0 && index < int(state["inventory_slots"].size()) &&
+            !ownsItem(state["inventory_slots"][index]))
+            return fail("This item belongs to another profession.");
+    }
+    return itemActionImpl(action, args);
+}
+
+Result Game::itemActionImpl(const std::string& action, const Json& args) {
     if (action == "robot_refuel" || action == "robot_upgrade") {
         const int index = args.get("index", -1).asInt();
         if (index < 0 || index >= 3 || id(state["robot_slots"][index]) != "robot")
@@ -672,7 +690,7 @@ Result Game::itemAction(const std::string& action, const Json& args) {
         } else {
             int total = 0;
             for (unsigned i = 1; i < planned.size(); ++i)
-                if (id(planned[i]) == expected && planned[i].get("tier", 1).asInt() == tier &&
+                if (ownsItem(planned[i]) && id(planned[i]) == expected && planned[i].get("tier", 1).asInt() == tier &&
                     (operation != "crystal_dust" || !planned[i].get("identified", false).asBool()))
                     total += count(planned[i]);
             if (operation == "crystal_craft" && total < 4)
@@ -680,7 +698,7 @@ Result Game::itemAction(const std::string& action, const Json& args) {
             const int amount = operation == "crystal_dust" ? total : (all ? total / 4 * 4 : 4);
             int needed = amount;
             for (unsigned i = 1; i < planned.size() && needed > 0; ++i)
-                if (id(planned[i]) == expected && planned[i].get("tier", 1).asInt() == tier &&
+                if (ownsItem(planned[i]) && id(planned[i]) == expected && planned[i].get("tier", 1).asInt() == tier &&
                     (operation != "crystal_dust" || !planned[i].get("identified", false).asBool())) {
                     int take = std::min(needed, count(planned[i]));
                     consume(planned, int(i), take);
@@ -702,19 +720,22 @@ Result Game::itemAction(const std::string& action, const Json& args) {
                 outputs.append(output);
             }
         }
-        for (const auto& output : outputs)
+        for (auto& output : outputs) {
+            if (data.profession != "mining")
+                output["profession"] = data.profession;
             if (!insert(planned, output, 1))
                 return fail("Not enough inventory space for the result.");
+        }
         slots = planned;
         return success("Items converted.");
     }
     if (action == "book" || action == "xp") {
         if (name != (action == "book" ? "enchant_book" : "liquid_xp"))
-            return fail("Use an enchant book or Liquid EXP on your pickaxe.");
+            return fail("Use an enchant book or Liquid EXP on your " + toolName() + ".");
         if (!apply(*this, item))
             return fail("This item cannot be applied.");
         consume(slots, index, count(item));
-        return success("Applied to your pickaxe.");
+        return success("Applied to your " + toolName() + ".");
     }
     if (action == "salvage") {
         if (args.isMember("item") && args["item"] != item)
@@ -758,7 +779,7 @@ Result Game::itemAction(const std::string& action, const Json& args) {
         output["count"] = 1;
         output["amount"] = rows[selected]["amount"];
         output["duration"] = shortest;
-        if (!giveItem(output, false))
+        if (!giveDrop(output, false))
             return fail("Make room in your inventory first.");
         Json unused;
         rows.removeIndex(selected, &unused);
@@ -787,7 +808,7 @@ Result Game::itemAction(const std::string& action, const Json& args) {
         Json planned = slots;
         int needed = 4;
         for (unsigned i = 1; i < planned.size() && needed > 0; ++i)
-            if (id(planned[i]) == "multiplier" &&
+            if (ownsItem(planned[i]) && id(planned[i]) == "multiplier" &&
                 rewardKind(planned[i].get("boost_type", "sell").asString()) == "money" &&
                 planned[i].get("amount", 1).asDouble() == amount &&
                 planned[i].get("duration", 0).asDouble() == duration) {
@@ -803,6 +824,8 @@ Result Game::itemAction(const std::string& action, const Json& args) {
         output["count"] = 1;
         output["amount"] = std::min(25.0, amount * 2);
         output["duration"] = duration * 3;
+        if (data.profession != "mining")
+            output["profession"] = data.profession;
         if (!insert(planned, output, 1))
             return fail("Make room for the combined multiplier.");
         slots = planned;
@@ -857,10 +880,10 @@ Result Game::itemAction(const std::string& action, const Json& args) {
     if (action == "rename_begin" || action == "rename" || action == "rename_preview") {
         const int selected = state.get("selected_hotbar_index", 0).asInt();
         if (selected < 0 || selected >= int(slots.size()))
-            return fail("Hold a pickaxe or pouch.");
+            return fail("Hold your " + toolName() + " or pouch.");
         Json& held = slots[selected];
         if (id(held) != "pickaxe" && id(held) != "pouch")
-            return fail("Hold a pickaxe or pouch.");
+            return fail("Hold your " + toolName() + " or pouch.");
         int token = -1;
         for (unsigned i = 1; i < slots.size(); ++i)
             if (id(slots[i]) == "rename_token") {
@@ -956,6 +979,14 @@ std::string Game::itemName(const Json& item) const {
     const auto name = id(item);
     if (name.empty())
         return "";
+    if (name == "watering_can")
+        return "Watering Can";
+    if (name == "fish" || name == "crop") {
+        const auto& rows = data.systems["professions"][data.profession][name == "fish" ? "fish" : "crops"];
+        for (const auto& row : rows)
+            if (row["id"] == item.get("species", ""))
+                return row["label"].asString() + (name == "fish" ? " (" + item.get("size_cm", 0).asString() + " cm)" : "");
+    }
     if (name == "pickaxe") {
         int tier = state.get("parts_prestige", 0).asInt() + 1;
         return plainName(state.get("pick_custom_name", "Prison Tool").asString()) +
@@ -1010,6 +1041,12 @@ std::vector<std::string> Game::itemLore(const Json& item) const {
     };
     std::vector<std::string> lines{itemName(item)};
     const auto name = id(item);
+    if (data.profession != "mining")
+        lines.push_back("Profession: " + data.profession);
+    if (name == "fish" || name == "crop") {
+        lines.push_back("Sell at Supplies for " + currencyName("money") + ".");
+        return lines;
+    }
     if (name == "pickaxe") {
         const int level = state.get("pick_level", 1).asInt();
         const double xp = state.get("pick_xp", 0).asDouble(), needed = pickXpNeeded(level);
@@ -1069,14 +1106,14 @@ std::vector<std::string> Game::itemLore(const Json& item) const {
         lines.push_back(std::to_string(std::max(1, item.get("amount", 1).asInt())) + "+ " +
                         data.enchants["defs"][key].get("label", "Random Enchant").asString());
         lines.push_back(enchantCurrency(key) == "tokens"
-                            ? "Drag to apply onto your pickaxe"
+                            ? "Drag to apply onto your " + toolName()
                             : "This enchant now requires " + currencyName(enchantCurrency(key)) + ".");
     } else if (name == "minebomb") {
         lines.push_back("Tier: " + std::to_string(std::max(1, item.get("tier", 1).asInt())));
         lines.push_back("Left click to throw");
     } else if (name == "liquid_xp") {
         lines.push_back("EXP:" + compact(item.get("amount", item.get("xp", 0)).asDouble()));
-        lines.push_back("Drag onto your pickaxe!");
+        lines.push_back("Drag onto your " + toolName() + "!");
     } else if (name == "crystal" || name == "pick_part") {
         if (item.get("identified", false).asBool()) {
             if (item.get("guardian_forged", false).asBool())
@@ -1160,7 +1197,7 @@ std::vector<std::string> Game::itemLore(const Json& item) const {
         lines.push_back("Duration: " + durationText(item.get("duration", 1800).asDouble()));
         lines.push_back("Right-click to activate.");
     } else if (name == "rename_token")
-        lines.push_back("Hold a pickaxe or pouch, then use /rename.");
+        lines.push_back("Hold your " + toolName() + " or pouch, then use /rename.");
     else if (name == "pet_food")
         lines.push_back("Right-click to feed your active pet.");
     return lines;

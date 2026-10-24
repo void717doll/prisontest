@@ -126,6 +126,10 @@ struct UI::Impl {
     void pets();
     void storage();
     void more();
+    void professions();
+    void supplies();
+    void activityIntro();
+    void activityHud();
     void mines();
     void mineUpgrades();
     void equipmentSets();

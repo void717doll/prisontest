@@ -1,4 +1,5 @@
 #include "prison/world.hpp"
+#include "prison/professions.hpp"
 #include "prison/guardians.hpp"
 #include <array>
 #include <atomic>
@@ -435,6 +436,35 @@ void Mine::buildShell() {
               {{minX, bottom, maxZ}, {maxX, top, maxZ + 1}},
               {{spawn_.x - 2.5f, .5f, spawn_.z - 2.5f}, {spawn_.x + 2.5f, 1.5f, spawn_.z + 2.5f}},
               {{spawn_.x - 2.5f, -.5f, maxZ + 1}, {spawn_.x + 2.5f, .5f, spawn_.z - 2.5f}}};
+    if (!options_["shaft"].isObject()) {
+        auto add = [&](Vec3 low, Vec3 high, int tile) { shell_.push_back({low, high, tile}); };
+        add({-2.5f, .5f, spawn_.z + 2.5f}, {2.5f, 1.5f, CourtyardStart}, TerrainPathTile);
+        add({-3.5f, 1.5f, spawn_.z + 2.5f}, {-2.5f, 2.5f, CourtyardStart}, TerrainWoodTile);
+        add({2.5f, 1.5f, spawn_.z + 2.5f}, {3.5f, 2.5f, CourtyardStart}, TerrainWoodTile);
+        add({-24, .5f, 72}, {-3, 1.5f, 80}, TerrainGrassTile);
+        add({3, .5f, 72}, {24, 1.5f, 80}, TerrainGrassTile);
+        add({-24, .5f, 80}, {-3, 1.5f, 103}, TerrainGrassTile);
+        add({3, .5f, 80}, {7, 1.5f, 84}, TerrainGrassTile);
+        add({3, .5f, 88}, {7, 1.5f, 103}, TerrainGrassTile);
+        add({22, .5f, 80}, {24, 1.5f, 103}, TerrainGrassTile);
+        add({-24, .5f, 103}, {-3, 1.5f, 112}, TerrainGrassTile);
+        add({3, .5f, 103}, {24, 1.5f, 112}, TerrainGrassTile);
+        add({-3, .5f, 108}, {3, 1.5f, 112}, TerrainGrassTile);
+        add({7, -.5f, 80}, {22, .5f, 103}, TerrainSoilTile);
+        add({-3, .5f, 72}, {3, 1.5f, 108}, TerrainPathTile);
+        add({3, .5f, 84}, {7, 1.5f, 88}, TerrainPathTile);
+        add({7, .5f, 84}, {12, 1.5f, 88}, TerrainWoodTile);
+        for (float x : {-24.f, 23.f})
+            add({x, 1.5f, 72}, {x + 1, 2.5f, 112}, TerrainWoodTile);
+        add({-24, 1.5f, 111}, {24, 2.5f, 112}, TerrainWoodTile);
+        add({-24, 1.5f, 72}, {-3, 2.5f, 73}, TerrainWoodTile);
+        add({3, 1.5f, 72}, {24, 2.5f, 73}, TerrainWoodTile);
+        for (Vec3 tree : {Vec3{-21, 1.5f, 76}, Vec3{-21, 1.5f, 108}, Vec3{20, 1.5f, 76}, Vec3{20, 1.5f, 108}}) {
+            add(tree, tree + Vec3{1, 4, 1}, TerrainWoodTile);
+            add(tree + Vec3{-1, 3, -1}, tree + Vec3{2, 6, 2}, TerrainLeafTile);
+        }
+        add({-2, 1.5f, 106}, {2, 2.5f, 108}, TerrainWoodTile);
+    }
     shellMesh_.vertices.clear();
     for (const auto& box : shell_) {
         const int sx = static_cast<int>(std::round(box.high.x - box.low.x));
@@ -445,17 +475,17 @@ void Mine::buildShell() {
                 for (int x = 0; x < sx; ++x) {
                     const Vec3 c = {box.low.x + x + .5f, box.low.y + y + .5f, box.low.z + z + .5f};
                     if (z == sz - 1)
-                        face(shellMesh_.vertices, c, 0, TerrainBedrockTile);
+                        face(shellMesh_.vertices, c, 0, box.tile);
                     if (z == 0)
-                        face(shellMesh_.vertices, c, 1, TerrainBedrockTile);
+                        face(shellMesh_.vertices, c, 1, box.tile);
                     if (x == sx - 1)
-                        face(shellMesh_.vertices, c, 2, TerrainBedrockTile);
+                        face(shellMesh_.vertices, c, 2, box.tile);
                     if (x == 0)
-                        face(shellMesh_.vertices, c, 3, TerrainBedrockTile);
+                        face(shellMesh_.vertices, c, 3, box.tile);
                     if (y == sy - 1)
-                        face(shellMesh_.vertices, c, 4, TerrainBedrockTile);
+                        face(shellMesh_.vertices, c, 4, box.tile);
                     if (y == 0)
-                        face(shellMesh_.vertices, c, 5, TerrainBedrockTile);
+                        face(shellMesh_.vertices, c, 5, box.tile);
                 }
     }
     shellMesh_.revision = nextMeshRevision();

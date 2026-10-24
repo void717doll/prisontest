@@ -135,6 +135,8 @@ bool equipment(const std::string& name) {
 bool accepted(const Game& game, const std::string& name, int index, const Json& item) {
     if (item.isNull())
         return true;
+    if (!game.ownsItem(item))
+        return false;
     if (name == "inventory")
         return index > 0 && id(item) != "pickaxe";
     if (name == "parts")
@@ -232,6 +234,10 @@ void Game::returnStoredItems() {
     for (auto& item : state["forge_slots"]) {
         if (!item.isObject())
             continue;
+        if (!ownsItem(item)) {
+            pending = true;
+            continue;
+        }
         if (giveItem(item)) {
             item = Json();
             continue;
@@ -246,6 +252,8 @@ void Game::returnStoredItems() {
 }
 
 bool Game::giveItem(Json item, bool automatic) {
+    if (!ownsItem(item))
+        return false;
     if (!item.isObject() || id(item).empty() || id(item) == "pickaxe" || !item.get("count", 1).isNumeric() ||
         item.get("count", 1).asDouble() < 1 || item.get("count", 1).asDouble() > 100000)
         return false;
@@ -286,6 +294,8 @@ Result Game::transfer(const std::string& sourceName, int index, const std::strin
 
     if (from == "inventory" && (index < 0 || index >= int(state["inventory_slots"].size())))
         return fail("Invalid inventory slot.");
+    if (from == "inventory" && !ownsItem(state["inventory_slots"][index]))
+        return fail("This item belongs to another profession.");
     if (from == "inventory" && to == "pet" && id(state["inventory_slots"][index]) == "pet_food") {
         Json args;
         args["index"] = index;
@@ -300,7 +310,7 @@ Result Game::transfer(const std::string& sourceName, int index, const std::strin
     if (from == to && target < 0)
         return success();
     if (from == "inventory" && index == 0)
-        return fail("Your pickaxe stays in the first slot.");
+        return fail("Your " + toolName() + " stays in the first slot.");
     if (to == "inventory" && target == 0 && from == "inventory") {
         Json args;
         args["index"] = index;
@@ -324,6 +334,10 @@ Result Game::transfer(const std::string& sourceName, int index, const std::strin
         destination.resize(crystalSlots());
     if (index < 0 || index >= int(source.size()) || !source[index].isObject())
         return fail("That slot is empty.");
+    if (!ownsItem(source[index]))
+        return fail("This item belongs to another profession.");
+    if (target >= 0 && target < int(destination.size()) && !ownsItem(destination[target]))
+        return fail("This item belongs to another profession.");
     if (from == to && target == index)
         return success();
     if (to.rfind("pouch:", 0) == 0 && from == "inventory" && std::to_string(index) == to.substr(6))

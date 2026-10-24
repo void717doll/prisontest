@@ -18,7 +18,7 @@ const Json& Game::crystalResonance() const {
     int tier = 0;
     for (int i = 0; i < 3; ++i) {
         const auto& crystal = equipped[i];
-        if (!crystal.isObject() || crystal.get("id", "") != "crystal" ||
+        if (!ownsItem(crystal) || !crystal.isObject() || crystal.get("id", "") != "crystal" ||
             !crystal.get("identified", false).asBool())
             return none;
         const int next = crystal.get("tier", 1).asInt();
@@ -40,7 +40,7 @@ const Json& Game::crystalResonance() const {
 }
 
 const Json& Game::petMutation(const Json& pet) const {
-    if (!pet.isObject() || pet.get("id", "") != "pet" || !pet["mutation"].isString())
+    if (!ownsItem(pet) || !pet.isObject() || pet.get("id", "") != "pet" || !pet["mutation"].isString())
         return none;
     for (const auto& trait : data.systems["mutations"]["traits"])
         if (trait["id"] == pet["mutation"])

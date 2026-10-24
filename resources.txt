@@ -6,6 +6,7 @@ data/help.json
 data/mine.json
 data/native_content.json
 data/native_economy.json
+data/professions.json
 data/ranks.json
 data/source_systems.json
 fonts/DejaVuSans-Bold.ttf

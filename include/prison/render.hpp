@@ -4,6 +4,7 @@
 #include <memory>
 namespace prison {
 class Mine;
+class Game;
 struct Image {
     int width = 0, height = 0;
     std::vector<unsigned char> pixels;
@@ -42,6 +43,8 @@ class Renderer {
     void clip(Rect box);
     void unclip();
     void world(const Mine& mine, Vec3 eye, float yaw, float pitch, float fov);
+    void outdoors(const Game& farming, const Game& fishing, Vec3 eye);
+    void worldLabel(Vec3 point, Vec3 eye, float yaw, float pitch, float fov, const std::string& text);
     void selection(Cell cell, float progress);
     void guardian(const Json& state, int targetedPart, float progress);
     void billboard(Vec3 position, float size, const std::string& path, float yaw, float pitch);

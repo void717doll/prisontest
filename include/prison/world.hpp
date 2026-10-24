@@ -10,6 +10,11 @@ constexpr int TerrainAtlasColumns = 8;
 constexpr int TerrainAtlasRows = 8;
 constexpr int TerrainBedrockTile = 52;
 constexpr int TerrainPocketTile = 53;
+constexpr int TerrainGrassTile = 54;
+constexpr int TerrainSoilTile = 55;
+constexpr int TerrainWoodTile = 56;
+constexpr int TerrainLeafTile = 57;
+constexpr int TerrainPathTile = 58;
 struct Vertex {
     float x, y, z, u, v, r, g, b;
 };
@@ -128,6 +133,7 @@ class Mine {
   private:
     struct Box {
         Vec3 low, high;
+        int tile = TerrainBedrockTile;
     };
     struct Blast {
         Cell centre, low, high, cursor;

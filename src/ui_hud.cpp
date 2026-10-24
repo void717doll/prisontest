@@ -37,6 +37,15 @@ void UI::Impl::bossBars() {
             draw.rect({x + 2 + (width - 4) * i / 20, track.y + 2, 1, 6}, {0, 0, 0, .4f});
         y += 39;
     };
+    const auto& cast = game.state["_cast"];
+    if (cast.isObject()) {
+        const bool bite = cast["phase"] == "bite";
+        bar(bite ? "Bite! Right-click to reel in" : "Waiting for a bite…",
+            bite ? cast["remaining"].asDouble() / 2.5 : 1 - cast["remaining"].asDouble() / cast["duration"].asDouble(),
+            bite ? Color{.9f, .7f, .2f, 1} : Color{.3f, .65f, .8f, 1});
+    }
+    if (ctx.activityProgress >= 0 && game.data.profession == "farming")
+        bar(ctx.activityProgress >= 1 ? "Ready to harvest" : "Growing", ctx.activityProgress, {.45f, .75f, .3f, 1});
     const auto& guardian = game.state["guardian"];
     if (guardian["active"].asBool())
         bar("Stone Guardian · " + guardianWeakName(guardian) + " · " +
@@ -61,6 +70,7 @@ void UI::Impl::hud() {
     hudBoxes.clear();
     bossBars();
     tutorialHud();
+    activityHud();
     const bool editing = page == "hud";
     const float width = draw.width(), height = draw.height();
     if (page.empty()) {
@@ -68,7 +78,7 @@ void UI::Impl::hud() {
         draw.rect({width / 2, height / 2 - 5, 1, 11}, foreground);
     }
     const bool scoreboard = game.state["settings"].get("show_scoreboard", true).asBool();
-    if (scoreboard || editing) {
+    if ((scoreboard || editing) && game.data.profession == "mining") {
         const auto multiplier = game.activeMultiplier("money");
         const std::string multi = multiplier.remaining > 0 ? clockText(multiplier.remaining) + " (" +
                                                                  number(multiplier.amount, 2) + "x)"
@@ -129,6 +139,41 @@ void UI::Impl::hud() {
         row("Multi: ", multi, multiplier.remaining > 0 ? foreground : dim(foreground, .6f));
         row("Autominer: ", autominer,
             game.state.get("autominer_active", false).asBool() ? hexColor("#c9705f") : dim(foreground, .6f));
+    }
+    if ((scoreboard || editing) && game.data.profession != "mining") {
+        Rect score = hudRect("scoreboard", {width - 275, 80, 260, 230});
+        Color color = dim(background, .4f);
+        color.a = ctx.settings.get("scoreboard_opacity", .75).asFloat();
+        draw.rect(score, color);
+        float y = score.y + 10;
+        auto row = [&](const std::string& text, Color tint = Color{.85f, .85f, .87f, 1}) {
+            draw.text(score.x + 10, y, text, tint, 14);
+            y += 22;
+        };
+        row(game.data.systems["professions"][game.data.profession]["label"].asString());
+        for (const char* wallet : {"money", "tokens", "sapphires", "rubies"})
+            row(game.currencyName(wallet) + ": " + compact(game.state[wallet].asDouble()), currencyColor(game.data, wallet));
+        row("Rank: " + game.state["rank_name"].asString() + " · Prestige: P" +
+            number(game.state["prestige_level"].asDouble()));
+        LoreLine next{{"Next Rankup: ", foreground}};
+        const auto cost = nextRankText(game);
+        next.insert(next.end(), cost.begin(), cost.end());
+        loreLine(score.x + 10, y, next, 14);
+        y += 22;
+        if (game.data.profession == "fishing") {
+            row("Caught: " + blockCount(game.state["activity_count"].asDouble()));
+            row("Bait: " + game.state["activity"]["bait"].asString());
+        } else {
+            int ready = 0, growing = 0;
+            for (int i = 0; i < game.state["activity"]["plots_owned"].asInt(); ++i)
+                if (game.state["activity"]["plots"][i].isObject()) {
+                    ++growing;
+                    if (game.cropProgress(i) >= 1)
+                        ++ready;
+                }
+            row("Harvested: " + blockCount(game.state["activity_count"].asDouble()));
+            row(std::to_string(growing) + " planted" + (ready > 0 ? " (" + std::to_string(ready) + " ready)" : ""));
+        }
     }
     const float size = 46;
     Rect hotbar = hudRect("hotbar", {(width - size * 9) / 2, height - size - 12, size * 9, size});

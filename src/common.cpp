@@ -66,6 +66,7 @@ void Data::load(const std::filesystem::path& sourceRoot) {
     enchants["defs"]["token_greed"]["color"] = systems["currencies"]["tokens"]["color"];
     for (const char* key : {"resonance", "mutations", "guardians"})
         systems[key] = content[key];
+    systems["professions"] = readJson(root / "data/professions.json");
     mine = readJson(root / "data/mine.json");
     help = readJson(root / "data/help.json");
 }

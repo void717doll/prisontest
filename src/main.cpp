@@ -2,6 +2,7 @@
 #include "prison/game.hpp"
 #include "prison/guardians.hpp"
 #include "prison/help.hpp"
+#include "prison/professions.hpp"
 #include "prison/rewards.hpp"
 #include "prison/save.hpp"
 #include "prison/settings.hpp"
@@ -231,6 +232,9 @@ int run(const Options& options) {
             worldName = envelope["slot"]["name"].asString();
     } else
         game.newWorld(options.dev);
+    Professions professions(game);
+    professions.load();
+    auto current = [&]() -> Game& { return professions.current(); };
     startMine(mine, game);
     if (!procJobs.restore(game.state["native_reward_jobs"], mine))
         throw std::runtime_error("Invalid pending mining rewards in save.");
@@ -242,11 +246,13 @@ int run(const Options& options) {
             procJobs.step(game, mine);
         traceStartup("running headless commands");
         for (const auto& cmd : options.commands) {
-            auto result = game.command(cmd);
+            auto result = current().command(cmd);
+            if (result.menu.rfind("profession:", 0) == 0)
+                result = professions.select(result.menu.substr(11));
             std::cout << (result.ok ? "OK " : "ERROR ") << result.message << '\n';
             if (!result.ok)
                 return 2;
-            if (result.resetMine) {
+            if (result.resetMine && professions.active() == "mining") {
                 mine.configure(game.mineOptions());
                 mine.reset(game.state["rank_index"].asInt(), game.state["total_prestige"].asInt64());
                 finishReset(mine);
@@ -297,7 +303,7 @@ int run(const Options& options) {
         ctx.worlds.append(w);
     ctx.playing = options.newWorld || !loadId.empty();
     ctx.worldId = loadId;
-    UI ui(game, renderer, ctx);
+    UI ui(current(), renderer, ctx);
     if (ctx.playing)
         ui.open(options.menu);
     else
@@ -313,8 +319,15 @@ int run(const Options& options) {
     std::uint64_t generation = mine.generation();
     int guardianTarget = -1;
     std::future<Json> saving;
+    auto professionSpawn = [&]() {
+        if (professions.active() == "farming")
+            return Vec3{-15, 1.5f, 75};
+        if (professions.active() == "fishing")
+            return Vec3{5, 1.5f, 86};
+        return mine.spawn();
+    };
     auto restorePlayer = [&]() {
-        position = mine.spawn();
+        position = professionSpawn();
         velocity = {};
         vertical = 0;
         yaw = 0;
@@ -323,9 +336,13 @@ int run(const Options& options) {
         if (p.isObject() && p["x"].isNumeric() && p["y"].isNumeric() && p["z"].isNumeric()) {
             Vec3 saved{p["x"].asFloat(), p["y"].asFloat(), p["z"].asFloat()};
             const auto low = mine.minimum(), high = mine.maximum();
+            const bool nearMine = saved.x > low.x - 4 && saved.x < high.x + 4 && saved.z > low.z - 4 &&
+                                  saved.z < mine.spawn().z + 4 && saved.y >= low.y - .5f && saved.y < high.y + 50;
+            const bool onBridge = std::abs(saved.x) <= 2.5f && saved.z >= mine.spawn().z &&
+                                  saved.z <= CourtyardStart && saved.y >= 1.4f && saved.y < 10;
+            const bool outdoors = !game.inShaft() && (inCourtyard(saved) || onBridge);
             if (std::isfinite(saved.x) && std::isfinite(saved.y) && std::isfinite(saved.z) &&
-                saved.x > low.x - 4 && saved.x < high.x + 4 && saved.z > low.z - 4 &&
-                saved.z < mine.spawn().z + 4 && saved.y >= low.y - .5f && saved.y < high.y + 50) {
+                (nearMine || outdoors)) {
                 position = saved;
                 yaw = p["yaw"].isNumeric() && std::isfinite(p["yaw"].asDouble())
                           ? std::clamp(p["yaw"].asFloat(), -100.f, 100.f)
@@ -345,6 +362,7 @@ int run(const Options& options) {
             ctx.worldId = saved["slot"]["id"].asString();
         }
         game.state["native_reward_jobs"] = procJobs.snapshot(mine);
+        professions.save();
         Json snapshot = capture(game, mine, position, yaw, pitch);
         if (ctx.worldId.empty()) {
             const auto stamp = std::chrono::duration_cast<std::chrono::microseconds>(
@@ -366,9 +384,11 @@ int run(const Options& options) {
         game.state["guardian"]["active"] = false;
         mine.configure(game.mineOptions());
         mine.reset(game.state["rank_index"].asInt(), game.state["total_prestige"].asInt64());
-        position = mine.spawn();
-        yaw = mine.spawnYaw();
-        pitch = -.25f;
+        if (!inCourtyard(position)) {
+            position = mine.spawn();
+            yaw = mine.spawnYaw();
+            pitch = -.25f;
+        }
         damage = 0;
         held = false;
         velocity = {};
@@ -378,11 +398,11 @@ int run(const Options& options) {
         ui.apply(r);
         if (r.ok)
             mine.configure(game.mineOptions());
-        if (r.resetMine)
+        if (r.resetMine && professions.active() == "mining")
             reset();
     };
     for (const auto& command : options.commands)
-        apply(game.command(command));
+        apply(current().command(command));
     if (ctx.playing && !options.stress.empty())
         apply(game.command("/test stress " + options.stress));
     auto summonGuardian = [&](bool development) {
@@ -431,7 +451,7 @@ int run(const Options& options) {
             if (event.type == SDL_DROPFILE) {
                 if (!ctx.playing && event.drop.file &&
                     (ui.menu() == "title" || ui.menu() == "worlds" || ui.menu() == "import")) {
-                    ctx.actions.push_back({"import", event.drop.file});
+                    ctx.actions.push_back({"import", event.drop.file, ""});
                     ui.open("import");
                 }
                 SDL_free(event.drop.file);
@@ -443,12 +463,13 @@ int run(const Options& options) {
             }
             if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_FOCUS_LOST) {
                 focused = false;
+                professions.fishing().state.removeMember("_cast");
                 held = false;
                 vertical = 0;
             }
             if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED)
                 focused = true;
-            bool gameInput = ctx.playing && !ui.capturesInput() && focused && !mine.resetting();
+            bool gameInput = ctx.playing && !ui.capturesInput() && focused && (!mine.resetting() || inCourtyard(position));
             if (gameInput && event.type == SDL_MOUSEMOTION) {
                 const float sensitivity = .0025f * ctx.settings["mouse_sensitivity"].asFloat();
                 yaw -= event.motion.xrel * sensitivity;
@@ -459,41 +480,52 @@ int run(const Options& options) {
             if (gameInput && event.type == SDL_MOUSEBUTTONDOWN) {
                 if (event.button.button == SDL_BUTTON_LEFT) {
                     held = true;
-                    int index = game.state.get("selected_hotbar_index", 0).asInt();
-                    auto id = game.state["inventory_slots"][index].get("id", "").asString();
+                    int index = current().state.get("selected_hotbar_index", 0).asInt();
+                    auto id = current().state["inventory_slots"][index].get("id", "").asString();
                     if (id != "pickaxe" && id != "minebomb")
-                        apply(game.activateHeld(index, true));
+                        apply(current().activateHeld(index, true));
                 }
-                int selected = game.state.get("selected_hotbar_index", 0).asInt();
+                int selected = current().state.get("selected_hotbar_index", 0).asInt();
                 bool bombClick = event.button.button == SDL_BUTTON_LEFT &&
-                                 game.state["inventory_slots"][selected].get("id", "") == "minebomb";
+                                 current().state["inventory_slots"][selected].get("id", "") == "minebomb";
                 if (event.button.button == SDL_BUTTON_RIGHT || bombClick) {
                     const Vec3 eye = position + Vec3{0, 1.62f, 0},
                                dir{-std::sin(yaw) * std::cos(pitch), std::sin(pitch),
                                    -std::cos(yaw) * std::cos(pitch)};
                     int index = selected;
-                    auto item = game.state["inventory_slots"][index];
-                    if (item.get("id", "") == "minebomb") {
+                    auto item = current().state["inventory_slots"][index];
+                    const auto outdoor = game.inShaft() ? OutdoorTarget{} : outdoorTarget(eye, dir);
+                    const auto itemId = item.get("id", "").asString();
+                    if (outdoor.kind == "supplies") {
+                        ui.open("supplies");
+                    } else if (professions.active() == "fishing" && itemId == "pickaxe") {
+                        apply(current().castFishing(outdoor.kind == "water" ? outdoor.point : Vec3{}));
+                        swing = .5f;
+                    } else if (professions.active() == "farming" && (itemId == "pickaxe" || itemId == "watering_can")) {
+                        apply(outdoor.kind == "plot" ? current().tendPlot(outdoor.plot, itemId == "watering_can") :
+                              Result{false, "Aim at a nearby farm plot."});
+                        swing = .5f;
+                    } else if (professions.active() == "mining" && itemId == "minebomb") {
                         auto result = bombs.launch(mine, game, eye, dir, item.get("tier", 1).asInt());
                         if (result.ok) {
                             int count = item.get("count", 1).asInt() - 1;
                             if (count <= 0)
-                                game.state["inventory_slots"][index] = Json();
+                                current().state["inventory_slots"][index] = Json();
                             else
-                                game.state["inventory_slots"][index]["count"] = count;
+                                current().state["inventory_slots"][index]["count"] = count;
                         } else
                             ui.apply(result);
                     } else
-                        apply(game.activateHeld(index, false));
+                        apply(current().activateHeld(index, false));
                 }
             }
             if (gameInput && event.type == SDL_MOUSEWHEEL) {
-                int slot = game.state.get("selected_hotbar_index", 0).asInt();
-                game.state["selected_hotbar_index"] = (slot - event.wheel.y % 9 + 9) % 9;
+                int slot = current().state.get("selected_hotbar_index", 0).asInt();
+                current().state["selected_hotbar_index"] = (slot - event.wheel.y % 9 + 9) % 9;
             }
             if (gameInput && event.type == SDL_KEYDOWN && event.key.keysym.sym >= SDLK_1 &&
                 event.key.keysym.sym <= SDLK_9)
-                game.state["selected_hotbar_index"] = int(event.key.keysym.sym - SDLK_1);
+                current().state["selected_hotbar_index"] = int(event.key.keysym.sym - SDLK_1);
             ui.event(event);
         }
         if (ui.capturesInput() || !focused) {
@@ -517,17 +549,22 @@ int run(const Options& options) {
                     procJobs.clear();
                     bombs.clear();
                     game.newWorld(ctx.settings.get("new_devmode", false).asBool() || action.value == "dev");
+                    professions.load();
+                    ui.bind(current());
                     mine.takePocketDrops(std::numeric_limits<int>::max());
                     ctx.worldId = "";
                     worldName = action.value.empty() || action.value == "dev" ? "Your Mine" : action.value;
                     ctx.playing = true;
                     reset();
+                    restorePlayer();
                     ui.open("");
                     break;
                 } else if (action.kind == "load") {
                     save(false);
                     auto envelope = saves.load(action.value);
                     game.loadSnapshot(envelope["state"]);
+                    professions.load();
+                    ui.bind(current());
                     ctx.actions.clear();
                     ctx.worldId = action.value;
                     worldName = envelope["slot"]["name"].isString() ? envelope["slot"]["name"].asString()
@@ -566,7 +603,23 @@ int run(const Options& options) {
                     break;
                 } else if (action.kind == "save")
                     save(false);
-                else if (action.kind == "mine_options" && ctx.playing)
+                else if (action.kind == "profession" && ctx.playing) {
+                    const auto result = professions.select(action.value);
+                    if (result.ok) {
+                        ui.bind(current());
+                        position = professionSpawn();
+                        yaw = professions.active() == "farming" ? 3.14159265f
+                              : professions.active() == "fishing" ? -1.5707963f : 0;
+                        pitch = -.35f;
+                        velocity = {};
+                        vertical = damage = 0;
+                        held = false;
+                        const bool intro = professions.active() != "mining" && current().state["activity"]["introduced"] != true;
+                        ui.open(intro ? "activity_intro" : "");
+                        save(false);
+                    }
+                    ui.apply(result);
+                } else if (action.kind == "mine_options" && ctx.playing)
                     mine.configure(game.mineOptions());
                 else if (action.kind == "shaft" && ctx.playing) {
                     if (!procJobs.empty()) {
@@ -626,6 +679,8 @@ int run(const Options& options) {
                     velocity = {};
                     held = false;
                 } else if (action.kind == "command" || action.kind == "progression") {
+                    if (!action.profession.empty() && action.profession != professions.active())
+                        continue;
                     if (!ctx.playing)
                         continue;
                     std::string verb = action.value.substr(0, action.value.find(' '));
@@ -635,7 +690,7 @@ int run(const Options& options) {
                                    [](unsigned char c) { return char(std::tolower(c)); });
                     bool progression = action.kind == "progression" || verb == "rankup" ||
                                        verb == "rankupmax" || verb == "prestige";
-                    if (progression && !procJobs.empty()) {
+                    if (progression && professions.active() == "mining" && !procJobs.empty()) {
                         bool queued =
                             std::any_of(ctx.actions.begin(), ctx.actions.end(), [](const UiAction& a) {
                                 return a.kind == "command" || a.kind == "progression";
@@ -644,17 +699,17 @@ int run(const Options& options) {
                             ctx.actions.push_back(action);
                         ui.open("pick");
                     } else if (action.kind == "command")
-                        apply(game.command(action.value));
+                        apply(current().command(action.value));
                     else if (action.value == "rankup")
-                        apply(game.rankUp());
+                        apply(current().rankUp());
                     else if (action.value == "rankupmax")
-                        apply(game.rankUp(true));
+                        apply(current().rankUp(true));
                     else if (action.value == "prestige")
-                        apply(game.prestige());
+                        apply(current().prestige());
                     else if (action.value == "prestige_confirm")
-                        apply(game.prestige(true));
+                        apply(current().prestige(true));
                     else if (action.value == "rebirth_confirm")
-                        apply(game.rebirth(true));
+                        apply(current().rebirth(true));
                 } else if (action.kind == "stress" && game.state.get("devmode", false).asBool()) {
                     if (game.inShaft()) {
                         ui.apply({false, "Leave the shaft before starting a stress test."});
@@ -684,9 +739,11 @@ int run(const Options& options) {
             if (generation != mine.generation()) {
                 game.state["guardian"]["active"] = false;
                 generation = mine.generation();
-                position = mine.spawn();
-                yaw = 0;
-                pitch = -.25f;
+                if (!inCourtyard(position)) {
+                    position = mine.spawn();
+                    yaw = 0;
+                    pitch = -.25f;
+                }
                 vertical = 0;
                 velocity = {};
                 held = false;
@@ -727,9 +784,9 @@ int run(const Options& options) {
                     ctx.say("Stress test finished: " + type + ", 1000 iterations.");
                 }
             }
-            ctx.resetting = mine.resetting();
+            ctx.resetting = mine.resetting() && !inCourtyard(position);
             ctx.mineSize = {mine.width(), mine.height(), mine.depth()};
-            bool input = !ui.capturesInput() && focused && !mine.resetting();
+            bool input = !ui.capturesInput() && focused && (!mine.resetting() || inCourtyard(position));
             if (input && game.tickGuardian(elapsed))
                 ctx.say("The Stone Guardian returned to stone.");
             mine.setGuardian(game.state["guardian"]);
@@ -739,7 +796,7 @@ int run(const Options& options) {
                       side = (keys[SDL_SCANCODE_D] ? 1.f : 0) - (keys[SDL_SCANCODE_A] ? 1.f : 0);
                 float norm = std::max(1.f, std::sqrt(forward * forward + side * side));
                 int index = game.state.get("selected_hotbar_index", 0).asInt();
-                bool pick = game.state["inventory_slots"][index].get("id", "") == "pickaxe";
+                bool pick = professions.active() == "mining" && game.state["inventory_slots"][index].get("id", "") == "pickaxe";
                 int speedLevel =
                     pick && game.state["message_settings"].get("speed_effect_enabled", true) != false
                         ? std::clamp(game.enchantLevel("speed"), 0, 5)
@@ -766,11 +823,25 @@ int run(const Options& options) {
                 if (grounded)
                     vertical = 0;
                 if (position.y < mine.minimum().y - 8) {
-                    position = mine.spawn();
+                    position = professionSpawn();
                     vertical = 0;
                     velocity = {};
                 }
             }
+            for (Game* activity : {&professions.fishing(), &professions.farming()}) {
+                activity->state["message_settings"]["visual_enchants"] = current().state["message_settings"]["visual_enchants"];
+                activity->tick(elapsed);
+                if (activity->state.isMember("_activity_notice")) {
+                    ctx.say(activity->state["_activity_notice"].asString());
+                    activity->state.removeMember("_activity_notice");
+                }
+            }
+            game.state["message_settings"]["visual_enchants"] = current().state["message_settings"]["visual_enchants"];
+            const auto& cast = professions.fishing().state["_cast"];
+            if (cast.isObject() && (!focused || professions.active() != "fishing" ||
+                current().state["selected_hotbar_index"].asInt() != 0 ||
+                std::hypot(position.x - cast["x"].asFloat(), position.z - cast["z"].asFloat()) > 24))
+                professions.fishing().state.removeMember("_cast");
             game.tick(elapsed);
             mine.applyVirtualMining(game.tickAutominer(elapsed, mine.rewardSample()), mine.generation());
             if (!mine.resetting()) {
@@ -779,6 +850,23 @@ int run(const Options& options) {
             Vec3 eye = position + Vec3{0, 1.62f, 0},
                  dir{-std::sin(yaw) * std::cos(pitch), std::sin(pitch), -std::cos(yaw) * std::cos(pitch)};
             auto hit = mine.raycast(eye, dir, 8);
+            ctx.activityHint.clear();
+            ctx.activityProgress = -1;
+            const auto outdoor = game.inShaft() ? OutdoorTarget{} : outdoorTarget(eye, dir);
+            if (outdoor.kind == "supplies")
+                ctx.activityHint = "Right-click for supplies";
+            else if (outdoor.kind == "water")
+                ctx.activityHint = professions.active() == "fishing" ? "Rod: right-click to cast or reel" : "/fishing to equip your rod";
+            else if (outdoor.kind == "plot") {
+                const auto& farm = professions.farming();
+                if (outdoor.plot >= farm.state["activity"]["plots_owned"].asInt())
+                    ctx.activityHint = "Locked plot · expand at /supplies";
+                else if (farm.state["activity"]["plots"][outdoor.plot].isObject()) {
+                    ctx.activityProgress = farm.cropProgress(outdoor.plot);
+                    ctx.activityHint = ctx.activityProgress >= 1 ? "Hoe: right-click to harvest" : "Watering can: right-click to water";
+                } else
+                    ctx.activityHint = "Hoe: right-click to plant";
+            }
             const auto guardianHit = raycastGuardian(game.state["guardian"], eye, dir,
                                                      hit.hit ? std::min(8.f, hit.distance) : 8.f);
             if (guardianHit.part != guardianTarget ||
@@ -789,7 +877,7 @@ int run(const Options& options) {
             }
             guardianTarget = guardianHit.part;
             int index = game.state.get("selected_hotbar_index", 0).asInt();
-            bool pick = game.state["inventory_slots"][index].get("id", "") == "pickaxe";
+            bool pick = professions.active() == "mining" && game.state["inventory_slots"][index].get("id", "") == "pickaxe";
             if (held && input && pick && guardianTarget >= 0 &&
                 guardianTarget == guardianWeakPart(game.state["guardian"]) &&
                 !game.state["autominer_active"].asBool()) {
@@ -846,30 +934,51 @@ int run(const Options& options) {
                     ui.apply({false, std::string("Save failed: ") + e.what()});
                 }
             }
-            if (game.state.isMember("mining_summary")) {
-                ctx.say(miningSummaryText(game.data, game.state["mining_summary"]));
-                game.state.removeMember("mining_summary");
+            for (Game* source : {&game, &professions.fishing(), &professions.farming()}) {
+                if (!source->state.isMember("mining_summary"))
+                    continue;
+                auto line = miningSummaryText(source->data, source->state["mining_summary"]);
+                if (source->data.profession != "mining" || professions.active() != "mining")
+                    line.insert(line.begin(), {source->data.profession + " ", {.8f, .8f, .8f, 1}});
+                ctx.say(std::move(line));
+                source->state.removeMember("mining_summary");
             }
             float gui = std::clamp(ctx.settings.get("gui_scale", 1).asFloat(), .75f, 1.5f);
             int ww, wh;
             SDL_GetWindowSize(window.get(), &ww, &wh);
             gui = std::min(gui, std::min(ww / 760.f, wh / 600.f));
-            renderer.begin(gui, mine.skyColor());
+            Color sky = mine.skyColor();
+            if (!game.inShaft()) {
+                const float outdoorLight = std::clamp((position.z - 55) / 17, 0.f, 1.f);
+                sky.r += (.35f - sky.r) * outdoorLight;
+                sky.g += (.52f - sky.g) * outdoorLight;
+                sky.b += (.62f - sky.b) * outdoorLight;
+            }
+            renderer.begin(gui, sky);
             renderer.world(mine, eye, yaw, pitch,
                            std::clamp(ctx.settings.get("fov", 72).asFloat(), 50.f, 120.f));
-            if (input && guardianTarget < 0 && hit.mineable)
+            if (input && professions.active() == "mining" && guardianTarget < 0 && hit.mineable)
                 renderer.selection(hit.cell, damage);
             renderer.guardian(game.state["guardian"], guardianTarget, damage);
+            if (!game.inShaft())
+                renderer.outdoors(professions.farming(), professions.fishing(), eye);
             for (const auto& bomb : bombs.projectiles())
                 renderer.billboard(bomb.position, .45f, "textures/minebomb.png", yaw, pitch);
             renderer.beginUI();
             renderer.mineHologram(mine, eye, yaw, pitch, ctx.settings.get("fov", 72).asFloat(),
                                   game.state["rank_index"].asInt(), game.state["shaft"]);
-            Json heldItem = game.state["inventory_slots"][index];
-            int tier = game.state.get("parts_prestige", 0).asInt();
+            if (!game.inShaft()) {
+                const float fov = ctx.settings.get("fov", 72).asFloat();
+                renderer.worldLabel({0, 3.5f, 73}, eye, yaw, pitch, fov, "Courtyard · /professions");
+                renderer.worldLabel({-15, 3.5f, 79}, eye, yaw, pitch, fov, "Farm · /farming");
+                renderer.worldLabel({10, 3.5f, 86}, eye, yaw, pitch, fov, "Pond · /fishing");
+                renderer.worldLabel({0, 3.5f, 106}, eye, yaw, pitch, fov, "Supplies · right-click");
+            }
+            Json heldItem = current().state["inventory_slots"][current().state["selected_hotbar_index"].asInt()];
+            int tier = current().state.get("parts_prestige", 0).asInt();
             if (heldItem.get("id", "") == "pickaxe") {
-                heldItem["enchanted"] = !game.state["enchants"].empty();
-                for (const auto& part : game.state["equipped_parts"])
+                heldItem["enchanted"] = !current().state["enchants"].empty();
+                for (const auto& part : current().state["equipped_parts"])
                     if (part.isObject())
                         tier = std::max(tier, part.get("tier", 1).asInt() - 1);
             }
