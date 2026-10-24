@@ -1,5 +1,4 @@
 #include "prison/world.hpp"
-#include "prison/professions.hpp"
 #include "prison/guardians.hpp"
 #include <array>
 #include <atomic>
@@ -11,6 +10,7 @@
 namespace prison {
 namespace {
 constexpr int ChunkSize = 5;
+constexpr float SceneryWidth = 20;
 constexpr std::uint32_t Missing = std::numeric_limits<std::uint32_t>::max();
 constexpr const char* Codes = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 constexpr Cell Neighbours[] = {{0, 0, 1}, {0, 0, -1}, {1, 0, 0}, {-1, 0, 0}, {0, 1, 0}, {0, -1, 0}};
@@ -51,7 +51,7 @@ void setAxis(Vec3& p, int i, float v) {
     else
         p.z = v;
 }
-void face(std::vector<Vertex>& vertices, Vec3 centre, int side, int tile) {
+void face(std::vector<Vertex>& vertices, Vec3 centre, int side, int tile, Vec3 size = {1, 1, 1}) {
     constexpr int triangles[] = {0, 1, 2, 0, 2, 3};
     constexpr float uv[4][2] = {{0, 1}, {1, 1}, {1, 0}, {0, 0}};
     // Half a texel inset avoids neighbouring tiles bleeding at the edge.
@@ -61,8 +61,31 @@ void face(std::vector<Vertex>& vertices, Vec3 centre, int side, int tile) {
         const float u =
             (tile % TerrainAtlasColumns + inset + uv[i][0] * (1 - 2 * inset)) / TerrainAtlasColumns;
         const float v = (tile / TerrainAtlasColumns + inset + uv[i][1] * (1 - 2 * inset)) / TerrainAtlasRows;
-        vertices.push_back({centre.x + p[0], centre.y + p[1], centre.z + p[2], u, v, Lights[side],
-                            Lights[side], Lights[side]});
+        const float light = tile == TerrainLampTile ? 1.f : Lights[side];
+        vertices.push_back({centre.x + p[0] * size.x, centre.y + p[1] * size.y,
+                            centre.z + p[2] * size.z, u, v, light, light, light});
+    }
+}
+void boxMesh(std::vector<Vertex>& vertices, Vec3 low, Vec3 high, int tile) {
+    // only the surfaces need vertices, including partial blocks at the entry platform.
+    for (int side = 0; side < 6; ++side) {
+        int faceTile = tile;
+        if (tile == TerrainTimberTile && side >= 4)
+            faceTile = TerrainTimberEndTile;
+        else if (tile == TerrainGrassTile && side != 4)
+            faceTile = side == 5 ? TerrainDirtTile : TerrainGrassSideTile;
+        const int a = side < 2 ? 0 : side < 4 ? 2 : 0;
+        const int b = side < 4 ? 1 : 2;
+        const Vec3 extent = high - low;
+        for (int v = 0; v < std::ceil(axis(extent, b)); ++v)
+            for (int u = 0; u < std::ceil(axis(extent, a)); ++u) {
+                Vec3 size = extent, centre = (low + high) * .5f;
+                setAxis(size, a, std::min(1.f, axis(extent, a) - u));
+                setAxis(size, b, std::min(1.f, axis(extent, b) - v));
+                setAxis(centre, a, axis(low, a) + u + axis(size, a) * .5f);
+                setAxis(centre, b, axis(low, b) + v + axis(size, b) * .5f);
+                face(vertices, centre, side, faceTile, size);
+            }
     }
 }
 bool integer(const Json& v, double low, double high) {
@@ -107,13 +130,14 @@ Mine::Mine(const Data& data) : data_(data) {
     resetDelay_ = std::clamp(data.mine.get("regen_delay", 10).asDouble(), 0.0, 30.0);
     resetRatio_ = std::clamp(data.balance.get("mine_auto_reset_ratio", .3).asDouble(), 0.0, 1.0);
     resize(mineBounds(data, 0));
+    buildShell();
 }
 
-void Mine::resize(const MineBounds& bounds) {
+bool Mine::resize(const MineBounds& bounds) {
     if (!cells_.empty() && bounds.minimum.x == minimum_.x && bounds.minimum.y == minimum_.y &&
         bounds.minimum.z == minimum_.z && bounds.maximum.x == maximum_.x && bounds.maximum.y == maximum_.y &&
         bounds.maximum.z == maximum_.z)
-        return;
+        return false;
     minimum_ = bounds.minimum;
     maximum_ = bounds.maximum;
     width_ = maximum_.x - minimum_.x + 1;
@@ -134,7 +158,7 @@ void Mine::resize(const MineBounds& bounds) {
     chunkZ_ = (depth_ + ChunkSize - 1) / ChunkSize;
     chunks_.resize(static_cast<std::size_t>(chunkX_) * chunkY_ * chunkZ_);
     dirtyFlags_.resize(chunks_.size(), false);
-    buildShell();
+    return true;
 }
 bool Mine::inside(Cell c) const {
     return c.x >= minimum_.x && c.x <= maximum_.x && c.y >= minimum_.y && c.y <= maximum_.y &&
@@ -209,7 +233,7 @@ void Mine::reset(int rank, std::int64_t prestige, std::uint64_t seed) {
 }
 
 void Mine::beginReset(int rank, std::int64_t prestige, std::uint64_t seed, const MineBounds& bounds) {
-    resize(bounds);
+    const bool resized = resize(bounds);
     const bool newTheme = themeName_.empty() || rank_ != rank ||
                           options_["region"] != nextOptions_["region"] ||
                           options_["shaft"] != nextOptions_["shaft"];
@@ -276,7 +300,11 @@ void Mine::beginReset(int rank, std::int64_t prestige, std::uint64_t seed, const
         }
         if (options_["shaft"].isObject())
             themeName_ = "Shaft " + options_["shaft"]["depth"].asString() + " · " + themeName_;
+        else
+            sky_ = {.10f + tint.r * .06f, .13f + tint.g * .06f, .18f + tint.b * .06f, 1};
     }
+    if (resized || newTheme)
+        buildShell();
     generateDiscoveries();
 }
 
@@ -429,66 +457,205 @@ void Mine::buildShell() {
     const float minX = minimum_.x - .5f, maxX = maximum_.x + .5f, minZ = minimum_.z - .5f,
                 maxZ = maximum_.z + .5f;
     const float bottom = minimum_.y - 1.5f, top = maximum_.y + 1.5f;
+    const float left = minX - 6, right = maxX + 6, back = minZ - 6, front = spawn_.z + 5.5f;
+    const bool shaft = options_["shaft"].isObject();
+    const int wallTile = shaft ? TerrainBedrockTile : TerrainMasonryTile;
     shell_ = {{{minX, bottom, minZ}, {maxX, bottom + 1, maxZ}},
-              {{minX - 1, bottom, minZ - 1}, {minX, top, maxZ + 1}},
-              {{maxX, bottom, minZ - 1}, {maxX + 1, top, maxZ + 1}},
-              {{minX, bottom, minZ - 1}, {maxX, top, minZ}},
-              {{minX, bottom, maxZ}, {maxX, top, maxZ + 1}},
-              {{spawn_.x - 2.5f, .5f, spawn_.z - 2.5f}, {spawn_.x + 2.5f, 1.5f, spawn_.z + 2.5f}},
-              {{spawn_.x - 2.5f, -.5f, maxZ + 1}, {spawn_.x + 2.5f, .5f, spawn_.z - 2.5f}}};
-    if (!options_["shaft"].isObject()) {
-        auto add = [&](Vec3 low, Vec3 high, int tile) { shell_.push_back({low, high, tile}); };
-        add({-2.5f, .5f, spawn_.z + 2.5f}, {2.5f, 1.5f, CourtyardStart}, TerrainPathTile);
-        add({-3.5f, 1.5f, spawn_.z + 2.5f}, {-2.5f, 2.5f, CourtyardStart}, TerrainWoodTile);
-        add({2.5f, 1.5f, spawn_.z + 2.5f}, {3.5f, 2.5f, CourtyardStart}, TerrainWoodTile);
-        add({-24, .5f, 72}, {-3, 1.5f, 80}, TerrainGrassTile);
-        add({3, .5f, 72}, {24, 1.5f, 80}, TerrainGrassTile);
-        add({-24, .5f, 80}, {-3, 1.5f, 103}, TerrainGrassTile);
-        add({3, .5f, 80}, {7, 1.5f, 84}, TerrainGrassTile);
-        add({3, .5f, 88}, {7, 1.5f, 103}, TerrainGrassTile);
-        add({22, .5f, 80}, {24, 1.5f, 103}, TerrainGrassTile);
-        add({-24, .5f, 103}, {-3, 1.5f, 112}, TerrainGrassTile);
-        add({3, .5f, 103}, {24, 1.5f, 112}, TerrainGrassTile);
-        add({-3, .5f, 108}, {3, 1.5f, 112}, TerrainGrassTile);
-        add({7, -.5f, 80}, {22, .5f, 103}, TerrainSoilTile);
-        add({-3, .5f, 72}, {3, 1.5f, 108}, TerrainPathTile);
-        add({3, .5f, 84}, {7, 1.5f, 88}, TerrainPathTile);
-        add({7, .5f, 84}, {12, 1.5f, 88}, TerrainWoodTile);
-        for (float x : {-24.f, 23.f})
-            add({x, 1.5f, 72}, {x + 1, 2.5f, 112}, TerrainWoodTile);
-        add({-24, 1.5f, 111}, {24, 2.5f, 112}, TerrainWoodTile);
-        add({-24, 1.5f, 72}, {-3, 2.5f, 73}, TerrainWoodTile);
-        add({3, 1.5f, 72}, {24, 2.5f, 73}, TerrainWoodTile);
-        for (Vec3 tree : {Vec3{-21, 1.5f, 76}, Vec3{-21, 1.5f, 108}, Vec3{20, 1.5f, 76}, Vec3{20, 1.5f, 108}}) {
-            add(tree, tree + Vec3{1, 4, 1}, TerrainWoodTile);
-            add(tree + Vec3{-1, 3, -1}, tree + Vec3{2, 6, 2}, TerrainLeafTile);
+              {{minX - 1, bottom, minZ - 1}, {minX, top, maxZ + 1}, wallTile},
+              {{maxX, bottom, minZ - 1}, {maxX + 1, top, maxZ + 1}, wallTile},
+              {{minX, bottom, minZ - 1}, {maxX, top, minZ}, wallTile},
+              {{minX, bottom, maxZ}, {maxX, top, maxZ + 1}, wallTile}};
+    auto add = [&](Vec3 low, Vec3 high, int tile) { shell_.push_back({low, high, tile}); };
+    walkMinimum_ = {left + 1, bottom + 1, back + 1};
+    walkMaximum_ = {right - 1, top + 50, front - 1};
+    if (shaft) {
+        add({left, -.5f, back}, {minX - 1, .5f, front}, TerrainBedrockTile);
+        add({maxX + 1, -.5f, back}, {right, .5f, front}, TerrainBedrockTile);
+        add({minX - 1, -.5f, back}, {maxX + 1, .5f, minZ - 1}, TerrainBedrockTile);
+        add({minX - 1, -.5f, maxZ + 1}, {maxX + 1, .5f, front}, TerrainBedrockTile);
+        add({spawn_.x - 2.5f, .5f, spawn_.z - 2.5f},
+            {spawn_.x + 2.5f, 1.5f, spawn_.z + 2.5f}, TerrainBedrockTile);
+        add({left, .5f, back}, {left + 1, 3.5f, front}, TerrainBedrockTile);
+        add({right - 1, .5f, back}, {right, 3.5f, front}, TerrainBedrockTile);
+        add({left + 1, .5f, back}, {right - 1, 3.5f, back + 1}, TerrainBedrockTile);
+        add({left + 1, .5f, front - 1}, {right - 1, 3.5f, front}, TerrainBedrockTile);
+    } else {
+        const float centre = spawn_.x;
+        add({left, -.5f, back}, {minX - 1, 1.5f, front}, TerrainPavingTile);
+        add({maxX + 1, -.5f, back}, {right, 1.5f, front}, TerrainPavingTile);
+        add({minX - 1, -.5f, back}, {maxX + 1, 1.5f, minZ - 1}, TerrainPavingTile);
+        add({minX - 1, -.5f, maxZ + 1}, {centre - 3, 1.5f, front}, TerrainPavingTile);
+        add({centre + 3, -.5f, maxZ + 1}, {maxX + 1, 1.5f, front}, TerrainPavingTile);
+        add({centre - 3, -.5f, maxZ + 3}, {centre + 3, 1.5f, front}, TerrainPavingTile);
+        add({centre - 3, -.5f, maxZ + 1}, {centre + 3, .5f, maxZ + 2}, TerrainTrimTile);
+        add({centre - 3, -.5f, maxZ + 2}, {centre + 3, 1, maxZ + 3}, TerrainTrimTile);
+
+        add({left, 1.5f, back}, {left + .75f, 2.5f, front}, TerrainMasonryTile);
+        add({right - .75f, 1.5f, back}, {right, 2.5f, front}, TerrainMasonryTile);
+        add({left + .75f, 1.5f, back}, {right - .75f, 2.5f, back + .75f}, TerrainMasonryTile);
+        add({left + .75f, 1.5f, front - .75f}, {right - .75f, 2.5f, front}, TerrainMasonryTile);
+        for (float y : {2.6f, 3.2f}) {
+            for (float x : {left + .25f, right - .5f})
+                add({x, y, back + .5f}, {x + .25f, y + .2f, front - .5f}, TerrainMetalTile);
+            for (float z : {back + .25f, front - .5f})
+                add({left + .5f, y, z}, {right - .5f, y + .2f, z + .25f}, TerrainMetalTile);
         }
-        add({-2, 1.5f, 106}, {2, 2.5f, 108}, TerrainWoodTile);
+        auto lamp = [&](float x, float z) {
+            add({x - .5f, 1.5f, z - .5f}, {x + .5f, 2, z + .5f}, TerrainTrimTile);
+            add({x - .25f, 2, z - .25f}, {x + .25f, 4, z + .25f}, TerrainMetalTile);
+            add({x - .45f, 4, z - .45f}, {x + .45f, 4.8f, z + .45f}, TerrainLampTile);
+            add({x - .6f, 4.8f, z - .6f}, {x + .6f, 5, z + .6f}, TerrainMetalTile);
+        };
+        const int sideBays = std::max(2, int(std::ceil((front - back - 2) / 8)));
+        for (int i = 0; i <= sideBays; ++i) {
+            const float z = back + 1 + (front - back - 2) * i / sideBays;
+            lamp(left + 1, z);
+            lamp(right - 1, z);
+        }
+        const int endBays = std::max(2, int(std::ceil((right - left - 2) / 8)));
+        for (int i = 1; i < endBays; ++i) {
+            const float x = left + 1 + (right - left - 2) * i / endBays;
+            lamp(x, back + 1);
+            lamp(x, front - 1);
+        }
+
+        auto support = [&](float x, float z) {
+            add({x - .5f, 1.5f, z - .5f}, {x + .5f, 5.5f, z + .5f}, TerrainTimberTile);
+            add({x - .6f, 1.5f, z - .6f}, {x + .6f, 2, z + .6f}, TerrainMetalTile);
+        };
+        const int supports = std::max(2, int(std::ceil((maxZ - minZ + 3) / 9)));
+        for (float x : {minX - 1.5f, maxX + 1.5f}) {
+            for (int i = 0; i <= supports; ++i)
+                support(x, minZ - 1.5f + (maxZ - minZ + 3) * i / supports);
+            add({x - .5f, 5.5f, minZ - 2}, {x + .5f, 6, maxZ + 2}, TerrainTimberTile);
+        }
+        add({minX - 2, 5.5f, minZ - 2}, {maxX + 2, 6, minZ - 1}, TerrainTimberTile);
+        const int backSupports = std::max(2, int(std::ceil((maxX - minX + 3) / 9)));
+        for (int i = 1; i < backSupports; ++i)
+            support(minX - 1.5f + (maxX - minX + 3) * i / backSupports, minZ - 1.5f);
+        for (float x : {centre - 4, centre + 4}) {
+            add({x - .5f, 1.5f, maxZ + 3}, {x + .5f, 6, maxZ + 4}, TerrainTimberTile);
+            add({x - .55f, 1.5f, maxZ + 2.95f}, {x + .55f, 2, maxZ + 4.05f}, TerrainMetalTile);
+            add({x - .4f, 3.5f, maxZ + 4}, {x + .4f, 5, maxZ + 4.15f}, smooth_ - 1);
+        }
+        add({centre - 5, 6, maxZ + 3}, {centre + 5, 6.75f, maxZ + 4}, TerrainTimberTile);
+
+        for (float x : {centre - 8, right - 3}) {
+            add({x - 1, 1.5f, spawn_.z + 1}, {x + 1, 3, spawn_.z + 3}, TerrainTimberTile);
+            add({x - 1.05f, 2.1f, spawn_.z + .95f},
+                {x + 1.05f, 2.3f, spawn_.z + 3.05f}, TerrainMetalTile);
+            add({x - .5f, 3, spawn_.z + 1.5f}, {x + .5f, 4, spawn_.z + 2.5f}, TerrainTimberTile);
+        }
+        for (float x : {centre - 12.5f, centre - 6})
+            for (float z : {spawn_.z, spawn_.z + 3})
+                add({x - .2f, 1.5f, z - .2f}, {x + .2f, 4.8f, z + .2f}, TerrainTimberTile);
+        for (int row = 0; row < 3; ++row) {
+            const float z = spawn_.z - .5f + row * 1.4f;
+            const float y = row == 1 ? 5.15f : 4.8f;
+            add({centre - 13, y, z}, {centre - 5.5f, y + .35f, z + 1.4f}, TerrainTimberTile);
+        }
+        for (float x : {centre - 11.8f, centre - 10.2f})
+            add({x - .2f, 1.5f, spawn_.z + 1}, {x + .2f, 2.6f, spawn_.z + 2.5f}, TerrainTimberTile);
+        add({centre - 12.2f, 2.6f, spawn_.z + .8f},
+            {centre - 9.8f, 2.9f, spawn_.z + 2.7f}, TerrainTimberTile);
+        add({centre - 11.5f, 2.9f, spawn_.z + 1.2f},
+            {centre - 10.5f, 3.25f, spawn_.z + 2}, TerrainMetalTile);
+
+        const float trackLeft = centre + 6, trackRight = right - 3, trackZ = maxZ + 3.5f;
+        for (float x = trackLeft; x < trackRight; x += 1.5f)
+            add({x, 1.5f, trackZ - 1.2f}, {x + .35f, 1.65f, trackZ + 1.2f}, TerrainTimberTile);
+        for (float z : {trackZ - .8f, trackZ + .8f})
+            add({trackLeft, 1.65f, z - .08f}, {trackRight, 1.85f, z + .08f}, TerrainMetalTile);
+        const float cartX = centre + 10;
+        for (float x : {cartX - .85f, cartX + .85f})
+            for (float z : {trackZ - .9f, trackZ + .9f})
+                add({x - .3f, 1.8f, z - .18f}, {x + .3f, 2.4f, z + .18f}, TerrainMetalTile);
+        add({cartX - 1.4f, 2.3f, trackZ - 1}, {cartX + 1.4f, 3.2f, trackZ + 1}, TerrainMetalTile);
+        add({cartX - 1.1f, 3.2f, trackZ - .7f}, {cartX + 1.1f, 3.5f, trackZ + .7f}, ore_ - 1);
+        add({cartX - .6f, 3.5f, trackZ - .4f}, {cartX + .3f, 4, trackZ + .5f}, ore_ - 1);
+        buildScenery(left, right, back, front);
     }
     shellMesh_.vertices.clear();
-    for (const auto& box : shell_) {
-        const int sx = static_cast<int>(std::round(box.high.x - box.low.x));
-        const int sy = static_cast<int>(std::round(box.high.y - box.low.y));
-        const int sz = static_cast<int>(std::round(box.high.z - box.low.z));
-        for (int y = 0; y < sy; ++y)
-            for (int z = 0; z < sz; ++z)
-                for (int x = 0; x < sx; ++x) {
-                    const Vec3 c = {box.low.x + x + .5f, box.low.y + y + .5f, box.low.z + z + .5f};
-                    if (z == sz - 1)
-                        face(shellMesh_.vertices, c, 0, box.tile);
-                    if (z == 0)
-                        face(shellMesh_.vertices, c, 1, box.tile);
-                    if (x == sx - 1)
-                        face(shellMesh_.vertices, c, 2, box.tile);
-                    if (x == 0)
-                        face(shellMesh_.vertices, c, 3, box.tile);
-                    if (y == sy - 1)
-                        face(shellMesh_.vertices, c, 4, box.tile);
-                    if (y == 0)
-                        face(shellMesh_.vertices, c, 5, box.tile);
-                }
-    }
+    for (const auto& box : shell_)
+        boxMesh(shellMesh_.vertices, box.low, box.high, box.tile);
     shellMesh_.revision = nextMeshRevision();
+}
+void Mine::buildScenery(float left, float right, float back, float front) {
+    auto add = [&](Vec3 low, Vec3 high, int tile) { shell_.push_back({low, high, tile}); };
+    const float outerLeft = left - SceneryWidth, outerRight = right + SceneryWidth;
+    const float outerBack = back - SceneryWidth, outerFront = front + SceneryWidth;
+    walkMinimum_.x = outerLeft + 1;
+    walkMinimum_.z = outerBack + 1;
+    walkMaximum_.x = outerRight - 1;
+    walkMaximum_.z = outerFront - 1;
+    auto ground = [&](float x1, float z1, float x2, float z2) {
+        add({x1, -3.5f, z1}, {x2, -.5f, z2}, TerrainDirtTile);
+        add({x1, -.5f, z1}, {x2, .5f, z2}, TerrainGrassTile);
+    };
+    ground(outerLeft, outerBack, left, outerFront);
+    ground(right, outerBack, outerRight, outerFront);
+    ground(left, outerBack, right, back);
+    ground(left, front, right, outerFront);
+
+    add({outerLeft, -3.5f, outerBack}, {outerLeft + 1, 3.5f, outerFront}, TerrainRockTile);
+    add({outerRight - 1, -3.5f, outerBack}, {outerRight, 3.5f, outerFront}, TerrainRockTile);
+    add({outerLeft + 1, -3.5f, outerBack}, {outerRight - 1, 3.5f, outerBack + 1}, TerrainRockTile);
+    add({outerLeft + 1, -3.5f, outerFront - 1}, {outerRight - 1, 3.5f, outerFront}, TerrainRockTile);
+
+    auto pine = [&](float x, float y, float z, float height) {
+        add({x - .35f, y, z - .35f}, {x + .35f, y + height - 1, z + .35f}, TerrainTimberTile);
+        for (int layer = 0; layer < 4; ++layer) {
+            const float half = 2.6f - layer * .6f;
+            const float low = y + height - 6 + layer * 1.5f;
+            add({x - half, low, z - half}, {x + half, low + 1.6f, z + half}, TerrainLeavesTile);
+        }
+    };
+    auto outcrop = [&](float x, float z, float width, float height) {
+        add({x - width, .5f, z - width}, {x + width, height * .45f, z + width}, TerrainRockTile);
+        add({x - width * .8f, height * .45f, z - width * .85f},
+            {x + width * .7f, height * .8f, z + width * .7f}, TerrainRockTile);
+        add({x - width * .55f, height * .8f, z - width * .55f},
+            {x + width * .4f, height, z + width * .4f}, TerrainRockTile);
+        add({x - width * .55f, height, z - width * .55f},
+            {x + width * .4f, height + .2f, z + width * .4f}, TerrainGrassTile);
+    };
+    const int backBays = int(std::ceil((right - left + 20) / 9));
+    for (int i = 0; i <= backBays; ++i) {
+        const float x = left - 10 + (right - left + 20) * i / backBays;
+        const float height = 7 + random(230 + i) * 6;
+        outcrop(x, back - 12, 4.5f + random(450 + i) * 1.5f, height);
+        if (i % 2 == 0)
+            pine(x - .5f, height + .2f, back - 12.5f, 7 + random(690 + i) * 3);
+        else
+            pine(x + 1, .5f, back - 4, 8 + random(810 + i) * 3);
+        outcrop(x, front + 12, 3 + random(940 + i), 3 + random(1060 + i) * 3);
+        if (i % 2 == 0)
+            pine(x, .5f, front + 6, 8 + random(1180 + i) * 3);
+    }
+    const int sideBays = int(std::ceil((front - back - 12) / 10));
+    for (int side = 0; side < 2; ++side) {
+        const float edge = side == 0 ? left : right;
+        const float direction = side == 0 ? -1.f : 1.f;
+        for (int i = 0; i <= sideBays; ++i) {
+            const int seed = 1400 + side * 100 + i;
+            const float z = back + 6 + (front - back - 12) * i / sideBays;
+            outcrop(edge + direction * 12, z, 4 + random(seed + 200) * 2, 4 + random(seed) * 5);
+            pine(edge + direction * (4 + random(seed + 400) * 2), .5f, z + 1,
+                 8 + random(seed + 600) * 4);
+            add({edge + direction * 3 - 1, .5f, z - 3.5f},
+                {edge + direction * 3 + 1, 2, z - 1.5f}, TerrainLeavesTile);
+        }
+    }
+    for (float x : {left - 5, right + 5}) {
+        add({x - 2.4f, .5f, front - 5}, {x + 2.4f, .75f, front - 2}, TerrainTimberTile);
+        for (int layer = 0; layer < 2; ++layer)
+            for (int row = 0; row < 3 - layer; ++row) {
+                const float z = front - 4.7f + row * .9f + layer * .45f;
+                const float y = .75f + layer * .8f;
+                add({x - 2, y, z}, {x + 2, y + .75f, z + .75f}, TerrainTimberTile);
+            }
+        outcrop(x, back + 3, 1.8f, 2.8f);
+    }
 }
 void Mine::setGuardian(const Json& guardian) {
     guardianBoxes_.clear();
@@ -575,6 +742,42 @@ Hit Mine::raycast(Vec3 origin, Vec3 direction, float reach) const {
         return hit;
     direction = direction * (1 / length);
     reach = std::min(reach, 512.0f);
+    Hit scenery;
+    auto intersect = [&](const Box& box) {
+        float near = 0, far = reach;
+        Vec3 normal{};
+        for (int a = 0; a < 3; ++a) {
+            const float d = axis(direction, a), p = axis(origin, a);
+            if (std::abs(d) < 1e-6f) {
+                if (p < axis(box.low, a) || p > axis(box.high, a))
+                    return;
+                continue;
+            }
+            float entry = (axis(box.low, a) - p) / d, exit = (axis(box.high, a) - p) / d;
+            if (entry > exit)
+                std::swap(entry, exit);
+            if (entry > near) {
+                near = entry;
+                normal = {};
+                setAxis(normal, a, d > 0 ? -1.f : 1.f);
+            }
+            far = std::min(far, exit);
+            if (near > far)
+                return;
+        }
+        if (near <= reach) {
+            scenery.hit = true;
+            scenery.distance = near;
+            scenery.normal = normal;
+            scenery.point = origin + direction * near;
+            scenery.cell = rounded(scenery.point);
+            reach = near;
+        }
+    };
+    for (const auto& box : shell_)
+        intersect(box);
+    for (const auto& box : guardianBoxes_)
+        intersect(box);
     Cell cell = rounded(origin);
     float travelled = 0;
     Vec3 normal{};
@@ -589,7 +792,7 @@ Hit Mine::raycast(Vec3 origin, Vec3 direction, float reach) const {
         tMax[a] = step[a] ? (initial[a] + (step[a] > 0 ? .5f : -.5f) - axis(origin, a)) / d : infinity;
     }
     for (int iteration = 0; iteration < 1538 && travelled <= reach; ++iteration) {
-        if (solid(cell)) {
+        if (code(cell)) {
             hit.hit = true;
             hit.cell = cell;
             hit.point = origin + direction * travelled;
@@ -611,7 +814,7 @@ Hit Mine::raycast(Vec3 origin, Vec3 direction, float reach) const {
         else
             cell.z += step[a];
     }
-    return hit;
+    return scenery;
 }
 bool Mine::collisionBox(const Box& b) const {
     auto overlaps = [&](const Box& o) {
@@ -633,18 +836,25 @@ bool Mine::collisionBox(const Box& b) const {
                     return true;
     return false;
 }
-MoveResult Mine::movePlayer(Vec3 feet, Vec3 delta, float radius, float height) const {
+Vec3 Mine::confinePlayer(Vec3 feet, float radius) const {
     if (!std::isfinite(feet.x) || !std::isfinite(feet.y) || !std::isfinite(feet.z) ||
         std::abs(feet.x) > 10000 || std::abs(feet.y) > 10000 || std::abs(feet.z) > 10000)
-        return {spawn_, false};
+        return spawn_;
+    radius = std::clamp(radius, .1f, 1.0f);
+    feet.x = std::clamp(feet.x, walkMinimum_.x + radius, walkMaximum_.x - radius);
+    feet.z = std::clamp(feet.z, walkMinimum_.z + radius, walkMaximum_.z - radius);
+    feet.y = std::max(feet.y, walkMinimum_.y);
+    return feet;
+}
+MoveResult Mine::movePlayer(Vec3 feet, Vec3 delta, float radius, float height) const {
+    feet = confinePlayer(feet, radius);
     if (!std::isfinite(delta.x) || !std::isfinite(delta.y) || !std::isfinite(delta.z))
         return {feet, false};
     radius = std::clamp(radius, .1f, 1.0f);
     height = std::clamp(height, .2f, 3.0f);
     MoveResult result{feet, false};
     constexpr float epsilon = .0001f;
-    // Sweep each axis against occupied voxels and the seven static arena boxes.
-    // This prevents tunnelling even when a frame is delayed.
+    // sweep against both terrain and scenery to prevent tunnelling during delayed frames.
     for (int a = 0; a < 3; ++a) {
         const float wanted = std::clamp(axis(delta, a), -128.0f, 128.0f);
         if (wanted == 0)
@@ -681,6 +891,11 @@ MoveResult Mine::movePlayer(Vec3 feet, Vec3 delta, float radius, float height) c
         if (a == 1 && wanted < 0 && allowed > wanted + epsilon)
             result.grounded = true;
     }
+    // the boundary also applies above the walls, including jumps from tree tops.
+    const Vec3 confined = confinePlayer(result.position, radius);
+    if (confined.y > result.position.y)
+        result.grounded = true;
+    result.position = confined;
     if (!result.grounded)
         result.grounded = collisionBox({{result.position.x - radius + epsilon, result.position.y - .015f,
                                          result.position.z - radius + epsilon},

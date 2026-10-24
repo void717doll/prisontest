@@ -38,7 +38,7 @@ UI::Impl::Impl(Game& g, Renderer& r, UiContext& c) : game(g), draw(r), ctx(c) {
 }
 
 void UI::Impl::action(const std::string& kind, const std::string& value) {
-    ctx.actions.push_back({kind, value, game.data.profession});
+    ctx.actions.push_back({kind, value});
 }
 
 void UI::Impl::settingsChanged() {
@@ -54,14 +54,7 @@ void UI::Impl::setPage(const std::string& name) {
         game.tutorialAction("skip");
         action("save");
     }
-    if (page == "activity_intro" && name.empty())
-        game.state["activity"]["introduced"] = true;
     page = name;
-    if (page == "tutorial" && game.data.profession != "mining")
-        page = "activity_intro";
-    if (page.empty() && ctx.playing && game.data.profession != "mining" &&
-        game.state["activity"]["introduced"] != true)
-        page = "activity_intro";
     if (page.empty() && ctx.playing && game.state["tutorial"].get("status", "") == "new")
         page = "tutorial";
     if (page == "inventory")
@@ -158,9 +151,7 @@ void UI::Impl::apply(const Result& result) {
     if (!result.message.empty()) {
         ctx.say(result.message, result.ok ? Color{.55f, 1, .55f, 1} : Color{1, .6f, .5f, 1});
     }
-    if (result.menu.rfind("profession:", 0) == 0) {
-        action("profession", result.menu.substr(11));
-    } else if (result.menu == "tutorial:close" || result.menu == "activity:close") {
+    if (result.menu == "tutorial:close") {
         action("save");
         setPage("");
     } else if (result.menu == "rename:preview") {
@@ -184,7 +175,7 @@ void UI::Impl::apply(const Result& result) {
         setPage("");
     } else if (!result.menu.empty())
         setPage(result.menu);
-    if (result.resetMine && game.data.profession == "mining")
+    if (result.resetMine)
         action("reset");
 }
 
@@ -425,12 +416,6 @@ void UI::Impl::paint() {
         robots();
     else if (page == "inventory" || page == "vault" || page.rfind("pouch:", 0) == 0)
         storage();
-    else if (page == "professions")
-        professions();
-    else if (page == "supplies")
-        supplies();
-    else if (page == "activity_intro")
-        activityIntro();
     else if (page == "more")
         more();
     else if (page == "mines")
@@ -480,10 +465,6 @@ void UI::Impl::paint() {
 UI::UI(Game& game, Renderer& renderer, UiContext& context)
     : p(std::make_unique<Impl>(game, renderer, context)) {}
 UI::~UI() = default;
-void UI::bind(Game& game) {
-    auto next = std::make_unique<Impl>(game, p->draw, p->ctx);
-    p = std::move(next);
-}
 void UI::event(const SDL_Event& event) {
     p->event(event);
 }

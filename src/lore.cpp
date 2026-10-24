@@ -146,24 +146,9 @@ LoreLine currencyText(const Data& data, const std::string& text, Color foregroun
             currency = "rubies";
         else if (word.key == "sapphire" || word.key == "sapphires")
             currency = "sapphires";
-        else {
-            for (const auto& wallet : data.systems["currencies"].getMemberNames()) {
-                std::string label = data.systems["currencies"][wallet]["label"].asString();
-                std::transform(label.begin(), label.end(), label.begin(),
-                               [](unsigned char c) { return std::tolower(c); });
-                const auto space = label.rfind(' ');
-                if (word.key == label.substr(space == std::string::npos ? 0 : space + 1))
-                    currency = wallet;
-            }
-            if (currency.empty())
-                continue;
-        }
+        else
+            continue;
         word.currency = currency;
-        if (i > 0 && words[i - 1].key == data.profession) {
-            words[i - 1].currency = currency;
-            if (i > 1 && amount(words[i - 2].key))
-                words[i - 2].currency = currency;
-        }
         if (i + 1 < words.size() && words[i + 1].key == "greed") {
             words[i + 1].currency = currency;
             if (i + 2 < words.size() && amount(words[i + 2].key))

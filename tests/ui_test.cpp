@@ -827,6 +827,8 @@ void rendererChecks(Fixture& f) {
         auto culled = f.readPixels();
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         // draw every face with the same camera as an independent visibility reference.
+        glEnable(GL_ALPHA_TEST);
+        glAlphaFunc(GL_GREATER, .5f);
         glBegin(GL_TRIANGLES);
         auto draw = [](const ChunkMesh& mesh) {
             for (const auto& vertex : mesh.vertices) {
@@ -839,6 +841,7 @@ void rendererChecks(Fixture& f) {
         for (const auto& chunk : source.chunks())
             draw(chunk);
         glEnd();
+        glDisable(GL_ALPHA_TEST);
         check(culled == f.readPixels(), "terrain culling removed a visible face");
     };
     compareTerrain(mine, {0, 3, 18}, 0, -.3f, 72);

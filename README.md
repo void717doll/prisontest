@@ -2,8 +2,7 @@
 
 a singleplayer prison mining game. mine blocks, sell what you collect, upgrade
 your pickaxe and work through ranks and prestiges. pets, robots, crystals and
-bosses give you more to work towards. fishing and farming have their own tools,
-wallets and upgrades in a courtyard beside the mine.
+bosses give you more to work towards.
 
 this is the standalone C++ client, built with SDL2 and OpenGL.
 [downloads](https://github.com/prisontest/prisontest-client/releases) are kept
@@ -50,16 +49,9 @@ or `$XDG_DATA_HOME/prisoncpp/` when set. windows uses
 ## playing
 
 use WASD to move, left click to mine and right click to use an item.
-E opens your inventory, M opens your current tool, and T or / opens chat.
+E opens your inventory, M opens your pickaxe, and T or / opens chat.
 type `/help` for commands and game systems. new worlds start with a tutorial
 that can be skipped.
-
-`/professions` switches between mining, fishing and farming. each keeps its own
-currencies, ranks, enchants, parts, crystals and storage. `/fishing` takes you
-to the pond; `/farming` takes you to the plots. right click to cast or reel a rod,
-plant or harvest with a hoe, or water with a watering can. `/supplies` buys bait
-and seeds, sells produce and expands the farm. crops grow while playing any
-profession and keep their progress on save; they do not grow offline.
 
 ## development
 

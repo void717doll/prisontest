@@ -41,7 +41,7 @@ def unique(rows, key, label):
 def check(root):
     textures = root / "textures"
     tables = {}
-    for name in ("balance", "blocks", "crystals", "enchants", "help", "mine", "ranks", "source_systems", "native_economy", "native_content", "professions"):
+    for name in ("balance", "blocks", "crystals", "enchants", "help", "mine", "ranks", "source_systems", "native_economy", "native_content"):
         path = root / "data" / (name + ".json")
         require(path.stat().st_size <= 4 * 1024 * 1024, f"{name}: file too large")
         tables[name] = json.loads(path.read_text(encoding="utf-8"), object_pairs_hook=object_pairs,
@@ -323,32 +323,6 @@ def check(root):
         else:
             require(numeric(loot["food_value"], 1), "expeditions: invalid food")
 
-    for name in ("fishing", "farming"):
-        activity = tables["professions"][name]
-        require(set(activity["currencies"]) == {"money", "tokens", "rubies", "sapphires"}, f"{name}: invalid currencies")
-        require(len(activity["order"]) == len(set(activity["order"])), f"{name}: duplicate enchant")
-        for wallet in activity["currencies"].values():
-            require(re.fullmatch(r"#[0-9a-fA-F]{6}", wallet["color"]), f"{name}: invalid currency color")
-        for key in activity["order"]:
-            definition = dict(enchants["defs"].get(key, enchants["defs"]["fortune"]))
-            definition.update(activity["enchants"].get(key, {}))
-            require(definition.get("currency", "tokens") in activity["currencies"], f"{name}: unknown enchant wallet")
-            require(numeric(definition["base_cost"], 1), f"{name}: invalid enchant price")
-        rows = activity["fish" if name == "fishing" else "crops"]
-        unique(rows, "id", name)
-        for row in rows:
-            for key in ("level", "value", "xp"):
-                require(numeric(row[key], 1), f"{name}: invalid {key}")
-            if name == "fishing":
-                require(numeric(row["weight"], 1) and 1 <= row["min_cm"] <= row["max_cm"] <= 1000, "fish: invalid size or weight")
-            else:
-                require(numeric(row["seconds"], 1) and numeric(row["seed_price"], 1) and 1 <= row["yield"] <= 99, "crop: invalid growth or yield")
-        if name == "farming":
-            require(len(activity["plot_costs"]) == len(activity["plot_levels"]) == 2, "farm: expected two expansions")
-            require(all(numeric(cost, 1) for cost in activity["plot_costs"]), "farm: invalid expansion cost")
-        else:
-            require(numeric(activity["bait_price"], 1) and 1 <= activity["bait_batch"] <= 100, "fish: invalid bait supply")
-
     help_data = tables["help"]
     require(help_data["version"] == 1, "help: unsupported version")
     pages = [page for section in help_data["sections"] for page in section["pages"]]
@@ -360,7 +334,7 @@ def check(root):
                 and all(isinstance(line, str) and line for line in page["body"]), "help: invalid body")
     for command in help_data["commands"]:
         require(command.get("category") in {"Mining", "Ranks & Prestige", "Pickaxe", "Pets & Robots",
-                                             "Items & Storage", "Settings & Chat", "Devmode", "Professions"},
+                                             "Items & Storage", "Settings & Chat", "Devmode"},
                 "help: missing command category")
         require(isinstance(command["description"], str) and command["description"], "help: missing description")
         usage = command.get("usage", "/" + command["command"])

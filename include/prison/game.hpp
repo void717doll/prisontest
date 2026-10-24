@@ -17,16 +17,6 @@ class Game {
     void newWorld(bool devmode = false);
     void loadSnapshot(const Json& snapshot);
     Json snapshot() const;
-    std::string toolName() const;
-    bool ownsItem(const Json& item) const;
-    bool giveDrop(Json item, bool automatic = false);
-    void loadActivity();
-    void tickActivity(double seconds);
-    Result activityAction(const std::string& action, const std::string& value = "");
-    Result castFishing(Vec3 point);
-    Result tendPlot(int index, bool water);
-    double cropProgress(int index) const;
-    void awardActivity(double value, double experience, int count);
     Json captureRewardContext() const;
     MiningReward mineBlock(const std::string& blockId, bool allowProcs = true, bool manual = true,
                            const std::string& source = "manual", const Json& context = Json());
@@ -118,7 +108,6 @@ class Game {
     std::vector<std::string> itemLore(const Json& item) const;
 
   private:
-    Result itemActionImpl(const std::string& action, const Json& args);
     Result developmentCommand(const std::string& name, const std::vector<std::string>& args);
     Result configureFilter(const std::string& action, const Json& args);
     double autominerElapsed_ = 0;

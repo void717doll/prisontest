@@ -18,7 +18,7 @@ add_library(prison_core
     src/common.cpp src/game.cpp src/items.cpp src/inventory.cpp src/filter.cpp
     src/commands.cpp src/development.cpp src/tutorial.cpp
     src/save.cpp src/world.cpp src/bombs.cpp src/rewards.cpp src/lore.cpp src/progression.cpp src/shaft.cpp
-    src/endgame.cpp src/equipment_bonuses.cpp src/guardians.cpp src/professions.cpp src/activities.cpp)
+    src/endgame.cpp src/equipment_bonuses.cpp src/guardians.cpp)
 target_include_directories(prison_core PUBLIC include)
 target_link_libraries(prison_core PUBLIC PkgConfig::JSONCPP Threads::Threads)
 target_compile_options(prison_core PRIVATE -Wall -Wextra -Wpedantic)
@@ -46,7 +46,7 @@ if(PRISON_CLIENT)
     find_package(Freetype REQUIRED)
     pkg_check_modules(CURL REQUIRED IMPORTED_TARGET libcurl>=7.62)
     set(PRISON_UI_SOURCES
-        src/ui.cpp src/ui_menus.cpp src/ui_development.cpp src/ui_hud.cpp src/ui_input.cpp src/ui_tutorial.cpp src/ui_professions.cpp)
+        src/ui.cpp src/ui_menus.cpp src/ui_development.cpp src/ui_hud.cpp src/ui_input.cpp src/ui_tutorial.cpp)
     if(BUILD_TESTING)
         add_executable(help_test tests/help_test.cpp src/help.cpp)
         target_link_libraries(help_test PRIVATE prison_core PkgConfig::CURL)

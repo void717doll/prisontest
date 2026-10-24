@@ -2,7 +2,6 @@
 #include "prison/game.hpp"
 #include <cctype>
 #include <map>
-#include <set>
 #include <sstream>
 
 namespace prison {
@@ -79,8 +78,7 @@ const std::map<std::string, std::string> aliases = {{"sc", "scoreboard"},
                                                     {"grantbag", "givepouch"},
                                                     {"givebag", "givepouch"},
                                                     {"picklvl", "picklevel"}};
-const std::map<std::string, std::string> menus = {{"inventory", "inventory"}, {"professions", "professions"}, {"supplies", "supplies"},
-                                                  {"rod", "pick"}, {"hoe", "pick"}, {"tool", "pick"},
+const std::map<std::string, std::string> menus = {{"inventory", "inventory"},
                                                   {"robots", "robots"},
                                                   {"mines", "mines"},
                                                   {"mineupgrades", "mine_upgrades"},
@@ -125,21 +123,6 @@ Result Game::command(const std::string& input) {
         args.push_back(word);
     if (name.empty())
         return error("Type /help for commands.");
-    if (name == "mining" || name == "fishing" || name == "farming") {
-        if (!args.empty())
-            return error("Usage: /" + name);
-        return {true, "", "profession:" + name};
-    }
-    if (data.profession != "mining") {
-        static const std::set<std::string> miningOnly = {
-            "robots", "mines", "mineupgrades", "shaft", "contracts", "expeditions", "autominer",
-            "pets", "hatchery", "guardian", "rewards", "pointshop", "petmerge", "resetmine", "rebirth"
-        };
-        if (miningOnly.count(name))
-            return error("Switch to /mining to use /" + name + ".");
-        if (name == "tutorial")
-            return !args.empty() && args[0] == "skip" ? activityAction("skip") : Result{true, "", "activity_intro"};
-    }
     if (name == "tutorial") {
         if (args.size() > 1)
             return error("Usage: /tutorial [start|skip|restart]");
@@ -190,10 +173,10 @@ Result Game::command(const std::string& input) {
     if (name == "balance") {
         if (!args.empty())
             return error("Usage: /balance");
-        return ok(currencyName("money") + ": " + compact(state.get("money", 0).asDouble()) +
-                  " | " + currencyName("tokens") + ": " + compact(state.get("tokens", 0).asDouble()) +
-                  " | " + currencyName("rubies") + ": " + compact(state.get("rubies", 0).asDouble()) +
-                  " | " + currencyName("sapphires") + ": " + compact(state.get("sapphires", 0).asDouble()) +
+        return ok("Money: " + compact(state.get("money", 0).asDouble()) +
+                  " | Tokens: " + compact(state.get("tokens", 0).asDouble()) +
+                  " | Rubys: " + compact(state.get("rubies", 0).asDouble()) +
+                  " | Sapphires: " + compact(state.get("sapphires", 0).asDouble()) +
                   " | Points: " + compact(state.get("points", 0).asDouble()));
     }
     if (name == "rank") {

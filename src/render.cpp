@@ -1,5 +1,4 @@
 #include "prison/render.hpp"
-#include "prison/professions.hpp"
 #include "prison/guardians.hpp"
 #include "prison/world.hpp"
 #include <SDL_opengl.h>
@@ -124,26 +123,6 @@ void tint(Image& i, Color c, float amount, bool neutralOnly = false) {
             i.pixels[p + k] = static_cast<unsigned char>(i.pixels[p + k] * (1 - amount) + v * 255 * amount);
         }
     }
-}
-void drawBox(const GuardianPart& part, Color tint) {
-        const float low[] = {part.low.x, part.low.y, part.low.z};
-        const float high[] = {part.high.x, part.high.y, part.high.z};
-        for (int axis = 0; axis < 3; ++axis)
-            for (int side = 0; side < 2; ++side) {
-                const float shade = axis == 1 ? (side ? 1.f : .55f) : axis == 0 ? .75f : .9f;
-                color({tint.r * shade, tint.g * shade, tint.b * shade, tint.a});
-                for (int i = 0; i < 4; ++i) {
-                    float vertex[] = {low[0], low[1], low[2]};
-                    vertex[axis] = side ? high[axis] : low[axis];
-                    const int u = (axis + 1) % 3, v = (axis + 2) % 3;
-                    if (i == 1 || i == 2)
-                        vertex[u] = high[u];
-                    if (i >= 2)
-                        vertex[v] = high[v];
-                    glTexCoord2f(i == 1 || i == 2 ? 1 : 0, i >= 2 ? 1 : 0);
-                    glVertex3fv(vertex);
-                }
-            }
 }
 void perspective(float fov, float aspect, float nearPlane = .05f, float farPlane = 160) {
     float top = nearPlane * std::tan(fov * 3.14159265f / 360);
@@ -322,96 +301,8 @@ struct Renderer::Impl {
         GLuint id = upload(i);
         return textures.emplace(path, Texture{id, std::move(i)}).first->second;
     }
-    Texture& activityTexture(const Json& item, int prestige, Color glint) {
-        const std::string id = item.get("id", "").asString();
-        const std::string profession = item.get("profession", "mining").asString();
-        const std::string species = item.get("species", "wheat").asString();
-        const bool enchanted = item.get("enchanted", false) == true;
-        const std::string key = "item:activity:" + id + ":" + profession + ":" + species + ":" +
-            std::to_string(prestige) + ":" + std::to_string(enchanted) + ":" + std::to_string(glint.r) +
-            ":" + std::to_string(glint.g) + ":" + std::to_string(glint.b);
-        auto found = textures.find(key);
-        if (found != textures.end())
-            return found->second;
-        Image im;
-        im.width = im.height = 16;
-        im.pixels.resize(16 * 16 * 4);
-        auto pixel = [&](int x, int y, Color c) {
-            if (x < 0 || y < 0 || x >= 16 || y >= 16) return;
-            auto offset = (y * 16 + x) * 4;
-            im.pixels[offset] = static_cast<unsigned char>(c.r * 255);
-            im.pixels[offset + 1] = static_cast<unsigned char>(c.g * 255);
-            im.pixels[offset + 2] = static_cast<unsigned char>(c.b * 255);
-            im.pixels[offset + 3] = 255;
-        };
-        auto fill = [&](int x, int y, int w, int h, Color c) {
-            for (int row = y; row < y + h; ++row)
-                for (int col = x; col < x + w; ++col)
-                    pixel(col, row, c);
-        };
-        Color wood = hexColor("#9b7548"), edge = hexColor("#493726"), metal = tier(prestige + 1);
-        if (id == "pickaxe") {
-            for (int i = 2; i < 14; ++i) {
-                pixel(i, 16 - i, edge);
-                pixel(i, 15 - i, wood);
-            }
-            if (profession == "fishing") {
-                fill(13, 2, 1, 10, hexColor("#cbc9b4"));
-                fill(12, 11, 2, 2, hexColor("#c06250"));
-                fill(5, 10, 2, 3, metal);
-            } else {
-                fill(8, 2, 6, 2, hexColor("#59616b"));
-                fill(7, 3, 7, 2, metal);
-                fill(7, 5, 2, 2, metal);
-            }
-        } else if (id == "watering_can") {
-            fill(4, 6, 7, 7, hexColor("#658da3"));
-            fill(5, 7, 5, 5, hexColor("#9db9c0"));
-            fill(11, 7, 3, 2, hexColor("#658da3"));
-            fill(13, 5, 2, 3, hexColor("#9db9c0"));
-            fill(2, 5, 4, 1, metal);
-            fill(1, 6, 1, 5, metal);
-            fill(2, 11, 2, 1, metal);
-        } else {
-            Color c = hexColor("#bfa45b");
-            const auto& rows = data.systems["professions"][id == "fish" ? "fishing" : "farming"][id == "fish" ? "fish" : "crops"];
-            for (const auto& row : rows)
-                if (row["id"] == species)
-                    c = hexColor(row["color"].asString());
-            if (id == "fish") {
-                fill(4, 6, 8, 5, c);
-                fill(6, 5, 4, 7, c);
-                fill(2, 5, 2, 7, c);
-                pixel(10, 7, {0.1f, .12f, .1f, 1});
-                fill(5, 10, 4, 1, {c.r * .7f, c.g * .7f, c.b * .7f, 1});
-            } else if (species == "wheat") {
-                fill(7, 3, 1, 12, wood);
-                for (int y = 3; y < 11; y += 3) {
-                    fill(5, y, 2, 2, c);
-                    fill(8, y + 1, 2, 2, c);
-                }
-            } else if (species == "carrot") {
-                fill(8, 2, 2, 4, hexColor("#5b9543"));
-                fill(10, 2, 3, 2, hexColor("#5b9543"));
-                for (int i = 0; i < 8; ++i)
-                    fill(8 - i / 2, 6 + i, 4 - i / 3, 1, c);
-            } else {
-                fill(4, 6, 8, 6, c);
-                fill(6, 4, 5, 10, c);
-                pixel(6, 7, wood);
-                pixel(10, 10, wood);
-            }
-        }
-        if (enchanted)
-            tint(im, glint, 32.f / 255);
-        const GLuint tex = upload(im);
-        return textures.emplace(key, Texture{tex, std::move(im)}).first->second;
-    }
     Texture& itemTexture(const Json& item, int prestige, Color glint, bool fur = false) {
         std::string id = item.get("id", "").asString();
-        if ((id == "pickaxe" && item.get("profession", "mining") != "mining") ||
-            id == "fish" || id == "crop" || id == "watering_can")
-            return activityTexture(item, prestige, glint);
         int n = item.get("tier", 1).isNumeric() ? item.get("tier", 1).asInt() : 1;
         Color c = {1, 1, 1, 1};
         float amount = 0;
@@ -543,8 +434,18 @@ struct Renderer::Impl {
               bedrock = loadImage(data.root / "textures/prisontest_void.png");
         Image a;
         tint(bedrock, {0, 0, 0, 1}, 170.f / 255);
-        a.width = a.height = 128;
-        a.pixels.resize(128 * 128 * 4);
+        a.width = TerrainAtlasColumns * 16;
+        a.height = TerrainAtlasRows * 16;
+        a.pixels.resize(a.width * a.height * 4);
+        auto putTile = [&](int tile, const Image& im) {
+            if (im.width != 16 || im.height != 16)
+                throw std::runtime_error("terrain textures must be 16 by 16 pixels");
+            for (int y = 0; y < 16; ++y) {
+                const int offset = ((tile / TerrainAtlasColumns * 16 + y) * a.width +
+                                    tile % TerrainAtlasColumns * 16) * 4;
+                std::memcpy(&a.pixels[offset], &im.pixels[y * 16 * 4], 16 * 4);
+            }
+        };
         int i = 0;
         std::regex hex("#[0-9a-fA-F]{6}");
         for (const auto& def : data.mine["blocks"]) {
@@ -572,16 +473,9 @@ struct Renderer::Impl {
                     }
                 }
             }
-            for (int y = 0; y < 16; ++y)
-                for (int x = 0; x < 16; ++x)
-                    std::memcpy(&a.pixels[(((i / 8) * 16 + y) * 128 + (i % 8) * 16 + x) * 4],
-                                &im.pixels[(y * 16 + x) * 4], 4);
-            ++i;
+            putTile(i++, im);
         }
-        for (int y = 0; y < 16; ++y)
-            for (int x = 0; x < 16; ++x)
-                std::memcpy(&a.pixels[((6 * 16 + y) * 128 + 4 * 16 + x) * 4],
-                            &bedrock.pixels[(y * 16 + x) * 4], 4);
+        putTile(TerrainBedrockTile, bedrock);
         {
             Image im = stone;
             tint(im, hexColor("#171b20"), .78f);
@@ -594,21 +488,36 @@ struct Renderer::Impl {
                                                                   (component * 220 + 35) * alpha);
                 }
             }
-            const int tile = TerrainPocketTile;
-            for (int y = 0; y < 16; ++y)
-                for (int x = 0; x < 16; ++x)
-                    std::memcpy(&a.pixels[(((tile / 8) * 16 + y) * 128 + (tile % 8) * 16 + x) * 4],
-                                &im.pixels[(y * 16 + x) * 4], 4);
+            putTile(TerrainPocketTile, im);
         }
-        const Color outdoorColors[] = {hexColor("#64824e"), hexColor("#6b4d38"), hexColor("#92734a"), hexColor("#45683c"), hexColor("#b5a98c")};
-        for (int tile = TerrainGrassTile; tile <= TerrainPathTile; ++tile) {
-            Image im = stone;
-            tint(im, outdoorColors[tile - TerrainGrassTile], .78f);
-            for (int y = 0; y < 16; ++y)
-                for (int x = 0; x < 16; ++x)
-                    std::memcpy(&a.pixels[(((tile / 8) * 16 + y) * 128 + (tile % 8) * 16 + x) * 4],
-                                &im.pixels[(y * 16 + x) * 4], 4);
+        const auto scenery = data.root / "textures/luanti";
+        const std::pair<int, const char*> materials[] = {
+            {TerrainMasonryTile, "default_cobble.png"},
+            {TerrainPavingTile, "default_gravel.png"},
+            {TerrainTimberTile, "default_pine_tree.png"},
+            {TerrainTrimTile, "default_stone.png"},
+            {TerrainGrassTile, "default_grass.png"},
+            {TerrainLeavesTile, "default_pine_needles.png"},
+            {TerrainRockTile, "default_stone.png"},
+            {TerrainDirtTile, "default_dirt.png"},
+            {TerrainTimberEndTile, "default_pine_tree_top.png"}};
+        for (const auto& [tile, file] : materials)
+            putTile(tile, loadImage(scenery / file));
+        Image metal = loadImage(scenery / "default_stone.png");
+        tint(metal, hexColor("#252a2e"), .7f);
+        putTile(TerrainMetalTile, metal);
+        Image lamp = loadImage(scenery / "default_sand.png");
+        tint(lamp, hexColor("#ffe6a4"), .4f);
+        putTile(TerrainLampTile, lamp);
+        Image grassSide = loadImage(scenery / "default_dirt.png");
+        const Image grass = loadImage(scenery / "default_grass_side.png");
+        for (std::size_t p = 0; p < grassSide.pixels.size(); p += 4) {
+            const float alpha = grass.pixels[p + 3] / 255.f;
+            for (int k = 0; k < 3; ++k)
+                grassSide.pixels[p + k] = static_cast<unsigned char>(
+                    grassSide.pixels[p + k] * (1 - alpha) + grass.pixels[p + k] * alpha);
         }
+        putTile(TerrainGrassSideTile, grassSide);
         atlas = upload(a);
     }
     void mesh(Mesh& gpu, const ChunkMesh& cpu) {
@@ -871,7 +780,8 @@ void Renderer::unclip() {
 void Renderer::world(const Mine& mine, Vec3 eye, float yaw, float pitch, float fov) {
     p->flushUi();
     glDisable(GL_BLEND);
-    glDisable(GL_ALPHA_TEST);
+    glEnable(GL_ALPHA_TEST);
+    glAlphaFunc(GL_GREATER, .5f);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_TEXTURE_2D);
     glEnable(GL_CULL_FACE);
@@ -925,6 +835,7 @@ void Renderer::world(const Mine& mine, Vec3 eye, float yaw, float pitch, float f
     glDisableClientState(GL_VERTEX_ARRAY);
     glDisableClientState(GL_TEXTURE_COORD_ARRAY);
     glDisableClientState(GL_COLOR_ARRAY);
+    glDisable(GL_ALPHA_TEST);
 }
 void Renderer::selection(Cell c, float progress) {
     glEnable(GL_BLEND);
@@ -976,9 +887,29 @@ void Renderer::guardian(const Json& state, int targetedPart, float progress) {
     glDisable(GL_CULL_FACE);
     glEnable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, p->texture("textures/prisontest_stone.png").id);
+    auto box = [](const GuardianPart& part, Color tint) {
+        const float low[] = {part.low.x, part.low.y, part.low.z};
+        const float high[] = {part.high.x, part.high.y, part.high.z};
+        for (int axis = 0; axis < 3; ++axis)
+            for (int side = 0; side < 2; ++side) {
+                const float shade = axis == 1 ? (side ? 1.f : .55f) : axis == 0 ? .75f : .9f;
+                color({tint.r * shade, tint.g * shade, tint.b * shade, tint.a});
+                for (int i = 0; i < 4; ++i) {
+                    float vertex[] = {low[0], low[1], low[2]};
+                    vertex[axis] = side ? high[axis] : low[axis];
+                    const int u = (axis + 1) % 3, v = (axis + 2) % 3;
+                    if (i == 1 || i == 2)
+                        vertex[u] = high[u];
+                    if (i >= 2)
+                        vertex[v] = high[v];
+                    glTexCoord2f(i == 1 || i == 2 ? 1 : 0, i >= 2 ? 1 : 0);
+                    glVertex3fv(vertex);
+                }
+            }
+    };
     glBegin(GL_QUADS);
     for (int i = 0; i < int(parts.size()); ++i)
-        drawBox(parts[i], i == weak ? Color{.65f, .95f, 1, 1} : Color{.48f, .52f, .59f, 1});
+        box(parts[i], i == weak ? Color{.65f, .95f, 1, 1} : Color{.48f, .52f, .59f, 1});
     glEnd();
     glDisable(GL_TEXTURE_2D);
     glBegin(GL_QUADS);
@@ -986,7 +917,7 @@ void Renderer::guardian(const Json& state, int targetedPart, float progress) {
     for (int side = 0; side < 2; ++side) {
         const float x = head.low.x + .18f + side * .56f;
         for (float z : {head.low.z - .012f, head.high.z})
-            drawBox({{x, head.low.y + .55f, z}, {x + .24f, head.low.y + .72f, z + .012f}}, {.5f, .9f, 1, 1});
+            box({{x, head.low.y + .55f, z}, {x + .24f, head.low.y + .72f, z + .012f}}, {.5f, .9f, 1, 1});
     }
     glEnd();
     if (targetedPart == weak && progress > 0) {
@@ -996,101 +927,10 @@ void Renderer::guardian(const Json& state, int targetedPart, float progress) {
         glEnable(GL_POLYGON_OFFSET_FILL);
         glPolygonOffset(-1, -1);
         glBegin(GL_QUADS);
-        drawBox(parts[weak], {1, 1, 1, std::clamp(progress, 0.f, 1.f)});
+        box(parts[weak], {1, 1, 1, std::clamp(progress, 0.f, 1.f)});
         glEnd();
         glDisable(GL_POLYGON_OFFSET_FILL);
     }
-}
-
-void Renderer::outdoors(const Game& farming, const Game& fishing, Vec3 eye) {
-    glEnable(GL_DEPTH_TEST);
-    glDisable(GL_CULL_FACE);
-    glDisable(GL_ALPHA_TEST);
-    glEnable(GL_TEXTURE_2D);
-    glBindTexture(GL_TEXTURE_2D, p->texture("textures/prisontest_stone.png").id);
-    glBegin(GL_QUADS);
-    const auto& crops = farming.data.systems["professions"]["farming"]["crops"];
-    const int owned = farming.state["activity"]["plots_owned"].asInt();
-    const bool flash = farming.state.get("_activity_flash", 0).asDouble() > 0;
-    for (int i = 0; i < 27; ++i) {
-        const auto centre = plotPosition(i);
-        const auto& plot = farming.state["activity"]["plots"][i];
-        const bool watered = plot.isObject() && plot["watered"] == true;
-        Color soil = i >= owned ? Color{.4f, .43f, .32f, 1}
-                      : watered ? Color{.3f, .24f, .17f, 1} : Color{.55f, .38f, .24f, 1};
-        drawBox({centre + Vec3{-1, 0, -1}, centre + Vec3{1, .08f, 1}}, soil);
-        if (i >= owned || !plot.isObject())
-            continue;
-        const float growth = float(farming.cropProgress(i));
-        Color leaf = growth >= 1 ? hexColor("#c9b153") : hexColor("#83a948");
-        for (const auto& crop : crops)
-            if (crop["id"] == plot["crop"] && growth >= 1)
-                leaf = hexColor(crop["color"].asString());
-        for (int row = 0; row < 3; ++row)
-            for (int col = 0; col < 3; ++col) {
-                Vec3 low = centre + Vec3{-.65f + col * .6f, .08f, -.65f + row * .6f};
-                drawBox({low, low + Vec3{.12f, .15f + growth * .65f, .12f}}, {.3f, .5f, .2f, 1});
-                low.y += .1f + growth * .3f;
-                drawBox({low + Vec3{-.12f, 0, -.12f}, low + Vec3{.25f, .12f + growth * .2f, .25f}},
-                        flash ? Color{.8f, .9f, .4f, 1} : leaf);
-            }
-    }
-    glEnd();
-    glDisable(GL_TEXTURE_2D);
-    glEnable(GL_BLEND);
-    color({.2f, .46f, .57f, .8f});
-    glBegin(GL_QUADS);
-    glVertex3f(7, 1.34f, 80);
-    glVertex3f(22, 1.34f, 80);
-    glVertex3f(22, 1.34f, 103);
-    glVertex3f(7, 1.34f, 103);
-    glEnd();
-    const auto& cast = fishing.state["_cast"];
-    if (cast.isObject()) {
-        const float x = cast["x"].asFloat(), z = cast["z"].asFloat();
-        const bool bite = cast["phase"] == "bite";
-        const float bob = std::sin(SDL_GetTicks() * (bite ? .018f : .004f)) * (bite ? .08f : .025f);
-        glBegin(GL_QUADS);
-        drawBox({{x - .09f, 1.34f + bob, z - .09f}, {x + .09f, 1.54f + bob, z + .09f}}, {1, .35f, .27f, 1});
-        glEnd();
-        glLineWidth(1);
-        glBegin(GL_LINES);
-        color({.9f, .87f, .75f, .8f});
-        glVertex3f(eye.x + .3f, eye.y - .35f, eye.z);
-        glVertex3f(x, 1.5f + bob, z);
-        glEnd();
-    }
-    if (fishing.state.get("_activity_flash", 0).asDouble() > 0) {
-        glBegin(GL_LINES);
-        color({.7f, .9f, 1, 1});
-        for (int i = 0; i < 12; ++i) {
-            float x = 8 + i, z = 91 + std::sin(i * 2.f) * 5;
-            glVertex3f(x, 1.4f, z);
-            glVertex3f(x + .6f, 1.4f, z);
-        }
-        glEnd();
-    }
-}
-
-void Renderer::worldLabel(Vec3 point, Vec3 eye, float yaw, float pitch, float fov, const std::string& value) {
-    const Vec3 relative = point - eye;
-    if (std::hypot(relative.x, relative.z) > 35)
-        return;
-    const Vec3 forward{-std::sin(yaw) * std::cos(pitch), std::sin(pitch), -std::cos(yaw) * std::cos(pitch)};
-    const float depth = relative.x * forward.x + relative.y * forward.y + relative.z * forward.z;
-    if (depth <= .1f)
-        return;
-    const float horizontal = relative.x * std::cos(yaw) - relative.z * std::sin(yaw);
-    const float vertical = relative.x * std::sin(yaw) * std::sin(pitch) + relative.y * std::cos(pitch) +
-                           relative.z * std::cos(yaw) * std::sin(pitch);
-    const float tangent = std::tan(fov * 3.14159265f / 360);
-    const float x = width() * (.5f + horizontal / (depth * tangent * (float(p->w) / p->h)) * .5f);
-    const float y = height() * (.5f - vertical / (depth * tangent) * .5f);
-    if (x < 0 || x > width() || y < 0 || y > height())
-        return;
-    const float left = x - textWidth(value, 14) / 2;
-    text(left + 1, y + 1, value, {0, 0, 0, 1}, 14);
-    text(left, y, value, {.92f, .9f, .78f, 1}, 14);
 }
 
 void Renderer::billboard(Vec3 position, float size, const std::string& path, float yaw, float pitch) {

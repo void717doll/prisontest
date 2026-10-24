@@ -5,16 +5,23 @@
 
 namespace prison {
 
-// Shared atlas layout: mine definitions in source order, followed by bedrock.
+// mine blocks occupy the first 52 tiles; the remaining tiles are scenery.
 constexpr int TerrainAtlasColumns = 8;
-constexpr int TerrainAtlasRows = 8;
+constexpr int TerrainAtlasRows = 16;
 constexpr int TerrainBedrockTile = 52;
 constexpr int TerrainPocketTile = 53;
-constexpr int TerrainGrassTile = 54;
-constexpr int TerrainSoilTile = 55;
-constexpr int TerrainWoodTile = 56;
-constexpr int TerrainLeafTile = 57;
-constexpr int TerrainPathTile = 58;
+constexpr int TerrainMasonryTile = 54;
+constexpr int TerrainPavingTile = 55;
+constexpr int TerrainTimberTile = 56;
+constexpr int TerrainMetalTile = 57;
+constexpr int TerrainLampTile = 58;
+constexpr int TerrainTrimTile = 59;
+constexpr int TerrainGrassTile = 60;
+constexpr int TerrainLeavesTile = 61;
+constexpr int TerrainRockTile = 62;
+constexpr int TerrainDirtTile = 63;
+constexpr int TerrainTimberEndTile = 64;
+constexpr int TerrainGrassSideTile = 65;
 struct Vertex {
     float x, y, z, u, v, r, g, b;
 };
@@ -119,6 +126,7 @@ class Mine {
     std::string dig(Cell cell);
     bool nextTarget(Cell& cell) const;
     Hit raycast(Vec3 origin, Vec3 direction, float reach) const;
+    Vec3 confinePlayer(Vec3 feet, float radius = .30f) const;
     MoveResult movePlayer(Vec3 feet, Vec3 displacement, float radius = .30f, float height = 1.80f) const;
     std::size_t enchantTargetCount(const std::string& id, int level, Cell origin) const;
     void applyVirtualMining(std::size_t count, std::uint64_t generation);
@@ -144,6 +152,7 @@ class Mine {
     Cell minimum_{-12, -7, -12}, maximum_{12, -1, 12};
     int width_ = 25, height_ = 7, depth_ = 25, chunkX_ = 0, chunkY_ = 0, chunkZ_ = 0;
     Vec3 spawn_{0, 2, 18};
+    Vec3 walkMinimum_, walkMaximum_;
     int rank_ = 0, smooth_ = 1, ore_ = 2;
     std::int64_t prestige_ = 0;
     std::uint64_t seed_ = 0, generation_ = 0;
@@ -175,10 +184,11 @@ class Mine {
     void markAllDirty();
     void buildChunk(std::size_t index);
     void buildShell();
+    void buildScenery(float left, float right, float back, float front);
     void generateDiscoveries();
     void scheduleReset();
     bool collisionBox(const Box& box) const;
-    void resize(const MineBounds& bounds);
+    bool resize(const MineBounds& bounds);
     void beginReset(int rank, std::int64_t prestige, std::uint64_t seed, const MineBounds& bounds);
 };
 } // namespace prison

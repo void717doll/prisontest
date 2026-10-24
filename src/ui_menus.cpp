@@ -73,14 +73,13 @@ void UI::Impl::importWorld() {
 }
 
 void UI::Impl::pause() {
-    Rect box = panel("Game Paused", 370, 430);
+    Rect box = panel("Game Paused", 370, 400);
     float x = box.x + 28, y = box.y + 67, width = box.w - 56;
     pageButton({x, y, width, 38}, "Back to Game", "");
     pageButton({x, y + 48, width, 38}, "Settings", "settings");
     pageButton({x, y + 96, width, 38}, "Help", "help");
     pageButton({x, y + 144, width, 38}, "Tutorial", "tutorial");
-    pageButton({x, y + 192, width, 38}, "Professions", "professions");
-    button({x, y + 240, width, 38}, "Save & Return to Title", [this] { action("title"); });
+    button({x, y + 192, width, 38}, "Save & Return to Title", [this] { action("title"); });
 }
 
 void UI::Impl::settings() {
@@ -144,8 +143,7 @@ void UI::Impl::settings() {
     const Rect effects{x + half + 12, y + 350, half, 38};
     button(effects, std::string("Enchant Visuals: ") + (visual ? "On" : "Off"),
            [this, visual] { game.state["message_settings"]["visual_enchants"] = !visual; }, ctx.playing);
-    hints.push_back({effects, "All mine enchants. On removes blocks; off keeps the rewards without changing terrain. "
-                             "Also controls fishing and farming proc visuals."});
+    hints.push_back({effects, "All mine enchants. On removes blocks; off keeps the rewards without changing terrain."});
 }
 
 void UI::Impl::bindings() {
@@ -158,7 +156,7 @@ void UI::Impl::bindings() {
                settingsChanged();
            });
     const char* keys[] = {"inventory_key", "pickaxe_key"};
-    const std::string names[] = {"Inventory", game.toolName()};
+    const char* names[] = {"Inventory", "Pickaxe"};
     for (int i = 0; i < 2; ++i) {
         std::string key = keys[i];
         std::string caption = std::string(names[i]) + ": " +
@@ -173,7 +171,7 @@ void UI::Impl::bindings() {
 }
 
 void UI::Impl::tool() {
-    Rect box = panel(game.toolName(), 690, 550);
+    Rect box = panel("Pickaxe", 690, 550);
     draw.item({box.x + 30, box.y + 63, 72, 72}, game.state["inventory_slots"][0],
               game.state.get("parts_prestige", 0).asInt(), glint);
     itemName(box.x + 122, box.y + 70, game.state["inventory_slots"][0], 18);
@@ -191,7 +189,7 @@ void UI::Impl::tool() {
 }
 
 void UI::Impl::enchants() {
-    Rect box = panel("Enchant " + game.toolName(), 690, 540);
+    Rect box = panel("Enchant Pickaxe", 690, 540);
     const char* categories[] = {"tokens", "sapphires", "rubies"};
     const float tabWidth = (box.w - 56) / 3;
     for (int i = 0; i < 3; ++i) {
@@ -281,7 +279,7 @@ void UI::Impl::maximumAmount() {
 }
 
 void UI::Impl::enchantDetail() {
-    Rect box = panel("Enchant " + game.toolName(), 565, 515);
+    Rect box = panel("Enchant Pickaxe", 565, 515);
     const Json& def = game.data.enchants["defs"][selectedEnchant];
     const std::string wallet = game.enchantCurrency(selectedEnchant);
     int level = game.state["enchants"].get(selectedEnchant, 0).asInt();
@@ -301,7 +299,7 @@ void UI::Impl::enchantDetail() {
     currencyLabel(x, box.y + 94,
                   game.currencyName(wallet) + ": " + compact(game.state.get(wallet, 0).asDouble()));
     if (locked)
-        label(x, box.y + 125, "Requires " + game.toolName() + " level " + std::to_string(required), 14);
+        label(x, box.y + 125, "Requires pickaxe level " + std::to_string(required), 14);
     paragraph(x, box.y + 149, width, def.get("description", "").asString(), 14);
     const auto& effect = game.data.enchants["effects"][selectedEnchant];
     if (effect.isMember("cooldown")) {
@@ -347,7 +345,7 @@ void UI::Impl::enchantDetail() {
 }
 
 void UI::Impl::equipment() {
-    Rect box = panel(page == "parts" ? game.toolName() + " Parts" : "Crystals", 690, 590);
+    Rect box = panel(page == "parts" ? "Pickaxe Parts" : "Crystals", 690, 590);
     float center = box.x + box.w * 0.5f;
     if (page == "parts") {
         const char* keys[] = {"head", "binding", "rod"};
@@ -627,10 +625,8 @@ void UI::Impl::storage() {
                  rows[i]);
         endScroll(top.y - scroll + storageHeight);
     } else {
-        pageButton({box.x + 24, box.y + 65, 140, 38}, game.toolName(), "pick");
-        const bool mining = game.data.profession == "mining";
-        pageButton({box.x + 174, box.y + 65, 140, 38}, mining ? "Pets" : "Professions",
-                   mining ? "pets" : "professions");
+        pageButton({box.x + 24, box.y + 65, 140, 38}, "Pickaxe", "pick");
+        pageButton({box.x + 174, box.y + 65, 140, 38}, "Pets", "pets");
         pageButton({box.x + 324, box.y + 65, 140, 38}, "Vault", "vault");
         pageButton({box.x + 474, box.y + 65, 140, 38}, "More", "more");
     }
@@ -639,8 +635,7 @@ void UI::Impl::storage() {
 
 void UI::Impl::more() {
     Rect box = panel("More", 600, 570);
-    std::vector<std::pair<const char*, const char*>> entries = {{"Professions", "professions"},
-                                                           {"Pets", "pets"},
+    const std::pair<const char*, const char*> entries[] = {{"Pets", "pets"},
                                                            {"Player Vault", "vault"},
                                                            {"Point Shop", "pointshop"},
                                                            {"Autominer", "automine"},
@@ -662,13 +657,7 @@ void UI::Impl::more() {
     float width = (box.w - 60) * 0.5f;
     Rect list{box.x + 24, box.y + 66, box.w - 48, box.h - 210};
     beginScroll(list);
-    if (game.data.profession != "mining")
-        entries = {{"Professions", "professions"}, {"Supplies", "supplies"},
-                   {"Enchants", "enchants"}, {"Parts", "parts"}, {"Crystals", "crystals"},
-                   {"Player Vault", "vault"}, {"Filter", "filter"}, {"Bin", "bin"},
-                   {"Equipment Sets", "equipment_sets"}, {"Crystal Resonance", "resonance"},
-                   {"Settings", "settings"}, {"Tutorial", "activity_intro"}};
-    const int count = int(entries.size());
+    const int count = int(sizeof(entries) / sizeof(entries[0]));
     for (int i = 0; i < count; ++i)
         pageButton({box.x + 24 + (i % 2) * (width + 12), list.y - scroll + (i / 2) * 46, width, 38},
                    entries[i].first, entries[i].second);

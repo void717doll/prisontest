@@ -218,9 +218,6 @@ Result Game::developmentCommand(const std::string& name, const std::vector<std::
     if (name == "test") {
         if (args.empty())
             return {true, "", "test"};
-        if (data.profession != "mining" &&
-            (lower(args[0]) == "mine" || lower(args[0]) == "guardian" || lower(args[0]) == "stress"))
-            return error("Switch to /mining to test the mine.");
         if (lower(args[0]) == "mine" && args.size() <= 2) {
             if (args.size() == 1)
                 return {true, "", "test:mine"};
@@ -303,8 +300,6 @@ Result Game::developmentCommand(const std::string& name, const std::vector<std::
                 part["slot"] = partNames[i];
                 part["boost_type"] = kinds[i];
                 part["boost"] = 1.43;
-                if (data.profession != "mining")
-                    part["profession"] = data.profession;
                 state["equipped_parts"][partNames[i]] = part;
             }
             state["equipped_crystals"] = Json(::Json::arrayValue);
@@ -316,11 +311,9 @@ Result Game::developmentCommand(const std::string& name, const std::vector<std::
                 crystal["identified"] = true;
                 crystal["boost_type"] = kinds[i % 3];
                 crystal["boost"] = 1.43;
-                if (data.profession != "mining")
-                    crystal["profession"] = data.profession;
                 state["equipped_crystals"].append(crystal);
             }
-            return ok("Test " + toolName() + " equipped.");
+            return ok("Test pickaxe equipped.");
         }
         if (args.size() == 1 && args[0] == "kit") {
             const Json before = state["inventory_slots"];
@@ -672,7 +665,7 @@ Result Game::giveTestItem(const Json& fields) {
             item["slots"] = data.systems["pouch_slots"][checked["size"].asString()];
             item["items"] = Json(::Json::arrayValue);
         }
-        if (!giveDrop(item, false)) {
+        if (!giveItem(item, false)) {
             state["inventory_slots"] = before;
             random = previousRandom;
             return error("Inventory full. Nothing was granted.");

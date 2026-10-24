@@ -6,7 +6,6 @@ data/help.json
 data/mine.json
 data/native_content.json
 data/native_economy.json
-data/professions.json
 data/ranks.json
 data/source_systems.json
 fonts/DejaVuSans-Bold.ttf
@@ -26,6 +25,17 @@ sounds/stone_break_3.wav
 textures/inventory_pack.png
 textures/inventory_pack_full.png
 textures/liquidxp.png
+textures/luanti/LICENSE.txt
+textures/luanti/default_cobble.png
+textures/luanti/default_dirt.png
+textures/luanti/default_grass.png
+textures/luanti/default_grass_side.png
+textures/luanti/default_gravel.png
+textures/luanti/default_pine_needles.png
+textures/luanti/default_pine_tree.png
+textures/luanti/default_pine_tree_top.png
+textures/luanti/default_sand.png
+textures/luanti/default_stone.png
 textures/minebomb.png
 textures/mining_crack.png
 textures/prisontest_crystal.png

@@ -80,14 +80,6 @@ Json cleanItem(const Json& raw, int depth = 0) {
     if (!raw.isObject() || string(raw, "id").empty())
         return Json();
     Json item = raw;
-    if (item["id"] == "fish" || item["id"] == "crop") {
-        if (!item["species"].isString())
-            return Json();
-        if (item["id"] == "fish")
-            item["size_cm"] = integer(item, "size_cm", 1, 1000);
-        else
-            item["quality"] = std::clamp(integer(item, "quality", 1), 1, 2);
-    }
     if (item["id"] == "global_booster")
         item["id"] = "multiplier";
     for (const char* key : {"count", "tier", "amount", "xp", "duration", "remaining", "boost",
@@ -315,7 +307,7 @@ void finderDrops(Game& game, bool bulk, int rolls = 1, const Json& context = Jso
             context.isObject() ? integer(context, "parts_prestige") : integer(game.state, "parts_prestige");
         drop["tier"] = part ? std::min(2147483646, partsPrestige) + 1 : crystalTier(game, context);
         drop["identified"] = false;
-        game.giveDrop(drop, true);
+        game.giveItem(drop, true);
     }
     const Json& books = game.data.systems["enchant_book_whitelist"];
     if (roll(game, 1, bulk ? 24000 : 45000) <= rolls && books.isArray() && !books.empty()) {
@@ -323,9 +315,9 @@ void finderDrops(Game& game, bool bulk, int rolls = 1, const Json& context = Jso
         drop["enchant_key"] = books[roll(game, 0, static_cast<int>(books.size()) - 1)];
         drop["amount"] = 1;
         if (game.enchantCurrency(drop["enchant_key"].asString()) == "tokens")
-            game.giveDrop(drop, true);
+            game.giveItem(drop, true);
     }
-    if (bulk || autominer || game.data.profession != "mining")
+    if (bulk || autominer)
         return;
     const double eggs = (context.isObject() ? field(context["specialization"], "eggs", 1)
                                             : game.specializationModifiers()["eggs"].asDouble()) *
@@ -337,7 +329,7 @@ void finderDrops(Game& game, bool bulk, int rolls = 1, const Json& context = Jso
     if (roll(game, 1, eggInterval) == 1) {
         Json drop = item("pet_egg");
         drop["tier_id"] = eggTier(game.data.systems["pets"]["tiers"], unit(game));
-        game.giveDrop(drop, true);
+        game.giveItem(drop, true);
     }
     if (game.enchantLevel("timefinder") <= 0 || boolean(game.state, "autominer_active"))
         return;
@@ -350,7 +342,7 @@ void finderDrops(Game& game, bool bulk, int rolls = 1, const Json& context = Jso
         drop["duration"] = durations.isArray() && !durations.empty()
                                ? durations[roll(game, 0, static_cast<int>(durations.size()) - 1)]
                                : Json(600);
-        game.giveDrop(drop, true);
+        game.giveItem(drop, true);
     }
     game.state["timefinder_progress"] = progress;
 }
@@ -417,7 +409,7 @@ void luckyReward(Game& game, MiningReward& reward) {
             chosen = "token";
     }
     if (chosen != "token") {
-        game.giveDrop(drop, true);
+        game.giveItem(drop, true);
         return;
     }
     const double scale = std::clamp(.02 + level * field(cfg, "token_cache_scale_per_level", .011), .02, .38);
@@ -570,7 +562,7 @@ void Game::newWorld(bool devmode) {
                             "rebirth", "total_prestige", "points", "autominer_time", "playtime_seconds"})
         state[key] = 0.0;
     state["pick_level"] = 1;
-    state["pick_custom_name"] = data.profession == "mining" ? "Prison Tool" : toolName();
+    state["pick_custom_name"] = "Prison Tool";
     state["enchant_label_color"] = "";
     state["enchant_value_color"] = "";
     state["enchant_colors_enabled"] = true;
@@ -583,18 +575,11 @@ void Game::newWorld(bool devmode) {
     Json pick = item("pickaxe");
     pick["instance_id"] = "pickaxe";
     pick["locked"] = true;
-    if (data.profession != "mining")
-        pick["profession"] = data.profession;
     state["inventory_slots"][0] = pick;
     Json bomb = item("minebomb");
     bomb["tier"] = 1;
     state["inventory_slots"][1] = bomb;
     state["inventory"]["minebomb"] = 1;
-    if (data.profession != "mining") {
-        state["inventory_slots"][1] = Json();
-        state["inventory"]["minebomb"] = 0;
-        state["tutorial"]["status"] = "skipped";
-    }
     state["selected_hotbar_index"] = 0;
     state["vault_slots"] = cleanSlots(Json(), VaultPageSize);
     state["vault_page_size"] = VaultPageSize;
@@ -615,7 +600,6 @@ void Game::newWorld(bool devmode) {
     loadShaft();
     loadEndgame();
     loadGuardian();
-    loadActivity();
     updateDerived(*this);
 }
 
@@ -658,9 +642,9 @@ void Game::loadSnapshot(const Json& snapshot) {
     state["total_prestige"] =
         std::min(progressLimit, std::max(field(state, "total_prestige"),
                                          field(state, "rebirth") * cycle + field(state, "prestige_level")));
-    state["pick_custom_name"] = string(snapshot, "pick_custom_name", data.profession == "mining" ? "Prison Tool" : toolName());
+    state["pick_custom_name"] = string(snapshot, "pick_custom_name", "Prison Tool");
     if (state["pick_custom_name"].asString().empty())
-        state["pick_custom_name"] = data.profession == "mining" ? "Prison Tool" : toolName();
+        state["pick_custom_name"] = "Prison Tool";
     for (const char* key : {"enchant_label_color", "enchant_value_color"})
         state[key] = validColor(string(snapshot, key)) ? string(snapshot, key) : "";
     state["enchant_colors_enabled"] = boolean(snapshot, "enchant_colors_enabled", true);
@@ -716,8 +700,6 @@ void Game::loadSnapshot(const Json& snapshot) {
     Json pick = item("pickaxe");
     pick["instance_id"] = "pickaxe";
     pick["locked"] = true;
-    if (data.profession != "mining")
-        pick["profession"] = data.profession;
     state["inventory_slots"][0] = pick;
     for (int i = 1; i < 36; ++i)
         if (string(state["inventory_slots"][i], "id") == "pickaxe")
@@ -818,15 +800,12 @@ void Game::loadSnapshot(const Json& snapshot) {
     loadEndgame();
     loadGuardian();
     returnStoredItems();
-    loadActivity();
     updateDerived(*this);
 }
 
 Json Game::snapshot() const {
     Json out = state;
     out["autominer_active"] = false;
-    if (data.profession == "fishing" && state["_cast"].isObject())
-        out["activity"]["bait"] = state["activity"]["bait"].asInt() + 1;
     for (const auto& key : out.getMemberNames())
         if (!key.empty() && key[0] == '_')
             out.removeMember(key);
@@ -878,15 +857,15 @@ double Game::boost(const std::string& type) const {
     const Json& equipped = state["equipped_crystals"];
     const int slots = std::min(crystalSlots(), static_cast<int>(equipped.size()));
     for (int i = 0; i < slots; ++i)
-        if (ownsItem(equipped[i]) && matches(equipped[i], kind))
+        if (matches(equipped[i], kind))
             crystals += field(equipped[i], "boost");
     for (const auto& part : state["equipped_parts"])
-        if (ownsItem(part) && matches(part, kind))
+        if (matches(part, kind))
             parts += field(part, "boost");
     value *= timed * (1 + std::min(parts, field(data.balance, "pick_parts_boost_cap", 12)) +
                       std::min(crystals, field(data.balance, "pick_crystal_boost_cap", 20)));
     const Json& pet = state["pet_data"]["active_pet"];
-    if (ownsItem(pet) && matches(pet, kind)) {
+    if (matches(pet, kind)) {
         const Json& cfg = data.systems["pets"];
         const int level = std::clamp(integer(pet, "level", 1), 1, std::max(1, integer(cfg, "max_level", 75)));
         const int softcap = std::max(1, integer(cfg, "growth_softcap_level", 30));
@@ -1020,7 +999,7 @@ std::string Game::enchantCurrency(const std::string& id) const {
 }
 
 std::string Game::currencyName(const std::string& id) const {
-    return string(data.systems["currencies"][id], "label", id == "money" ? "Money" : id);
+    return string(data.systems["currencies"][id], "label", id);
 }
 
 Json Game::makeRobot(const std::string& kind) {
@@ -1179,7 +1158,7 @@ Result Game::buyEnchant(const std::string& id, int count) {
         return {false, "Invalid " + currencyName(wallet) + " balance."};
     const int current = enchantLevel(id);
     if (integer(state, "pick_level", 1) < integer(definition, "required_pickaxe_level", 1))
-        return {false, "Requires " + toolName() + " level " +
+        return {false, "Requires pickaxe level " +
                            std::to_string(integer(definition, "required_pickaxe_level", 1)) + "."};
     const int limit = definition["max"].isInt() ? definition["max"].asInt() : current;
     const bool maximum = count <= 0;
@@ -1251,10 +1230,6 @@ void Game::awardPocketDrops(int count) {
 MiningReward Game::mineBlock(const std::string& blockId, bool allowProcs, bool manual,
                              const std::string& source, const Json& context) {
     MiningReward reward;
-    if (data.profession != "mining") {
-        reward.ok = false;
-        return reward;
-    }
     if (manual && (boolean(state, "autominer_active") || shaftComplete())) {
         reward.ok = false;
         return reward;
@@ -1399,7 +1374,6 @@ void Game::tick(double seconds) {
         if (elapsed >= 1)
             returnStoredItems();
     }
-    tickActivity(seconds);
     tickEndgame(seconds);
     state["playtime_seconds"] = std::min(progressLimit, field(state, "playtime_seconds") + seconds);
     for (const char* kind : {"money", "token", "xp"}) {
@@ -1429,18 +1403,5 @@ void Game::tick(double seconds) {
     }
     addPickXp(*this, 0);
     tickItems(seconds, 0);
-}
-void Game::awardActivity(double value, double experience, int count) {
-    if (data.profession == "mining" || count < 1)
-        return;
-    const double scale = std::pow(1.8, integer(state, "rank_index", 0, 25));
-    const double tokens = currency(*this, value * count * scale *
-        (1 + enchantLevel("token_greed") * .15) * boost("token"));
-    state["tokens"] = currency(*this, field(state, "tokens") + tokens);
-    state["_summary_tokens"] = currency(*this, field(state, "_summary_tokens") + tokens);
-    addPickXp(*this, experience * count * (1 + enchantLevel("experienced") * .035) * boost("xp"));
-    state["activity_count"] = std::min(progressLimit, field(state, "activity_count") + count);
-    finderDrops(*this, false, 1);
-    premiumDrops();
 }
 } // namespace prison
