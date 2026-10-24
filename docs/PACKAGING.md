@@ -5,19 +5,17 @@ pull requests, `v*` tags and manual runs. every successful run uploads all ten
 packages, checksums and release notes as the `prisontest-packages` artifact.
 pushes to the default branch, version tags and manual runs also publish a release
 in this same repository after every platform succeeds. pull requests and pushes
-to other branches only upload artifacts. the workflow does not upload to the
-public client repository.
+to other branches only upload artifacts.
 
 ## download packages
 
-1. open this source repo's **Actions → native builds and releases → Run workflow**.
+1. open **Actions → native builds and releases → Run workflow** in this repository.
 2. choose the branch. leave `release_tag` empty to release the version in `VERSION`,
    or enter a new version such as `v0.1.5` to override it.
-3. when the run succeeds, download `prisontest-packages` from its artifacts or
-   summary link. manual runs also attach each package to this repo's release.
-4. extract the artifact and upload the ten packages in `assets/` plus
-   `SHA256SUMS.txt` to `prisontest/prisontest-client` manually. copy `notes.md`
-   into the public release description.
+3. when the run succeeds, download a package from this repository's release,
+   or get `prisontest-packages` from the run's artifacts or summary link.
+4. the artifact contains the ten packages and `SHA256SUMS.txt` in `assets/`,
+   with the release description in `notes.md`.
 
 artifacts expire after 14 days; release attachments remain available. each
 platform also uploads its own artifact, even if another platform fails later.
@@ -28,9 +26,6 @@ to the release job. no cross-repository token or secret is needed. new tags
 created by manual runs point to the exact commit that was built. uploads go to
 a draft first, so a failed upload can be retried before publishing. already
 published versions stay unchanged; use a new version for new packages.
-
-the public downloads repository does not contain the native source or `VERSION`;
-run this workflow here, at the `prisoncpp` repository root.
 
 ## platform builds
 

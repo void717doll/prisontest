@@ -679,6 +679,8 @@ void Game::loadSnapshot(const Json& snapshot) {
                 Json row;
                 row["amount"] = field(old, "amount", 1);
                 row["remaining"] = field(old, "remaining");
+                row["duration"] = std::max(row["remaining"].asDouble(),
+                                           field(old, "duration", row["remaining"].asDouble()));
                 state["boosts"][kind].append(row);
             } else if (old.isNumeric())
                 state["boosts"][kind].append(number(old, 1));
@@ -837,7 +839,7 @@ TimedMultiplier Game::activeMultiplier(const std::string& type) const {
             continue;
         const double amount = field(row, "amount", 1), remaining = field(row, "remaining");
         if (remaining > 0 && (amount > best.amount || (amount == best.amount && remaining > best.remaining)))
-            best = {amount, remaining};
+            best = {amount, remaining, std::max(remaining, field(row, "duration", remaining))};
     }
     return best;
 }

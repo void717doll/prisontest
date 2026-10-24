@@ -112,7 +112,7 @@ struct UI::Impl {
     void importWorld();
     void pause();
     void tutorial();
-    void tutorialHud();
+    void tutorialHud(Rect timers);
     std::string tutorialInstruction() const;
     void settings();
     void bindings();
@@ -163,7 +163,7 @@ struct UI::Impl {
     void devStress(Rect box);
     void devtools();
     Rect hudRect(const std::string& name, Rect fallback);
-    void bossBars();
+    Rect bossBars();
     void hud();
     void chat();
     void tooltip();

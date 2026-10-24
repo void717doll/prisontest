@@ -17,50 +17,89 @@ Rect UI::Impl::hudRect(const std::string& name, Rect fallback) {
     return fallback;
 }
 
-void UI::Impl::bossBars() {
+Rect UI::Impl::bossBars() {
     if (!ctx.playing || !page.empty())
-        return;
-    const float width = std::min(364.f, draw.width() - 32);
-    const float x = std::floor((draw.width() - width) / 2);
-    float y = 9;
-    int shown = 0;
-    auto bar = [&](const std::string& title, double fraction, Color tint) {
-        if (shown++ >= 3)
-            return;
-        draw.text((draw.width() - draw.textWidth(title, 13)) / 2 + 1, y + 1, title, {0, 0, 0, 1}, 13);
-        draw.text((draw.width() - draw.textWidth(title, 13)) / 2, y, title, foreground, 13);
-        Rect track{x, y + 18, width, 10};
-        draw.rect(track, {0.06f, 0.025f, .08f, .95f});
-        draw.rect({x + 2, track.y + 2, float((width - 4) * std::clamp(fraction, 0.0, 1.0)), 6}, tint);
-        draw.border(track, dim(tint, .45f), 1);
-        for (int i = 1; i < 20; ++i)
-            draw.rect({x + 2 + (width - 4) * i / 20, track.y + 2, 1, 6}, {0, 0, 0, .4f});
-        y += 39;
+        return {};
+    struct Bar {
+        std::string title;
+        double fraction;
+        Color color;
     };
+    std::vector<Bar> bars;
+    const double autominerTime = game.state.get("autominer_time", 0).asDouble();
+    if (game.state.get("autominer_active", false).asBool() && autominerTime > 0) {
+        const double duration = game.state.get("_autominer_duration", autominerTime).asDouble();
+        bars.push_back({"Autominer · " + clockText(std::ceil(autominerTime / game.autominerTickCost())) +
+                            " left",
+                        autominerTime / std::max(1.0, duration), hexColor("#c9705f")});
+    }
+    const char* kinds[] = {"money", "token", "xp"};
+    const char* labels[] = {"Sell", "Token", "XP"};
+    const Color colors[] = {{.3f, .9f, .3f, 1}, currencyColor(game.data, "tokens"), {.8f, .7f, .95f, 1}};
+    for (int i = 0; i < 3; ++i) {
+        const auto multiplier = game.activeMultiplier(kinds[i]);
+        if (multiplier.amount <= 1 || multiplier.remaining <= 0)
+            continue;
+        bars.push_back({number(multiplier.amount, 2) + "x " + labels[i] + " · " +
+                            clockText(std::ceil(multiplier.remaining)),
+                        multiplier.remaining / multiplier.duration, colors[i]});
+    }
     const auto& guardian = game.state["guardian"];
     if (guardian["active"].asBool())
-        bar("Stone Guardian · " + guardianWeakName(guardian) + " · " +
-                std::to_string(int(std::ceil(guardian["remaining"].asDouble()))) + "s",
-            guardian["health"].asDouble() / std::max(1, guardian["maximum"].asInt()),
-            hexColor(game.data.systems["guardians"]["color"].asString()));
+        bars.push_back({"Stone Guardian · " + guardianWeakName(guardian) + " · " +
+                            clockText(std::ceil(guardian["remaining"].asDouble())),
+                        guardian["health"].asDouble() / std::max(1, guardian["maximum"].asInt()),
+                        hexColor(game.data.systems["guardians"]["color"].asString())});
     for (const auto& entry : game.data.systems["endgame"]) {
         const auto id = entry.asString();
         const double remaining = game.state["endgame"][id].get("remaining", 0).asDouble();
         if (remaining <= 0 || game.endgameMultiplier(id) <= 1)
             continue;
         const auto& def = game.data.enchants["defs"][id];
-        bar(def["label"].asString() + " · " + std::to_string(int(std::ceil(remaining))) + "s",
-            remaining / std::max(1.0, game.data.enchants["effects"][id]["duration"].asDouble()),
-            hexColor(def["color"].asString()));
+        bars.push_back({def["label"].asString() + " · " + clockText(std::ceil(remaining)),
+                        remaining / std::max(1.0, game.data.enchants["effects"][id]["duration"].asDouble()),
+                        hexColor(def["color"].asString())});
     }
+    if (bars.empty())
+        return {};
+
+    float width = std::min(364.f, draw.width() - 32);
+    float x = std::floor((draw.width() - width) / 2);
+    for (const auto& [name, box] : hudBoxes) {
+        if (name != "scoreboard" || box.x >= x + width || box.x + box.w <= x)
+            continue;
+        const float left = box.x - 24, right = draw.width() - box.x - box.w - 24;
+        if (std::max(left, right) >= 240) {
+            width = std::min(width, std::max(left, right));
+            x = left >= right ? (box.x - width) / 2 : box.x + box.w + (right + 24 - width) / 2;
+        }
+    }
+    const float spacing = std::min(39.f, (draw.height() * .5f - 20) / bars.size());
+    const bool compact = spacing < 34;
+    const int font = compact ? 12 : 13;
+    Rect bounds{x, 9, width, 0};
+    float y = 9;
+    for (const auto& bar : bars) {
+        const float textX = x + (width - draw.textWidth(bar.title, font)) / 2;
+        draw.text(textX + 1, y + 1, bar.title, {0, 0, 0, 1}, font);
+        draw.text(textX, y, bar.title, foreground, font);
+        Rect track{x, y + (compact ? 15 : 18), width, compact ? 7.f : 10.f};
+        draw.rect(track, {0.06f, 0.025f, .08f, .95f});
+        draw.rect({x + 2, track.y + 2, float((width - 4) * std::clamp(bar.fraction, 0.0, 1.0)), track.h - 4},
+                  bar.color);
+        draw.border(track, dim(bar.color, .45f), 1);
+        for (int i = 1; i < 20; ++i)
+            draw.rect({x + 2 + (width - 4) * i / 20, track.y + 2, 1, track.h - 4}, {0, 0, 0, .4f});
+        bounds.h = track.y + track.h - bounds.y;
+        y += spacing;
+    }
+    return bounds;
 }
 
 void UI::Impl::hud() {
     if (!ctx.playing)
         return;
     hudBoxes.clear();
-    bossBars();
-    tutorialHud();
     const bool editing = page == "hud";
     const float width = draw.width(), height = draw.height();
     if (page.empty()) {
@@ -130,6 +169,8 @@ void UI::Impl::hud() {
         row("Autominer: ", autominer,
             game.state.get("autominer_active", false).asBool() ? hexColor("#c9705f") : dim(foreground, .6f));
     }
+    const Rect timers = bossBars();
+    tutorialHud(timers);
     const float size = 46;
     Rect hotbar = hudRect("hotbar", {(width - size * 9) / 2, height - size - 12, size * 9, size});
     int selected = std::clamp(game.state.get("selected_hotbar_index", 0).asInt(), 0, 8);

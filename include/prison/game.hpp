@@ -6,7 +6,7 @@ namespace prison {
 constexpr int VaultPageSize = 54;
 constexpr int MaxVaultPages = 25;
 struct TimedMultiplier {
-    double amount = 1, remaining = 0;
+    double amount = 1, remaining = 0, duration = 0;
 };
 class Game {
   public:

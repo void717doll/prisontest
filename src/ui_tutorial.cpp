@@ -51,11 +51,13 @@ void UI::Impl::tutorial() {
         pageButton({x + half + 12, bottom, half, 36}, "Back to Game", "");
 }
 
-void UI::Impl::tutorialHud() {
+void UI::Impl::tutorialHud(Rect timers) {
     if (!page.empty() || game.state["tutorial"].get("status", "") != "active")
         return;
     const float width = std::min(340.f, draw.width() * .43f);
-    const Rect box{14, 56, width, 96};
+    Rect box{14, 56, width, 96};
+    if (timers.x < box.x + box.w && timers.x + timers.w > box.x)
+        box.y = std::max(box.y, timers.y + timers.h + 10);
     Color shade = background;
     shade.a = .88f;
     draw.rect(box, shade);

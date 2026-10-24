@@ -123,8 +123,12 @@ bool apply(Game& game, const Json& item) {
     const auto name = id(item);
     const int total = count(item);
     if (name == "automine_time") {
-        game.state["autominer_time"] = game.state.get("autominer_time", 0).asDouble() +
-                                       std::max(1.0, item.get("duration", 3600).asDouble()) * total;
+        const double remaining = game.state.get("autominer_time", 0).asDouble();
+        const double added = std::max(1.0, item.get("duration", 3600).asDouble()) * total;
+        game.state["autominer_time"] = remaining + added;
+        if (game.state.get("autominer_active", false).asBool())
+            game.state["_autominer_duration"] =
+                std::max(remaining, game.state.get("_autominer_duration", remaining).asDouble()) + added;
         return true;
     }
     if (name == "liquid_xp") {
@@ -166,7 +170,9 @@ bool apply(Game& game, const Json& item) {
             rows = Json(::Json::arrayValue);
         for (auto& row : rows)
             if (row.isObject() && std::abs(row.get("amount", 1).asDouble() - amount) < 0.001) {
-                row["remaining"] = std::max(0.0, row.get("remaining", 0).asDouble()) + duration;
+                const double remaining = std::max(0.0, row.get("remaining", 0).asDouble());
+                row["duration"] = std::max(remaining, row.get("duration", remaining).asDouble()) + duration;
+                row["remaining"] = remaining + duration;
                 return true;
             }
         if (rows.size() >= 256)
@@ -174,6 +180,7 @@ bool apply(Game& game, const Json& item) {
         Json row(::Json::objectValue);
         row["amount"] = amount;
         row["remaining"] = duration;
+        row["duration"] = duration;
         rows.append(row);
         return true;
     }
@@ -926,6 +933,7 @@ Result Game::itemAction(const std::string& action, const Json& args) {
         if (id(state["inventory_slots"][selected]) != "pickaxe")
             return fail("Hold your prison pickaxe to start Autominer.");
         autominerElapsed_ = 0;
+        state["_autominer_duration"] = state["autominer_time"];
         state["autominer_active"] = true;
         return {true, "Autominer started.", "autominer:start"};
     }

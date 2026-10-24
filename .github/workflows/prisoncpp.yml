@@ -219,8 +219,8 @@ jobs:
           cat >> "$GITHUB_STEP_SUMMARY" <<EOF
           [download all platform packages]($BUNDLE_URL)
 
-          extract the bundle and upload the ten packages in assets/ and SHA256SUMS.txt
-          to a release in prisontest/prisontest-client. use notes.md for its description.
+          the bundle contains all ten packages and SHA256SUMS.txt in assets/.
+          release runs publish these files in this repository after all platforms succeed.
           EOF
 
   release:

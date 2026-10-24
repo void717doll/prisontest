@@ -1,12 +1,12 @@
 # prisontest
 
 a singleplayer prison mining game. mine blocks, sell what you collect, upgrade
-your pickaxe and work through ranks and prestiges. pets, robots, crystals and
-bosses give you more to work towards.
+your pickaxe and work through ranks and prestiges. collect pets, robots,
+crystals and pickaxe parts along the way.
 
 this is the standalone C++ client, built with SDL2 and OpenGL.
-[downloads](https://github.com/prisontest/prisontest-client/releases) are kept
-in the public client repository.
+download packages from this repository's
+[releases](https://github.com/void717doll/prisontest/releases).
 
 packages: linux deb, rpm, AppImage and tar.gz; windows x64 and win32 installers and zips;
 macos apple silicon and intel apps.
@@ -52,6 +52,10 @@ use WASD to move, left click to mine and right click to use an item.
 E opens your inventory, M opens your pickaxe, and T or / opens chat.
 type `/help` for commands and game systems. new worlds start with a tutorial
 that can be skipped.
+
+active autominer time, sell/token/xp multipliers and temporary enchant effects
+have countdown bars above the mine. the autominer countdown accounts for its
+current speed; stored time remains in the scoreboard.
 
 ## development
 
