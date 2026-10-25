@@ -853,14 +853,6 @@ Result Game::itemAction(const std::string& action, const Json& args) {
         }
         return success("Salvaged " + std::to_string(total) + (total == 1 ? " part." : " parts."));
     }
-    if (action == "salvage") {
-        if (args.isMember("item") && args["item"] != item)
-            return fail("Item changed. Select it again.");
-        if (!item.isObject() || !salvage(*this, item))
-            return fail("This item cannot be salvaged.");
-        consume(slots, index, count(item));
-        return success("Item salvaged.");
-    }
     if (action == "buy_point") {
         for (const auto& product : pointShopProducts())
             if (args.get("key", "") == product["key"]) {

@@ -23,7 +23,7 @@ void UI::Impl::rightClick(const Slot& value) {
     if (value.container == "preview")
         return;
     if (value.container == "inventory") {
-        if (page == "pet_food" || (page == "bin" && value.item["id"] == "pick_part")) {
+        if (page == "pet_food" || page == "bin") {
             const bool parts = page == "bin";
             auto& selection = parts ? partSelection : petFoodSelection;
             if (value.index > 0 && value.item["id"] == (parts ? "pick_part" : "pet")) {
@@ -32,11 +32,6 @@ void UI::Impl::rightClick(const Slot& value) {
                 else
                     selection[value.index] = value.item;
             }
-        } else if (page == "bin" && value.index > 0 && value.item.isObject()) {
-            Json args;
-            args["index"] = value.index;
-            args["item"] = value.item;
-            apply(game.itemAction("salvage", args));
         } else if (page == "combinemulti" && value.index > 0 && value.item.isObject()) {
             confirmAction = "combinemulti";
             confirmArgs = Json();

@@ -233,7 +233,7 @@
           "body": [
             "Drag items between inventory, equipment and storage. Matching items stack while keeping their metadata.",
             "Right-click a held pouch to open it. /pv opens your vault, where you can buy and name extra pages.",
-            "/salvage, /bin and /trash turn eligible items into tokens."
+            "open /bin to select spare parts, review them and confirm the salvage. /salvage, /scrap and /trash open the same selector."
           ],
           "keywords": [
             "pouch",
@@ -600,7 +600,7 @@
     {
       "command": "salvage",
       "category": "Items & Storage",
-      "description": "Choose items to convert into salvage tokens.",
+      "description": "select spare parts and confirm salvaging them for tokens.",
       "usage": "/salvage",
       "aliases": [
         "scrap",

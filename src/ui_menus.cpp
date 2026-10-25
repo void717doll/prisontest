@@ -1169,7 +1169,7 @@ void UI::Impl::itemSelection() {
         }
     }
     paragraph(box.x + 26, box.y + 69, box.w - 52,
-              parts ? "Select parts to review before salvaging. Other items are salvaged when clicked."
+              parts ? "Select parts to salvage for tokens. Nothing is consumed until you confirm."
                     : "Select pets to turn into food. Nothing is consumed until you confirm.");
     label(box.x + 26, box.y + 112,
           parts ? std::to_string(total) + (total == 1 ? " part selected" : " parts selected")

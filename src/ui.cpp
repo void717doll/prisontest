@@ -387,8 +387,13 @@ void UI::Impl::inventory(Rect box) {
     for (int row = 0; row < 4; ++row)
         for (int col = 0; col < 9; ++col) {
             int index = row == 3 ? col : 9 + row * 9 + col;
+            bool active = true;
+            if (page == "pet_food")
+                active = index > 0 && items[index]["id"] == "pet";
+            else if (page == "bin")
+                active = index > 0 && items[index]["id"] == "pick_part";
             slot({x + col * size, y + row * size + (row == 3 ? 5.f : 0.f), size - 2, size - 2}, "inventory",
-                 index, items[index], page != "pet_food" || (index > 0 && items[index]["id"] == "pet"));
+                 index, items[index], active);
         }
 }
 
