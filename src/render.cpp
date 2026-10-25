@@ -491,30 +491,42 @@ struct Renderer::Impl {
             putTile(TerrainPocketTile, im);
         }
         const auto scenery = data.root / "textures/luanti";
-        const std::pair<int, const char*> materials[] = {
-            {TerrainMasonryTile, "default_stone_brick.png"},
-            {TerrainPavingTile, "default_stone_block.png"},
-            {TerrainTimberTile, "default_wood.png"},
-            {TerrainMetalTile, "default_steel_block.png"},
-            {TerrainLampTile, "default_meselamp.png"},
-            {TerrainTrimTile, "default_stone.png"},
-            {TerrainGrassTile, "default_grass.png"},
-            {TerrainLeavesTile, "default_pine_needles.png"},
-            {TerrainRockTile, "default_stone.png"},
-            {TerrainDirtTile, "default_dirt.png"},
-            {TerrainTimberEndTile, "default_wood.png"},
-            {TerrainTreeTile, "default_pine_tree.png"},
-            {TerrainTreeEndTile, "default_pine_tree_top.png"},
-            {TerrainTallGrassTile, "default_grass_2.png"},
-            {TerrainTallGrassTile + 1, "default_grass_3.png"},
-            {TerrainTallGrassTile + 2, "default_grass_4.png"},
+        struct Material {
+            int tile;
+            const char* file;
+            const char* color = nullptr;
+            float amount = 0;
+        };
+        const Material materials[] = {
+            {TerrainMasonryTile, "default_stone_brick.png", "#596472", .35f},
+            {TerrainPavingTile, "default_stone_block.png", "#596472", .35f},
+            {TerrainTimberTile, "default_wood.png", "#685041", .4f},
+            {TerrainMetalTile, "default_steel_block.png", "#252a2e", .75f},
+            {TerrainLampTile, "default_meselamp.png", "#ffe6a4", .4f},
+            {TerrainTrimTile, "default_stone.png", "#414d5a", .4f},
+            {TerrainGrassTile, "default_grass.png", "#668653", .35f},
+            {TerrainLeavesTile, "default_pine_needles.png", "#385341", .3f},
+            {TerrainRockTile, "default_stone.png", "#596472", .35f},
+            {TerrainDirtTile, "default_dirt.png", "#695443", .2f},
+            {TerrainTimberEndTile, "default_wood.png", "#685041", .4f},
+            {TerrainTreeTile, "default_pine_tree.png", "#574b3e", .2f},
+            {TerrainTreeEndTile, "default_pine_tree_top.png", "#574b3e", .2f},
+            {TerrainTallGrassTile, "default_grass_2.png", "#668653", .35f},
+            {TerrainTallGrassTile + 1, "default_grass_3.png", "#668653", .35f},
+            {TerrainTallGrassTile + 2, "default_grass_4.png", "#668653", .35f},
             {TerrainFlowerTile, "flowers_rose.png"},
             {TerrainFlowerTile + 1, "flowers_dandelion_yellow.png"},
             {TerrainFlowerTile + 2, "flowers_viola.png"}};
-        for (const auto& [tile, file] : materials)
-            putTile(tile, loadImage(scenery / file));
+        for (const auto& material : materials) {
+            Image image = loadImage(scenery / material.file);
+            if (material.color)
+                tint(image, hexColor(material.color), material.amount);
+            putTile(material.tile, image);
+        }
         Image grassSide = loadImage(scenery / "default_dirt.png");
-        const Image grass = loadImage(scenery / "default_grass_side.png");
+        Image grass = loadImage(scenery / "default_grass_side.png");
+        tint(grassSide, hexColor("#695443"), .2f);
+        tint(grass, hexColor("#668653"), .35f);
         for (std::size_t p = 0; p < grassSide.pixels.size(); p += 4) {
             const float alpha = grass.pixels[p + 3] / 255.f;
             for (int k = 0; k < 3; ++k)

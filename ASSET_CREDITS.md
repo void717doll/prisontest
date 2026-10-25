@@ -1,8 +1,9 @@
 # asset credits
 
 the scenery textures in `textures/luanti` are copied unchanged from the supplied
-Minetest Game `default` and `flowers` mods. the renderer layers the grass-side
-overlay over dirt. no generated artwork is used for these scenery materials.
+Minetest Game `default` and `flowers` mods. the renderer applies prisontest's
+scenery palette and layers the grass-side overlay over dirt. the source texture
+files are unchanged. no generated artwork is used for these scenery materials.
 
 - terrain, wood and lamps: [original authors](textures/luanti/README-default.md)
   and [media license](textures/luanti/LICENSE.txt). most are CC BY-SA 3.0;
