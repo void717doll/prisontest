@@ -48,6 +48,10 @@ void UI::Impl::settingsChanged() {
 }
 
 void UI::Impl::setPage(const std::string& name) {
+    if ((name == "statistics" || name == "stats") && page != "statistics") {
+        statisticsReturn = page == "pause" || page == "more" ? page : "";
+        statisticsCategory = "General";
+    }
     if (name != "pet_food" && name != "confirm")
         petFoodSelection.clear();
     if (name != "bin" && name != "confirm")
@@ -59,6 +63,8 @@ void UI::Impl::setPage(const std::string& name) {
         action("save");
     }
     page = name;
+    if (page == "stats")
+        page = "statistics";
     if (page.empty() && ctx.playing && game.state["tutorial"].get("status", "") == "new")
         page = "tutorial";
     if (page == "inventory")
@@ -317,7 +323,9 @@ Rect UI::Impl::panel(const std::string& title, float width, float height) {
     draw.border(box, outline);
     label(box.x + 18, box.y + 17, title, 19);
     button({box.x + box.w - 84, box.y + 10, 70, 32}, "Done", [this] {
-        if (page == "itemviewer" || page == "theme")
+        if (page == "statistics")
+            setPage(statisticsReturn);
+        else if (page == "itemviewer" || page == "theme")
             setPage("settings");
         else if (page == "pet_food")
             setPage("pets");
@@ -411,6 +419,8 @@ void UI::Impl::paint() {
         help();
     else if (page == "pause")
         pause();
+    else if (page == "statistics")
+        statistics();
     else if (page == "tutorial")
         tutorial();
     else if (page == "settings" || page == "itemviewer" || page == "theme")

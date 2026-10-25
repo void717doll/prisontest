@@ -136,7 +136,9 @@ Result Game::strikeGuardian(int part) {
     guardian["defeated"] = std::min(1000000000, guardian["defeated"].asInt() + 1);
     const auto& cfg = data.systems["guardians"];
     const int points = cfg.get("points", 3).asInt();
-    state["points"] = std::min(9e15, state["points"].asDouble() + points);
+    const double beforePoints = state["points"].asDouble();
+    state["points"] = std::min(9e15, beforePoints + points);
+    addStatistic("points_earned", state["points"].asDouble() - beforePoints);
     return {true, "Stone Guardian defeated. +" + std::to_string(points) + " points."};
 }
 } // namespace prison

@@ -111,8 +111,10 @@ bool Game::activateEndgame(const std::string& id, std::vector<Proc>& procs) {
             choices[std::uniform_int_distribution<std::size_t>(0, choices.size() - 1)(random)];
         if (state["endgame"].isMember(effect))
             activateEndgame(effect, procs);
-        else
+        else {
             procs.push_back({effect, enchantLevel(effect)});
+            recordEnchantProc(effect);
+        }
     } else if (id == "rewind") {
         double money = 0, tokens = 0;
         const double now = state["playtime_seconds"].asDouble(),
@@ -125,8 +127,11 @@ bool Game::activateEndgame(const std::string& id, std::vector<Proc>& procs) {
             }
         if (money <= 0 && tokens <= 0)
             return false;
-        state["money"] = std::min(cap, state["money"].asDouble() + money);
-        state["tokens"] = std::min(cap, state["tokens"].asDouble() + tokens);
+        const double beforeMoney = state["money"].asDouble(), beforeTokens = state["tokens"].asDouble();
+        state["money"] = std::min(cap, beforeMoney + money);
+        state["tokens"] = std::min(cap, beforeTokens + tokens);
+        addStatistic("money_earned", state["money"].asDouble() - beforeMoney);
+        addStatistic("tokens_earned", state["tokens"].asDouble() - beforeTokens);
         state["_summary_money"] = std::min(cap, state.get("_summary_money", 0).asDouble() + money);
         state["_summary_tokens"] = std::min(cap, state.get("_summary_tokens", 0).asDouble() + tokens);
         // replayed income never enters the history or advances mining progression.
@@ -134,7 +139,9 @@ bool Game::activateEndgame(const std::string& id, std::vector<Proc>& procs) {
     } else if (id == "jackpot") {
         awardJackpot();
     } else if (id == "credit_finder") {
-        state["points"] = std::min(9e15, state["points"].asDouble() + 1);
+        const double beforePoints = state["points"].asDouble();
+        state["points"] = std::min(9e15, beforePoints + 1);
+        addStatistic("points_earned", state["points"].asDouble() - beforePoints);
         state["_summary_points"] = state.get("_summary_points", 0).asDouble() + 1;
     } else {
         if (id == "rage" && inShaft() && shaftCondition().get("procs", true) != true)
@@ -142,6 +149,7 @@ bool Game::activateEndgame(const std::string& id, std::vector<Proc>& procs) {
         state["endgame"][id]["remaining"] = cfg["duration"];
     }
     state["endgame"][id]["cooldown"] = cfg["cooldown"];
+    recordEnchantProc(id);
     return true;
 }
 

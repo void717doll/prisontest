@@ -8,6 +8,15 @@ constexpr int MaxVaultPages = 25;
 struct TimedMultiplier {
     double amount = 1, remaining = 0, duration = 0;
 };
+enum class StatisticFormat { Count, Time, Currency };
+struct StatisticDefinition {
+    const char* id;
+    const char* label;
+    const char* category;
+    StatisticFormat format = StatisticFormat::Count;
+};
+const std::vector<StatisticDefinition>& statisticDefinitions();
+const std::vector<std::string>& procEnchantIds();
 class Game {
   public:
     explicit Game(const Data& source);
@@ -17,6 +26,10 @@ class Game {
     void newWorld(bool devmode = false);
     void loadSnapshot(const Json& snapshot);
     Json snapshot() const;
+    void addStatistic(const std::string& id, double amount = 1);
+    double statistic(const std::string& id) const;
+    void recordEnchantProc(const std::string& id);
+    double enchantProcCount(const std::string& id) const;
     Json captureRewardContext() const;
     MiningReward mineBlock(const std::string& blockId, bool allowProcs = true, bool manual = true,
                            const std::string& source = "manual", const Json& context = Json());

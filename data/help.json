@@ -37,6 +37,15 @@
           ]
         },
         {
+          "id": "statistics",
+          "title": "World statistics",
+          "body": [
+            "Open /stats or Statistics in the pause menu for this world's mining totals, currency earned, enchant activations, pets fed, crystals dusted and crafted, and other actions.",
+            "Statistics save with the world. Older worlds keep their recorded totals; actions that were never tracked start at zero."
+          ],
+          "keywords": ["statistics", "stats", "totals", "earned", "procs", "world"]
+        },
+        {
           "id": "progression",
           "title": "Ranks and prestige",
           "body": [
@@ -604,6 +613,13 @@
       "category": "Settings & Chat",
       "description": "Open message and proc settings.",
       "usage": "/settings"
+    },
+    {
+      "command": "stats",
+      "category": "Settings & Chat",
+      "description": "View this world's statistics, currency earned and enchant activations.",
+      "usage": "/stats",
+      "aliases": ["statistics"]
     },
     {
       "command": "endmulti",

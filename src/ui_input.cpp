@@ -195,7 +195,9 @@ void UI::Impl::event(const SDL_Event& event) {
         return;
     }
     if (key == SDLK_ESCAPE) {
-        if (page == "pet_food")
+        if (page == "statistics")
+            setPage(statisticsReturn);
+        else if (page == "pet_food")
             setPage("pets");
         else if (page == "confirm" && confirmAction == "pet_food")
             setPage(confirmArgs.get("pets", Json()).isArray() ? "pet_food" : "pets");

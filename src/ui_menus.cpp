@@ -3,6 +3,7 @@
 #include "ui_internal.hpp"
 #include <array>
 #include <cctype>
+#include <iomanip>
 
 namespace prison {
 namespace {
@@ -98,7 +99,73 @@ void UI::Impl::pause() {
     pageButton({x, y + 48, width, 38}, "Settings", "settings");
     pageButton({x, y + 96, width, 38}, "Help", "help");
     pageButton({x, y + 144, width, 38}, "Tutorial", "tutorial");
-    button({x, y + 192, width, 38}, "Save & Return to Title", [this] { action("title"); });
+    pageButton({x, y + 192, width, 38}, "Statistics", "statistics");
+    button({x, y + 240, width, 38}, "Save & Return to Title", [this] { action("title"); });
+}
+
+void UI::Impl::statistics() {
+    Rect box = panel("Statistics", 730, 570);
+    const float x = box.x + 22, width = box.w - 44;
+    label(x, box.y + 60, "Totals for this world", 14);
+    std::vector<std::string> categories;
+    for (const auto& entry : statisticDefinitions())
+        if (std::find(categories.begin(), categories.end(), entry.category) == categories.end())
+            categories.push_back(entry.category);
+    if (categories.empty())
+        return;
+    if (std::find(categories.begin(), categories.end(), statisticsCategory) == categories.end())
+        statisticsCategory = categories.front();
+    const float categoryWidth = std::min(152.f, width * .25f);
+    for (unsigned i = 0; i < categories.size(); ++i) {
+        const auto category = categories[i];
+        Rect tab{x, box.y + 94 + i * 34, categoryWidth, 28};
+        button(tab, category, [this, category] {
+            statisticsCategory = category;
+            scroll = 0;
+        });
+        if (category == statisticsCategory)
+            draw.border(tab, foreground, 2);
+    }
+    const float listX = x + categoryWidth + 18;
+    Rect list{listX, box.y + 127, x + width - listX, box.h - 187};
+    const bool enchants = statisticsCategory == "Enchants";
+    label(list.x, box.y + 95, "Statistic", 14);
+    label(list.x + list.w - draw.textWidth("Total", 14) - 10, box.y + 95, "Total", 14);
+    draw.rect({list.x, box.y + 118, list.w, 1}, outline);
+    beginScroll(list);
+    float y = list.y - scroll;
+    auto row = [&](const std::string& name, const std::string& value) {
+        label(list.x, y + 5, name, 14);
+        label(list.x + list.w - draw.textWidth(value, 14) - 10, y + 5, value, 14);
+        y += 32;
+    };
+    for (const auto& entry : statisticDefinitions()) {
+        if (entry.category != statisticsCategory)
+            continue;
+        const double total = game.statistic(entry.id);
+        std::string value = entry.format == StatisticFormat::Time ? clockText(total)
+                            : entry.format == StatisticFormat::Currency ? compact(total)
+                                                                       : blockCount(total);
+        if (entry.format == StatisticFormat::Currency && draw.textWidth(value, 14) > list.w * .45f) {
+            std::ostringstream text;
+            text << std::scientific << std::setprecision(2) << total;
+            value = text.str();
+        }
+        row(entry.label, value);
+    }
+    if (enchants) {
+        y += 8;
+        label(list.x, y + 5, "Enchantment activations", 14);
+        y += 32;
+        for (const auto& id : procEnchantIds()) {
+            const auto& definition = game.data.enchants["defs"][id];
+            if (definition.isObject())
+                row(definition.get("label", id).asString(), blockCount(game.enchantProcCount(id)));
+        }
+    }
+    endScroll(y);
+    paragraph(x, box.y + box.h - 43, width,
+              "Older worlds only include activity that was recorded.", 12);
 }
 
 void UI::Impl::settings() {
@@ -405,10 +472,8 @@ void UI::Impl::equipment() {
                 }
         });
     }
-    if (page == "crystals") {
-        pageButton({box.x + 24, box.y + 286, 170, 30}, "Equipment Sets", "equipment_sets");
-        pageButton({box.x + 210, box.y + 286, 160, 30}, "Resonance", "resonance");
-    }
+    if (page == "crystals")
+        pageButton({box.x + 24, box.y + 286, 160, 30}, "Resonance", "resonance");
     inventory(box);
 }
 
@@ -663,6 +728,7 @@ void UI::Impl::more() {
                                                            {"Filter", "filter"},
                                                            {"Bin", "bin"},
                                                            {"Boosts", "boosts"},
+                                                           {"Statistics", "statistics"},
                                                            {"Rewards", "rewards"},
                                                            {"Combine Multipliers", "combinemulti"},
                                                            {"Settings", "settings"},

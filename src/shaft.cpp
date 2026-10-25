@@ -146,7 +146,9 @@ bool Game::recordShaftMining(int blocks) {
         return false;
     shaft["best_depth"] = std::max(shaft["best_depth"].asInt(), floor["depth"].asInt());
     shaft["floors_cleared"] = std::min(depthLimit, shaft["floors_cleared"].asInt() + 1);
-    state["points"] = std::min(9e15, state["points"].asDouble() + floor["points"].asDouble());
+    const double beforePoints = state["points"].asDouble();
+    state["points"] = std::min(9e15, beforePoints + floor["points"].asDouble());
+    addStatistic("points_earned", state["points"].asDouble() - beforePoints);
     return true;
 }
 } // namespace prison

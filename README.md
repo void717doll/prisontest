@@ -57,6 +57,10 @@ active autominer time, sell/token/xp multipliers and temporary enchant effects
 have countdown bars above the mine. the autominer countdown accounts for its
 current speed; stored time remains in the scoreboard.
 
+open Statistics from the pause menu or use `/stats` for this world's totals:
+mining, currency earned, enchant activations, pets, crystals and other actions.
+older worlds keep their recorded totals; actions that were never tracked start at zero.
+
 ## development
 
 the core checks can use the repository's asset files:

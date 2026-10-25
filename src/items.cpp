@@ -84,8 +84,9 @@ Json rollPet(Game& game, const std::string& rarity) {
 void addXp(Game& game, double amount) {
     if (!std::isfinite(amount) || amount <= 0)
         return;
-    double xp = std::min(game.data.balance.get("currency_cap", 9e33).asDouble(),
-                         game.state.get("pick_xp", 0).asDouble() + amount);
+    const double previous = game.state.get("pick_xp", 0).asDouble();
+    double xp = std::min(game.data.balance.get("currency_cap", 9e33).asDouble(), previous + amount);
+    game.addStatistic("pickaxe_xp_earned", xp - previous);
     int level = std::max(1, game.state.get("pick_level", 1).asInt());
     for (int steps = 0;
          steps < 32 && level < std::numeric_limits<int>::max() && xp >= game.pickXpNeeded(level); ++steps) {
@@ -129,6 +130,7 @@ bool apply(Game& game, const Json& item) {
         if (game.state.get("autominer_active", false).asBool())
             game.state["_autominer_duration"] =
                 std::max(remaining, game.state.get("_autominer_duration", remaining).asDouble()) + added;
+        game.addStatistic("autominer_time_added", added);
         return true;
     }
     if (name == "liquid_xp") {
@@ -173,6 +175,7 @@ bool apply(Game& game, const Json& item) {
                 const double remaining = std::max(0.0, row.get("remaining", 0).asDouble());
                 row["duration"] = std::max(remaining, row.get("duration", remaining).asDouble()) + duration;
                 row["remaining"] = remaining + duration;
+                game.addStatistic("multipliers_used", total);
                 return true;
             }
         if (rows.size() >= 256)
@@ -182,6 +185,7 @@ bool apply(Game& game, const Json& item) {
         row["remaining"] = duration;
         row["duration"] = duration;
         rows.append(row);
+        game.addStatistic("multipliers_used", total);
         return true;
     }
     return false;
@@ -219,8 +223,11 @@ bool salvage(Game& game, const Json& item) {
     }
     double amount = std::min(cfg.get("max_tokens_per_redeem", 500000000).asDouble(),
                              std::floor(randomRange(game, low, high + 1)) * count(item));
-    game.state["tokens"] = std::min(game.data.balance.get("currency_cap", 9e33).asDouble(),
-                                    game.state.get("tokens", 0).asDouble() + amount);
+    const double tokens = game.state.get("tokens", 0).asDouble();
+    game.state["tokens"] = std::min(game.data.balance.get("currency_cap", 9e33).asDouble(), tokens + amount);
+    game.addStatistic("tokens_earned", game.state["tokens"].asDouble() - tokens);
+    if (id(item) == "pick_part")
+        game.addStatistic("parts_salvaged", count(item));
     return true;
 }
 } // namespace item_detail
@@ -464,6 +471,7 @@ Result Game::itemAction(const std::string& action, const Json& args) {
             for (const char* wallet : {"rubies", "sapphires"})
                 state[wallet] = state[wallet].asDouble() - quote[wallet].asDouble();
             robot["level"] = robot["level"].asInt() + quote["levels"].asInt();
+            addStatistic("robots_upgraded", quote["levels"].asInt());
             return {true, "Robot upgraded to level " + std::to_string(robot["level"].asInt()) + ".",
                     "robots"};
         }
@@ -486,6 +494,7 @@ Result Game::itemAction(const std::string& action, const Json& args) {
         if (!loaded)
             return fail("No Robot Fuel in your inventory. Upgrade FuelFinder to find it.");
         robot["fuel"] = robot.get("fuel", 0).asInt() + loaded * perItem;
+        addStatistic("robot_fuel_used", loaded);
         return success("Added " + std::to_string(loaded * perItem) + " fuel.");
     }
     if (action.rfind("equipment_set_", 0) == 0)
@@ -507,6 +516,7 @@ Result Game::itemAction(const std::string& action, const Json& args) {
         state["money"] = std::floor(money - cost);
         state["vault_slots"].resize((page + 1) * VaultPageSize);
         state["vault_names"].append("Vault " + std::to_string(page + 1));
+        addStatistic("vault_pages_bought");
         return {true, "Vault page " + std::to_string(page + 1) + " unlocked.",
                 "vault:" + std::to_string(page)};
     }
@@ -546,6 +556,7 @@ Result Game::itemAction(const std::string& action, const Json& args) {
         else if (!insert(planned, rolled, 1))
             return fail("Free a slot before identifying this stack.");
         slots = planned;
+        addStatistic(name == "crystal" ? "crystals_identified" : "parts_identified");
         return success("Item identified.");
     }
     if (action == "hatch") {
@@ -566,6 +577,7 @@ Result Game::itemAction(const std::string& action, const Json& args) {
         egg["ready"] = false;
         eggs.append(egg);
         consume(slots, index);
+        addStatistic("eggs_incubated");
         return success("Egg added to the hatchery.");
     }
     if (action == "claim") {
@@ -621,6 +633,8 @@ Result Game::itemAction(const std::string& action, const Json& args) {
         addPetExperience((10 + int(random() % 41)) * multiplier);
         pet["last_fed_ts"] = ::Json::Int64(now);
         consume(slots, index);
+        addStatistic("pets_fed");
+        addStatistic("pet_food_used");
         return success("Pet fed.");
     }
     if (action == "merge_pets") {
@@ -664,6 +678,7 @@ Result Game::itemAction(const std::string& action, const Json& args) {
         if (!insert(planned, pet, 1))
             return fail("Inventory is full.");
         slots = planned;
+        addStatistic("pets_merged");
         return success("Merged five Mythicals into an OVERPOWERED pet.");
     }
     if (action == "crystal_dust" || action == "dust" || action == "crystal_craft" || action == "craft" ||
@@ -716,6 +731,8 @@ Result Game::itemAction(const std::string& action, const Json& args) {
             if (!insert(planned, output, 1))
                 return fail("Not enough inventory space for the food.");
             slots = std::move(planned);
+            addStatistic("pets_converted", selected.size());
+            addStatistic("pet_food_created", double(food));
             return success("Converted " + std::to_string(selected.size()) +
                            (selected.size() == 1 ? " pet into " : " pets into ") +
                            std::to_string(food) + " pet food.");
@@ -741,6 +758,7 @@ Result Game::itemAction(const std::string& action, const Json& args) {
             return fail("Free an inventory slot first.");
         const int tier = item.get("tier", 1).asInt();
         Json outputs(::Json::arrayValue);
+        ::Json::Int64 converted = 1;
         if (operation == "crystal_dust" && !all) {
             consume(planned, index);
             Json output;
@@ -757,6 +775,7 @@ Result Game::itemAction(const std::string& action, const Json& args) {
             if (operation == "crystal_craft" && total < 4)
                 return fail("You need four matching dust.");
             const auto amount = operation == "crystal_dust" ? total : (all ? total / 4 * 4 : 4);
+            converted = amount;
             if (amount / 4 > 100000)
                 return fail("Not enough inventory space for the result.");
             auto needed = amount;
@@ -787,6 +806,13 @@ Result Game::itemAction(const std::string& action, const Json& args) {
             if (!insert(planned, output, 1))
                 return fail("Not enough inventory space for the result.");
         slots = planned;
+        if (operation == "crystal_dust") {
+            addStatistic("crystals_dusted", double(converted));
+            addStatistic("crystal_dust_created", double(converted));
+        }
+        for (const auto& output : outputs)
+            if (id(output) == "crystal")
+                addStatistic("crystals_crafted", count(output));
         return success("Items converted.");
     }
     if (action == "book" || action == "xp") {
@@ -917,6 +943,7 @@ Result Game::itemAction(const std::string& action, const Json& args) {
         if (!insert(planned, output, 1))
             return fail("Make room for the combined multiplier.");
         slots = planned;
+        addStatistic("multipliers_combined");
         return success("Combined four sell multipliers.");
     }
     if (action == "autominer_start") {
@@ -1059,6 +1086,7 @@ void Game::tickItems(double, int blocks, int hatcheryLevel) {
             egg["ready"] = egg["progress"].asDouble() >= required;
             if (egg["ready"].asBool()) {
                 rollPetMutation(egg);
+                addStatistic("pets_hatched");
                 recordProgress("hatches", 1, captureRewardContext());
             }
         }

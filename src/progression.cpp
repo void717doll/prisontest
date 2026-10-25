@@ -168,6 +168,7 @@ Result Game::progressionAction(const std::string& action, const Json& args) {
         state["money"] = money - cost;
         state["points"] = points - pointCost;
         state["progression"]["upgrades"][id] = quote["level"].asInt() + 1;
+        addStatistic("mine_upgrades_bought");
         return {true, "Mine upgraded. Applies on the next refill.", "mine_upgrades"};
     }
     if (action == "contract_accept") {
@@ -197,7 +198,9 @@ Result Game::progressionAction(const std::string& action, const Json& args) {
         }
         if (contract["progress"].asInt() < contract["goal"].asInt())
             return {false, "The contract is not finished."};
-        state["points"] = std::min(9e15, state["points"].asDouble() + contract["points"].asDouble());
+        const double beforePoints = state["points"].asDouble();
+        state["points"] = std::min(9e15, beforePoints + contract["points"].asDouble());
+        addStatistic("points_earned", state["points"].asDouble() - beforePoints);
         state["progression"]["contracts_completed"] =
             std::min(supplyLimit, amount(state["progression"]["contracts_completed"]) + 1);
         state["progression"]["contract"] = Json();
@@ -248,8 +251,12 @@ Result Game::progressionAction(const std::string& action, const Json& args) {
             state["inventory_slots"] = before;
             return {false, "Make room for your pet" + std::string(claim ? " and its rewards." : ".")};
         }
-        if (claim)
-            state["points"] = std::min(9e15, state["points"].asDouble() + trip["points"].asDouble());
+        if (claim) {
+            const double beforePoints = state["points"].asDouble();
+            state["points"] = std::min(9e15, beforePoints + trip["points"].asDouble());
+            addStatistic("points_earned", state["points"].asDouble() - beforePoints);
+            addStatistic("expeditions_completed");
+        }
         Json unused;
         trips.removeIndex(unsigned(at), &unused);
         return {true, claim ? "Pet returned with its expedition rewards." : "Pet recalled.", "expeditions"};

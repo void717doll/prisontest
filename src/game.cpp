@@ -5,9 +5,76 @@
 #include <limits>
 
 namespace prison {
+const std::vector<StatisticDefinition>& statisticDefinitions() {
+    static const std::vector<StatisticDefinition> definitions = {
+        {"playtime_seconds", "Time played", "General", StatisticFormat::Time},
+        {"blocks_mined", "Blocks mined", "General"},
+        {"money_earned", "Money earned", "Economy", StatisticFormat::Currency},
+        {"tokens_earned", "Tokens earned", "Economy", StatisticFormat::Currency},
+        {"sapphires_earned", "Sapphires earned", "Economy", StatisticFormat::Currency},
+        {"rubies_earned", "Rubies earned", "Economy", StatisticFormat::Currency},
+        {"points_earned", "Points earned", "Economy", StatisticFormat::Currency},
+        {"pickaxe_xp_earned", "Pickaxe XP earned", "Economy", StatisticFormat::Currency},
+        {"pets_fed", "Pets fed", "Pets"},
+        {"pet_food_used", "Pet food used", "Pets"},
+        {"eggs_incubated", "Eggs incubated", "Pets"},
+        {"pets_hatched", "Pets hatched", "Pets"},
+        {"pets_merged", "Pets merged", "Pets"},
+        {"pets_converted", "Pets turned into food", "Pets"},
+        {"pet_food_created", "Pet food created", "Pets"},
+        {"crystals_identified", "Crystals identified", "Crystals"},
+        {"crystals_dusted", "Crystals dusted", "Crystals"},
+        {"crystals_crafted", "Crystals crafted", "Crystals"},
+        {"crystal_dust_created", "Crystal dust created", "Crystals"},
+        {"parts_identified", "Parts identified", "Parts"},
+        {"parts_salvaged", "Parts salvaged", "Parts"},
+        {"autominer_seconds", "Autominer running time", "Machines", StatisticFormat::Time},
+        {"autominer_blocks", "Autominer blocks mined", "Machines"},
+        {"autominer_time_added", "Autominer time added", "Machines", StatisticFormat::Time},
+        {"robots_upgraded", "Robot levels bought", "Machines"},
+        {"robot_fuel_used", "Fuel items used", "Machines"},
+        {"rankups", "Ranks gained", "Progression"},
+        {"prestiges", "Prestiges", "Progression"},
+        {"rebirths", "Rebirths", "Progression"},
+        {"vault_pages_bought", "Vault pages bought", "Progression"},
+        {"contracts_completed", "Contracts completed", "Progression"},
+        {"expeditions_completed", "Expeditions completed", "Progression"},
+        {"mine_upgrades_bought", "Mine upgrades bought", "Progression"},
+        {"shaft_floors_completed", "Shaft floors cleared", "Progression"},
+        {"enchant_levels_bought", "Enchant levels bought", "Enchants"},
+        {"enchant_procs", "Total enchant procs", "Enchants"},
+        {"multipliers_used", "Multipliers used", "Enchants"},
+        {"multipliers_combined", "Multipliers combined", "Enchants"},
+    };
+    return definitions;
+}
+
+const std::vector<std::string>& procEnchantIds() {
+    static const std::vector<std::string> ids = {
+        "greed", "crystalfinder", "partfinder", "timefinder", "lucky", "combo",
+        "explosive", "jackhammer", "veinminer", "ruby_greed", "sapphire_greed", "fuel_finder",
+        "drill", "jackpot", "hyper_surge", "adrenaline", "rage", "credit_finder", "rewind",
+        "energizer", "overdrive",
+    };
+    return ids;
+}
+
 namespace {
 constexpr double progressLimit = 9000000000000000.0;
 constexpr double defaultCurrencyCap = 9e33;
+constexpr double earnedCurrencyLimit = 1e300;
+
+const StatisticDefinition* statisticDefinition(const std::string& id) {
+    for (const auto& definition : statisticDefinitions())
+        if (id == definition.id)
+            return &definition;
+    return nullptr;
+}
+
+bool derivedStatistic(const std::string& id) {
+    return id == "playtime_seconds" || id == "blocks_mined" || id == "prestiges" || id == "rebirths" ||
+           id == "contracts_completed" || id == "shaft_floors_completed" || id == "enchant_procs";
+}
 
 double number(const Json& value, double fallback = 0.0, double limit = defaultCurrencyCap) {
     if (!value.isNumeric())
@@ -171,6 +238,7 @@ void updateDerived(Game& game) {
 }
 void addPickXp(Game& game, double amount) {
     double xp = currency(game, field(game.state, "pick_xp") + std::max(0.0, amount));
+    game.addStatistic("pickaxe_xp_earned", xp - field(game.state, "pick_xp"));
     int level = std::max(1, integer(game.state, "pick_level", 1));
     // Large developer grants carry remaining XP into future frames instead of
     // making one input event iterate through millions of levels.
@@ -307,6 +375,9 @@ void finderDrops(Game& game, bool bulk, int rolls = 1, const Json& context = Jso
             context.isObject() ? integer(context, "parts_prestige") : integer(game.state, "parts_prestige");
         drop["tier"] = part ? std::min(2147483646, partsPrestige) + 1 : crystalTier(game, context);
         drop["identified"] = false;
+        const int level = context.isObject() ? integer(context["enchants"], id) : game.enchantLevel(id);
+        if (level > 0)
+            game.recordEnchantProc(id);
         game.giveItem(drop, true);
     }
     const Json& books = game.data.systems["enchant_book_whitelist"];
@@ -342,6 +413,7 @@ void finderDrops(Game& game, bool bulk, int rolls = 1, const Json& context = Jso
         drop["duration"] = durations.isArray() && !durations.empty()
                                ? durations[roll(game, 0, static_cast<int>(durations.size()) - 1)]
                                : Json(600);
+        game.recordEnchantProc("timefinder");
         game.giveItem(drop, true);
     }
     game.state["timefinder_progress"] = progress;
@@ -357,6 +429,7 @@ void luckyReward(Game& game, MiningReward& reward) {
                  field(cfg, "base_chance", .0004) + level * field(cfg, "per_level_chance", .0001));
     if (unit(game) >= chance)
         return;
+    game.recordEnchantProc("lucky");
     game.state["_lucky_cooldown"] = now + field(cfg, "cooldown_seconds", 8);
     const std::vector<std::string> pool = {"token",      "crystal",  "minebomb", "pet_egg",
                                            "multiplier", "automine", "book"};
@@ -462,9 +535,12 @@ MiningReward rollMiningReward(Game& game, const std::string& blockId, const std:
     if (greed > 0 &&
         unit(game) < std::min({1.0, field(game.data.balance, "greed_proc_cap", 1),
                                field(game.data.balance, "greed_proc_base", .05) +
-                                   greed * field(game.data.balance, "greed_proc_per_level", .008)}))
+                                   greed * field(game.data.balance, "greed_proc_per_level", .008)})) {
+        game.recordEnchantProc("greed");
         reward.money *= 2;
+    }
     if (combo > 0 && unit(game) < std::min(.003, combo * .00005)) {
+        game.recordEnchantProc("combo");
         reward.money *= 2;
         reward.tokens *= 2;
     }
@@ -494,8 +570,11 @@ MiningReward rollMiningReward(Game& game, const std::string& blockId, const std:
 }
 void applyMiningReward(Game& game, const MiningReward& reward) {
     game.recordIncome(reward);
+    const double money = field(game.state, "money"), tokens = field(game.state, "tokens");
     game.state["money"] = currency(game, field(game.state, "money") + reward.money);
     game.state["tokens"] = currency(game, field(game.state, "tokens") + reward.tokens);
+    game.addStatistic("money_earned", game.state["money"].asDouble() - money);
+    game.addStatistic("tokens_earned", game.state["tokens"].asDouble() - tokens);
     game.state["xp"] = currency(game, field(game.state, "xp") + reward.xp);
     game.state["_summary_money"] = currency(game, field(game.state, "_summary_money") + reward.money);
     game.state["_summary_tokens"] = currency(game, field(game.state, "_summary_tokens") + reward.tokens);
@@ -506,9 +585,11 @@ void awardBlocks(Game& game, int removed) {
     const double blocks = std::min(progressLimit, previous + removed);
     game.state["blocks_mined"] = blocks;
     const int perPoint = std::max(1, integer(game.data.systems, "points_blocks_per_point", 10000));
+    const double points = field(game.state, "points");
     game.state["points"] =
-        std::min(progressLimit, field(game.state, "points") + std::floor(blocks / perPoint) -
+        std::min(progressLimit, points + std::floor(blocks / perPoint) -
                                     std::floor(previous / perPoint));
+    game.addStatistic("points_earned", game.state["points"].asDouble() - points);
     for (const auto& row : game.data.systems["reward_milestones"]) {
         const double target = field(row, "blocks");
         const std::string key = std::to_string(static_cast<::Json::Int64>(target));
@@ -516,7 +597,9 @@ void awardBlocks(Game& game, int removed) {
             continue;
         game.state["reward_claims"][key] = true;
         for (const char* kind : {"money", "tokens"}) {
-            game.state[kind] = currency(game, field(game.state, kind) + field(row, kind));
+            const double before = field(game.state, kind);
+            game.state[kind] = currency(game, before + field(row, kind));
+            game.addStatistic(std::string(kind) + "_earned", game.state[kind].asDouble() - before);
             const std::string summary = std::string("_summary_") + kind;
             game.state[summary] = currency(game, field(game.state, summary.c_str()) + field(row, kind));
         }
@@ -566,7 +649,8 @@ void Game::newWorld(bool devmode) {
     state["enchant_label_color"] = "";
     state["enchant_value_color"] = "";
     state["enchant_colors_enabled"] = true;
-    for (const char* key : {"enchants", "reward_claims", "message_settings", "mine_state", "inventory"})
+    for (const char* key : {"enchants", "reward_claims", "message_settings", "mine_state", "inventory",
+                            "statistics", "enchant_procs"})
         state[key] = Json(::Json::objectValue);
     state["message_settings"]["visual_enchants"] = false;
     for (const char* kind : {"money", "token", "xp"})
@@ -631,6 +715,15 @@ void Game::loadSnapshot(const Json& snapshot) {
                             "parts_prestige", "rebirth", "total_prestige", "points"})
         state[key] = std::floor(field(snapshot, key, 0, progressLimit));
     state["playtime_seconds"] = field(snapshot, "playtime_seconds", 0, progressLimit);
+    state["statistics"] = Json(::Json::objectValue);
+    for (const auto& definition : statisticDefinitions())
+        addStatistic(definition.id, field(snapshot["statistics"], definition.id, 0, earnedCurrencyLimit));
+    state["enchant_procs"] = Json(::Json::objectValue);
+    for (const auto& id : procEnchantIds()) {
+        const double count = std::floor(field(snapshot["enchant_procs"], id.c_str(), 0, progressLimit));
+        if (count > 0 && data.enchants["defs"].isMember(id))
+            state["enchant_procs"][id] = count;
+    }
     state["pick_level"] = std::max(1, integer(snapshot, "pick_level", 1));
     state["parts_prestige"] = integer(snapshot, "parts_prestige", 0, 2147483646);
     state["rank_index"] =
@@ -815,6 +908,63 @@ Json Game::snapshot() const {
     return out;
 }
 
+void Game::addStatistic(const std::string& id, double amount) {
+    if (!std::isfinite(amount) || amount <= 0 || derivedStatistic(id))
+        return;
+    const auto* definition = statisticDefinition(id);
+    if (!definition)
+        return;
+    const double limit = definition->format == StatisticFormat::Currency ? earnedCurrencyLimit : progressLimit;
+    double total = std::min(limit, statistic(id) + amount);
+    if (definition->format == StatisticFormat::Count)
+        total = std::floor(total);
+    if (!state["statistics"].isObject())
+        state["statistics"] = Json(::Json::objectValue);
+    state["statistics"][id] = total;
+}
+
+double Game::statistic(const std::string& id) const {
+    if (id == "playtime_seconds" || id == "blocks_mined")
+        return field(state, id.c_str(), 0, progressLimit);
+    if (id == "prestiges")
+        return field(state, "total_prestige", 0, progressLimit);
+    if (id == "rebirths")
+        return field(state, "rebirth", 0, progressLimit);
+    if (id == "contracts_completed")
+        return field(state["progression"], "contracts_completed", 0, progressLimit);
+    if (id == "shaft_floors_completed")
+        return field(state["shaft"], "floors_cleared", 0, progressLimit);
+    if (id == "enchant_procs") {
+        double total = 0;
+        for (const auto& enchant : procEnchantIds())
+            total = std::min(progressLimit, total + enchantProcCount(enchant));
+        return total;
+    }
+    const auto* definition = statisticDefinition(id);
+    if (!definition)
+        return 0;
+    const double limit = definition->format == StatisticFormat::Currency ? earnedCurrencyLimit : progressLimit;
+    const double value = field(state["statistics"], id.c_str(), 0, limit);
+    return definition->format == StatisticFormat::Count ? std::floor(value) : value;
+}
+
+void Game::recordEnchantProc(const std::string& id) {
+    const auto& ids = procEnchantIds();
+    if (!data.enchants["defs"].isMember(id) || std::find(ids.begin(), ids.end(), id) == ids.end())
+        return;
+    const double total = std::min(progressLimit, enchantProcCount(id) + 1);
+    if (!state["enchant_procs"].isObject())
+        state["enchant_procs"] = Json(::Json::objectValue);
+    state["enchant_procs"][id] = total;
+}
+
+double Game::enchantProcCount(const std::string& id) const {
+    const auto& ids = procEnchantIds();
+    if (!data.enchants["defs"].isMember(id) || std::find(ids.begin(), ids.end(), id) == ids.end())
+        return 0;
+    return std::floor(field(state["enchant_procs"], id.c_str(), 0, progressLimit));
+}
+
 int Game::enchantLevel(const std::string& id) const {
     return integer(state["enchants"], id.c_str(), 0, 100000000);
 }
@@ -939,6 +1089,7 @@ Result Game::rankUp(bool maximum) {
                            : "Not enough money. Need " + compact(rankCost(rank + 1)) + "."};
     state["money"] = remaining;
     state["rank_index"] = rank;
+    addStatistic("rankups", count);
     updateDerived(*this);
     tutorialEvent("ranked");
     return {true, "Rank " + string(state, "rank_name") + ".", "", true};
@@ -965,8 +1116,10 @@ Result Game::prestige(bool confirmed) {
     const int next = (integer(state, "prestige_level") + 1) % cycle;
     state["money"] = boolean(data.balance, "clear_money_on_prestige", true) ? 0.0 : std::floor(money - cost);
     const std::string rewardKey = std::to_string(static_cast<::Json::Int64>(total) + 1);
+    const double tokens = field(state, "tokens");
     state["tokens"] = std::floor(currency(
-        *this, field(state, "tokens") + field(data.balance["prestige_token_rewards"], rewardKey.c_str())));
+        *this, tokens + field(data.balance["prestige_token_rewards"], rewardKey.c_str())));
+    addStatistic("tokens_earned", state["tokens"].asDouble() - tokens);
     state["total_prestige"] = total + 1;
     state["prestige_level"] = next;
     state["rebirth"] = field(state, "rebirth") + (next == 0 ? 1 : 0);
@@ -1111,14 +1264,18 @@ void Game::premiumDrops() {
         const char* enchant = std::string(wallet) == "rubies" ? "ruby_greed" : "sapphire_greed";
         if (!triggered(enchant))
             continue;
+        recordEnchantProc(enchant);
         const double before = field(state, wallet);
         const double reward = std::floor(field(data.enchants["effects"][enchant], "amount", 1));
         state[wallet] = currency(*this, before + reward);
+        addStatistic(std::string(wallet) + "_earned", state[wallet].asDouble() - before);
         const std::string summary = std::string("_summary_") + wallet;
         state[summary] = currency(*this, field(state, summary.c_str()) + state[wallet].asDouble() - before);
     }
-    if (triggered("fuel_finder"))
+    if (triggered("fuel_finder")) {
+        recordEnchantProc("fuel_finder");
         giveItem(item("robot_fuel"), true);
+    }
     const auto& cfg = data.systems["robots"];
     if (integer(state, "pick_level", 1) >= integer(cfg, "drop_pick_level", 40) &&
         unit(*this) < field(cfg, "drop_chance"))
@@ -1183,6 +1340,7 @@ Result Game::buyEnchant(const std::string& id, int count) {
         return {false, "Not enough " + currencyName(wallet) + "."};
     state[wallet] = balance - price;
     state["enchants"][id] = current + bought;
+    addStatistic("enchant_levels_bought", bought);
     tutorialEvent("enchanted");
     return {true, string(definition, "label", id) + ": " + std::to_string(current + bought) + "."};
 }
@@ -1262,8 +1420,10 @@ MiningReward Game::mineBlock(const std::string& blockId, bool allowProcs, bool m
         for (const char* id : {"explosive", "jackhammer", "veinminer", "drill"}) {
             const int level = enchantLevel(id);
             if (level > 0 &&
-                unit(*this) < std::min(1.0, procChance(*this, id, level) * endgameMultiplier("rage")))
+                unit(*this) < std::min(1.0, procChance(*this, id, level) * endgameMultiplier("rage"))) {
+                recordEnchantProc(id);
                 reward.procs.push_back({id, level});
+            }
         }
     if (manual && source == "manual" && allowProcs)
         rollEndgame(reward.procs);
@@ -1360,6 +1520,8 @@ int Game::tickAutominer(double seconds, const Json& sample) {
     }
     applyMiningReward(*this, total);
     awardBlocks(*this, bps);
+    addStatistic("autominer_seconds");
+    addStatistic("autominer_blocks", bps);
     recordMining(bps, ores, context);
     state["autominer_time"] = remaining - cost;
     if (remaining == cost)

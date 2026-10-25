@@ -56,6 +56,8 @@ struct UI::Impl {
     std::string helpPage;
     std::string helpTab = "commands";
     std::string helpQuery;
+    std::string statisticsCategory = "General";
+    std::string statisticsReturn;
     float helpListScroll = 0, helpListMaximum = 0;
     Rect helpListBox{};
     Json devChoices;
@@ -111,6 +113,7 @@ struct UI::Impl {
     void worlds();
     void importWorld();
     void pause();
+    void statistics();
     void tutorial();
     void tutorialHud(Rect timers);
     std::string tutorialInstruction() const;
