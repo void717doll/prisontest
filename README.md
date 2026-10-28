@@ -76,6 +76,21 @@ ctest --test-dir build --output-on-failure
 build's copy. [game assets](docs/ASSETS.md) covers the file layout and packaging;
 [game data](data/README.md) describes the gameplay tables.
 
+when this checkout lives in a workspace with sibling `assets/` and `site/`
+folders, sync their contents after changing game data or features:
+
+```sh
+python3 tools/sync_workspace.py
+python3 tools/sync_workspace.py --check
+```
+
+the client owns the resources, version and help text. the sync exports assets
+and rebuilds the site's guide, commands and feature summaries from those files.
+edit `data/help.json` alongside gameplay changes so additions and removals reach
+both the in-game help and website. `run.sh` also syncs this workspace before building.
+`python3 tools/sync_workspace.py --install-hooks` installs local pre-commit checks
+in the workspace repositories. standalone client checkouts still build normally.
+
 ## credits and license
 
 - Pramsing — original concept.

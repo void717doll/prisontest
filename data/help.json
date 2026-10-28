@@ -21,6 +21,15 @@
           ]
         },
         {
+          "id": "worlds",
+          "title": "worlds and offline play",
+          "body": [
+            "all game assets are included in the download. the first launch works offline without an asset download or cache.",
+            "create or choose a world from Singleplayer. inventory, progression, tutorial progress and statistics belong to that world and are saved on your computer."
+          ],
+          "keywords": ["worlds", "offline", "saves", "download", "singleplayer"]
+        },
+        {
           "id": "welcome",
           "title": "Mining and currencies",
           "body": [
@@ -40,8 +49,10 @@
           "id": "statistics",
           "title": "World statistics",
           "body": [
-            "Open /stats or Statistics in the pause menu for this world's mining totals, currency earned, enchant activations, pets fed, crystals dusted and crafted, and other actions.",
-            "Statistics save with the world. Older worlds keep their recorded totals; actions that were never tracked start at zero."
+            "open /stats, /statistics or Statistics in the pause menu to see totals for this world.",
+            "track blocks mined, play time, money, tokens, rubies, sapphires and points earned, plus total and per-enchant activations. earned currency counts what you have received over time, including money already spent.",
+            "item totals include pets fed and hatched, pets made into food, food used and created, crystals dusted and crafted, parts salvaged, and other completed actions.",
+            "statistics save with each world. older worlds keep their recorded totals; actions that were never tracked start at zero."
           ],
           "keywords": ["statistics", "stats", "totals", "earned", "procs", "world"]
         },
@@ -181,6 +192,7 @@
           "body": [
             "Identify a crystal by using it or right-clicking it in inventory, then drag it into an unlocked slot in /crystals.",
             "Convert spare crystals into dust. Use matching dust to preview crafting a higher-tier crystal.",
+            "Dust All processes matching unidentified crystals together, crafting one higher-tier crystal per group of four and keeping leftover dust. Craft All works on matching dust. review the totals before choosing either action.",
             "The first three crystal slots can resonate when they hold identified crystals of one tier, T5 or higher. Match their boost types or use one of each. /resonance shows the combinations and your active bonus."
           ],
           "keywords": [
@@ -196,7 +208,8 @@
           "title": "Parts and tool prestige",
           "body": [
             "Identify a part, then equip it in the matching Head, Binding or Rod slot in /parts.",
-            "Equip all three parts at the required tier to prestige the parts. This consumes that set and advances the tool tier; it is separate from rank prestige."
+            "Equip all three parts at the required tier to prestige the parts. This consumes that set and advances the tool tier; it is separate from rank prestige.",
+            "open /bin to select spare inventory parts, choose Salvage Selected, then review and confirm. only the selected parts are consumed; equipped parts stay in place."
           ],
           "keywords": [
             "parts",
@@ -205,6 +218,14 @@
             "binding",
             "pickaxe prestige"
           ]
+        },
+        {
+          "id": "sets",
+          "title": "equipment sets",
+          "body": [
+            "use /sets to save or equip three named combinations of your owned parts, crystals and active pet. a saved set uses existing items."
+          ],
+          "keywords": ["sets", "equipment", "parts", "crystals", "pet"]
         },
         {
           "id": "rename",
@@ -267,6 +288,7 @@
           "title": "Pets and hatchery",
           "body": [
             "Use an egg or drag it into /pets to start hatching. Mining advances it; drag a ready pet out to claim it. Equip a pet for its boost and feed it when ready.",
+            "in /pets, choose Make Pet Food to select spare pets or Select All. Convert Selected shows the pets and food total before confirmation. matching food stacks together.",
             "/petmerge combines eligible pets. Rare hatch mutations can save robot fuel, improve egg discovery or add pickaxe EXP. Only the active pet grants its trait.",
             "Traits stay with pets through storage and expeditions. Merging inherits the most common parent trait, or rolls for one if no parent has a mutation."
           ],
@@ -293,6 +315,7 @@
           "title": "Multipliers and rewards",
           "body": [
             "Use multiplier items to activate them. /boosts shows your equipment bonuses and active effects; matching multipliers extend their duration.",
+            "active sell, token and EXP multipliers have countdown bars above the mine. temporary enchant effects use these bars too; /boosts lists the full bonuses.",
             "/endmulti returns your active sell multiplier as an item. /combinemulti combines matching sell multipliers into a stronger one.",
             "/rewards lists mining milestones. Mining income appears in a one-minute chat summary."
           ],
@@ -309,7 +332,8 @@
           "title": "Autominer",
           "body": [
             "Use Automine Time items to add time, then open /autominer or /am. Buy speed upgrades in its menu.",
-            "/am start starts automining; /am stop stops it. Higher speeds consume more stored time. Manual digging and mine bombs are disabled while automining."
+            "/am start starts automining; /am stop stops it. Higher speeds consume more stored time. Manual digging and mine bombs are disabled while automining.",
+            "while running, the autominer countdown bar shows time remaining at the current speed. the scoreboard shows your stored time balance."
           ],
           "keywords": [
             "autominer",
@@ -392,7 +416,7 @@
     {
       "command": "autominer",
       "category": "Mining",
-      "description": "Open UI, start/stop, or set BPS.",
+      "description": "open the autominer, start or stop it, buy upgrades or choose its speed.",
       "usage": "/autominer [start|stop|upgrade|bps <1-10>]",
       "aliases": [
         "am",
@@ -402,7 +426,7 @@
     {
       "command": "balance",
       "category": "Ranks & Prestige",
-      "description": "Show your money, tokens and points.",
+      "description": "show your money, tokens, rubies, sapphires and points.",
       "usage": "/balance",
       "aliases": [
         "bal"
@@ -423,7 +447,7 @@
     {
       "command": "crystals",
       "category": "Pickaxe",
-      "description": "Open crystals UI.",
+      "description": "equip crystals and view their slots and resonance bonus.",
       "usage": "/crystals"
     },
     {
@@ -444,7 +468,7 @@
     {
       "command": "hatchery",
       "category": "Pets & Robots",
-      "description": "Open hatchery UI.",
+      "description": "open the hatchery to incubate eggs and collect ready pets.",
       "usage": "/hatchery"
     },
     {
@@ -467,7 +491,7 @@
     {
       "command": "parts",
       "category": "Pickaxe",
-      "description": "Open pickaxe parts UI.",
+      "description": "equip pickaxe parts and review tool prestige.",
       "usage": "/parts"
     },
     {
@@ -479,7 +503,7 @@
     {
       "command": "pets",
       "category": "Pets & Robots",
-      "description": "Open pets UI.",
+      "description": "manage your active pet, hatchery, feeding and conversion of spare pets into food.",
       "usage": "/pets"
     },
     {
@@ -491,7 +515,7 @@
     {
       "command": "pointshop",
       "category": "Items & Storage",
-      "description": "Open point shop UI.",
+      "description": "spend points on eggs, multipliers, automine time and other items.",
       "usage": "/pointshop",
       "aliases": [
         "ps",
@@ -507,55 +531,55 @@
     {
       "command": "mines",
       "category": "Mining",
-      "description": "Choose a rebirth mine and view its ore layout in the native client.",
+      "description": "choose a rebirth mine and view its ore layout.",
       "usage": "/mines"
     },
     {
       "command": "mineupgrades",
       "category": "Mining",
-      "description": "Buy permanent ore density and pocket size upgrades in the native client.",
+      "description": "buy permanent ore density and pocket size upgrades.",
       "usage": "/mineupgrades"
     },
     {
       "command": "guardian",
       "category": "Mining",
-      "description": "View mine guardian encounters and defeats, or leave a fight in the native client.",
+      "description": "view mine guardian encounters and defeats, or leave a fight.",
       "usage": "/guardian [leave]"
     },
     {
       "command": "resonance",
       "category": "Pickaxe",
-      "description": "View crystal combinations and your active resonance bonus in the native client.",
+      "description": "view crystal combinations and your active resonance bonus.",
       "usage": "/resonance"
     },
     {
       "command": "sets",
       "category": "Pickaxe",
-      "description": "Save or equip three named combinations of owned parts, crystals and a pet in the native client.",
+      "description": "save or equip three named combinations of owned parts, crystals and a pet.",
       "usage": "/sets"
     },
     {
       "command": "shaft",
       "category": "Mining",
-      "description": "Enter challenge floors, view depth records, descend or return to your mine in the native client.",
+      "description": "enter challenge floors, view depth records, descend or return to your mine.",
       "usage": "/shaft"
     },
     {
       "command": "contracts",
       "category": "Mining",
-      "description": "Choose a non-expiring goal for points in the native client.",
+      "description": "choose a non-expiring goal for points.",
       "usage": "/contracts"
     },
     {
       "command": "expeditions",
       "category": "Pets & Robots",
-      "description": "Send spare pets for supplies while mining in the native client.",
+      "description": "send spare pets for supplies while mining.",
       "usage": "/expeditions"
     },
     {
       "command": "pv",
       "category": "Items & Storage",
-      "description": "Open your player vault. The native client supports buying and naming extra pages.",
+      "description": "open your player vault, buy extra pages or rename a page.",
       "usage": "/pv [page]"
     },
     {
@@ -617,7 +641,7 @@
     {
       "command": "stats",
       "category": "Settings & Chat",
-      "description": "View this world's statistics, currency earned and enchant activations.",
+      "description": "view this world's mining, currency earned, enchant activations, pets and item statistics.",
       "usage": "/stats",
       "aliases": ["statistics"]
     },
@@ -751,7 +775,7 @@
     {
       "command": "robots",
       "category": "Pets & Robots",
-      "description": "Equip, fuel and upgrade SellBoost, EXPBoost and TokenBoost robots in the native client.",
+      "description": "equip, fuel and upgrade SellBoost, EXPBoost and TokenBoost robots.",
       "usage": "/robots"
     },
     {

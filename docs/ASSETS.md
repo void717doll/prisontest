@@ -22,6 +22,13 @@ building or packaging fails if a listed file is missing. only listed runtime
 files are copied, along with the resource list, credits and packaged licenses.
 
 run `python3 tools/check_data.py .` after editing gameplay data.
+in the shared `client/`, `assets/`, `site/` workspace, run
+`python3 tools/sync_workspace.py` to export the same resources and rebuild the
+website. `assets/` is a hosting export; edit originals in the client. the export
+keeps its own managed file list, removes retired files from that list, and leaves
+hosting configuration and unrelated files alone. `--check` reports drift without
+writing. the client's installed assets still come from its own repository.
+
 `source_systems.json`, `native_economy.json` and `native_content.json` must carry
 `data_revision: 2` together; older or mixed revisions are rejected. data changes
 ship with the client package.
