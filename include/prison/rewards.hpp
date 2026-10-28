@@ -26,6 +26,8 @@ class RewardQueue {
         int total = 0, remaining = 0, compressed = 0;
         int terrainTotal = 0, terrainCursor = 0;
         bool visual = false, rewardsFinished = false, cross = false;
+        bool trackPayout = true;
+        double paidMoney = 0, paidTokens = 0;
         std::uint64_t generation = 0;
         Json context, sample;
         Cell low{}, high{}, origin{};

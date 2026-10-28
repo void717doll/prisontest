@@ -91,7 +91,8 @@ void Mine::buildScenery() {
     for (float x : {centre - 4, centre + 4}) {
         add({x - .5f, 1.5f, maxZ + 3}, {x + .5f, 6, maxZ + 4}, TerrainTimberTile);
         add({x - .55f, 1.5f, maxZ + 2.95f}, {x + .55f, 2, maxZ + 4.05f}, TerrainMetalTile);
-        add({x - .4f, 3.5f, maxZ + 4}, {x + .4f, 5, maxZ + 4.15f}, smooth_ - 1);
+        const int banner = quarryStyle_["banner"] == "classic" ? smooth_ - 1 : TerrainBannerTile;
+        add({x - .4f, 3.5f, maxZ + 4}, {x + .4f, 5, maxZ + 4.15f}, banner);
     }
     add({centre - 5, 6, maxZ + 3}, {centre + 5, 6.75f, maxZ + 4}, TerrainTimberTile);
 

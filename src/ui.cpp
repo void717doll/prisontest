@@ -48,10 +48,12 @@ void UI::Impl::settingsChanged() {
 }
 
 void UI::Impl::setPage(const std::string& name) {
-    if ((name == "statistics" || name == "stats") && page != "statistics") {
+    if ((name == "statistics" || name == "stats" || name == "records") && page != "statistics") {
         statisticsReturn = page == "pause" || page == "more" ? page : "";
         statisticsCategory = "General";
     }
+    if (name == "records")
+        statisticsCategory = "Records";
     if (name != "pet_food" && name != "confirm")
         petFoodSelection.clear();
     if (name != "bin" && name != "confirm")
@@ -63,7 +65,7 @@ void UI::Impl::setPage(const std::string& name) {
         action("save");
     }
     page = name;
-    if (page == "stats")
+    if (page == "stats" || page == "records")
         page = "statistics";
     if (page.empty() && ctx.playing && game.state["tutorial"].get("status", "") == "new")
         page = "tutorial";
@@ -454,6 +456,8 @@ void UI::Impl::paint() {
         more();
     else if (page == "mines")
         mines();
+    else if (page == "quarry")
+        quarry();
     else if (page == "mine_upgrades")
         mineUpgrades();
     else if (page == "equipment_sets")

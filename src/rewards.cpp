@@ -155,6 +155,10 @@ std::size_t RewardQueue::step(Game& game, Mine& mine, std::size_t budget, double
         auto& job = jobs_.front();
         if (job.source == "drill") {
             if (job.remaining == 0 || job.generation != mine.generation() || game.shaftComplete()) {
+                if (job.trackPayout) {
+                    game.recordEnchantPayout(job.source, "money", job.paidMoney);
+                    game.recordEnchantPayout(job.source, "tokens", job.paidTokens);
+                }
                 jobs_.pop_front();
                 continue;
             }
@@ -166,7 +170,9 @@ std::size_t RewardQueue::step(Game& game, Mine& mine, std::size_t budget, double
                             job.low.z + (offset / width) % depth};
             const auto block = job.visual ? mine.dig(cell) : mine.blockId(cell);
             if (!block.empty()) {
-                game.mineBlock(block, false, false, "drill", job.context);
+                const auto reward = game.mineBlock(block, false, false, "drill", job.context);
+                job.paidMoney += reward.money;
+                job.paidTokens += reward.tokens;
                 game.recordShaftMining(1);
                 if (!job.visual)
                     mine.applyVirtualMining(1, job.generation);
@@ -179,8 +185,10 @@ std::size_t RewardQueue::step(Game& game, Mine& mine, std::size_t budget, double
         if (job.remaining > 0) {
             const bool ore =
                 std::generate_canonical<double, 53>(game.random) < job.sample["ore_ratio"].asDouble();
-            game.mineBlock(job.sample[ore ? "ore" : "smooth"].asString(), false, false, job.source,
-                           job.context);
+            const auto reward = game.mineBlock(job.sample[ore ? "ore" : "smooth"].asString(), false,
+                                               false, job.source, job.context);
+            job.paidMoney += reward.money;
+            job.paidTokens += reward.tokens;
             --job.remaining;
             // spread compressed progression across payouts; remaining also persists across saves.
             const int completed = job.total - job.remaining;
@@ -193,6 +201,10 @@ std::size_t RewardQueue::step(Game& game, Mine& mine, std::size_t budget, double
             if (job.generation == mine.generation() && mine.resetting())
                 break;
             if (!job.rewardsFinished) {
+                if (job.trackPayout) {
+                    game.recordEnchantPayout(job.source, "money", job.paidMoney);
+                    game.recordEnchantPayout(job.source, "tokens", job.paidTokens);
+                }
                 game.finishProc(job.total, job.compressed, job.context);
                 if (!job.visual)
                     mine.applyVirtualMining(job.compressed, job.generation);
@@ -235,7 +247,7 @@ std::size_t RewardQueue::step(Game& game, Mine& mine, std::size_t budget, double
 
 Json RewardQueue::snapshot(const Mine& mine) const {
     Json value;
-    value["version"] = 2;
+    value["version"] = 3;
     value["jobs"] = Json(::Json::arrayValue);
     for (const auto& job : jobs_) {
         Json row;
@@ -245,6 +257,9 @@ Json RewardQueue::snapshot(const Mine& mine) const {
         row["compressed"] = job.compressed;
         row["visual"] = job.visual;
         row["finished"] = job.rewardsFinished;
+        row["track_payout"] = job.trackPayout;
+        row["paid_money"] = job.paidMoney;
+        row["paid_tokens"] = job.paidTokens;
         row["terrain_cursor"] = job.terrainCursor;
         row["terrain_pending"] = job.generation == mine.generation();
         row["context"] = job.context;
@@ -270,7 +285,7 @@ bool RewardQueue::restore(const Json& value, Mine& mine) {
         clear();
         return true;
     }
-    if (!value.isObject() || !validNumber(value["version"], 1, 2, true) || !value["jobs"].isArray() ||
+    if (!value.isObject() || !validNumber(value["version"], 1, 3, true) || !value["jobs"].isArray() ||
         value["jobs"].size() > maximumJobs)
         return false;
     std::deque<Job> restored;
@@ -286,7 +301,7 @@ bool RewardQueue::restore(const Json& value, Mine& mine) {
         job.total = row["total"].asInt();
         job.remaining = row["remaining"].asInt();
         job.compressed = row["compressed"].asInt();
-        if (value["version"].asInt() == 2) {
+        if (value["version"].asInt() >= 2) {
             if (!row["visual"].isBool() || !row["finished"].isBool() ||
                 !validNumber(row["terrain_cursor"], 0, 1000000, true))
                 return false;
@@ -298,7 +313,19 @@ bool RewardQueue::restore(const Json& value, Mine& mine) {
                 return false;
         } else
             job.visual = job.source == "drill";
-        if (job.source == "drill" && !row["terrain_pending"].asBool())
+        if (value["version"].asInt() >= 3) {
+            if (!row["track_payout"].isBool() || !validNumber(row["paid_money"], 0, 1e300) ||
+                !validNumber(row["paid_tokens"], 0, 1e300))
+                return false;
+            job.trackPayout = row["track_payout"].asBool();
+            job.paidMoney = row["paid_money"].asDouble();
+            job.paidTokens = row["paid_tokens"].asDouble();
+        } else {
+            // a partially paid legacy proc has no reliable total to record.
+            job.trackPayout = job.remaining == job.total;
+        }
+        if (job.source == "drill" && !row["terrain_pending"].asBool() &&
+            (!job.trackPayout || (job.paidMoney == 0 && job.paidTokens == 0)))
             continue;
         if (job.source == "drill" || job.visual) {
             const auto low = mine.minimum(), high = mine.maximum();

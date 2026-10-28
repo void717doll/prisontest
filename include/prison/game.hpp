@@ -30,6 +30,8 @@ class Game {
     double statistic(const std::string& id) const;
     void recordEnchantProc(const std::string& id);
     double enchantProcCount(const std::string& id) const;
+    void recordMiningIncome(double money, double tokens);
+    void recordEnchantPayout(const std::string& id, const std::string& wallet, double amount);
     Json captureRewardContext() const;
     MiningReward mineBlock(const std::string& blockId, bool allowProcs = true, bool manual = true,
                            const std::string& source = "manual", const Json& context = Json());
@@ -130,6 +132,11 @@ class Game {
         double second = 0, money = 0, tokens = 0;
     };
     std::deque<Income> recentIncome_;
+    std::deque<Income> miningIncome_;
+    void resetRecords();
+    void loadRecords(const Json& snapshot);
+    void saveRecords(Json& snapshot) const;
+    void completePrestigeRecord();
     bool endgameReady(const std::string& id) const;
     bool activateEndgame(const std::string& id, std::vector<Proc>& procs);
 };

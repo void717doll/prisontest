@@ -1,4 +1,5 @@
 #include "prison/world.hpp"
+#include "prison/quarry.hpp"
 #include "world_internal.hpp"
 #include <array>
 #include <atomic>
@@ -31,7 +32,7 @@ void face(std::vector<Vertex>& vertices, Vec3 centre, int side, int tile, Vec3 s
     constexpr int triangles[] = {0, 1, 2, 0, 2, 3};
     constexpr float uv[4][2] = {{0, 1}, {1, 1}, {1, 0}, {0, 0}};
     // Half a texel inset avoids neighbouring tiles bleeding at the edge.
-    const float inset = .5f / 16.0f;
+    const float inset = .5f / TerrainTileSize;
     for (int i : triangles) {
         const auto& p = Faces[side][i];
         const float u =
@@ -105,6 +106,7 @@ MineBounds mineBounds(const Data& data, std::int64_t totalPrestige) {
 }
 
 Mine::Mine(const Data& data) : data_(data) {
+    quarryStyle_ = sanitizeQuarryStyle(Json(), 0);
     resetDelay_ = std::clamp(data.mine.get("regen_delay", 10).asDouble(), 0.0, 30.0);
     resetRatio_ = std::clamp(data.balance.get("mine_auto_reset_ratio", .3).asDouble(), 0.0, 1.0);
     resize(mineBounds(data, 0));
@@ -191,6 +193,13 @@ void Mine::configure(const Json& input) {
                 nextOptions_["shaft"]["depth"] = input["shaft"]["depth"];
                 nextOptions_["shaft"]["condition"] = condition["id"];
             }
+}
+void Mine::setQuarryStyle(const Json& style) {
+    const auto next = sanitizeQuarryStyle(style, std::numeric_limits<std::int64_t>::max());
+    if (quarryStyle_ == next)
+        return;
+    quarryStyle_ = next;
+    buildShell();
 }
 int Mine::upgradeLevel(const std::string& id) const {
     return options_["upgrades"].get(id, 0).asInt();

@@ -132,6 +132,9 @@ bool Game::activateEndgame(const std::string& id, std::vector<Proc>& procs) {
         state["tokens"] = std::min(cap, beforeTokens + tokens);
         addStatistic("money_earned", state["money"].asDouble() - beforeMoney);
         addStatistic("tokens_earned", state["tokens"].asDouble() - beforeTokens);
+        recordEnchantPayout(id, "money", state["money"].asDouble() - beforeMoney);
+        recordEnchantPayout(id, "tokens", state["tokens"].asDouble() - beforeTokens);
+        recordMiningIncome(state["money"].asDouble() - beforeMoney, state["tokens"].asDouble() - beforeTokens);
         state["_summary_money"] = std::min(cap, state.get("_summary_money", 0).asDouble() + money);
         state["_summary_tokens"] = std::min(cap, state.get("_summary_tokens", 0).asDouble() + tokens);
         // replayed income never enters the history or advances mining progression.
@@ -142,6 +145,7 @@ bool Game::activateEndgame(const std::string& id, std::vector<Proc>& procs) {
         const double beforePoints = state["points"].asDouble();
         state["points"] = std::min(9e15, beforePoints + 1);
         addStatistic("points_earned", state["points"].asDouble() - beforePoints);
+        recordEnchantPayout(id, "points", state["points"].asDouble() - beforePoints);
         state["_summary_points"] = state.get("_summary_points", 0).asDouble() + 1;
     } else {
         if (id == "rage" && inShaft() && shaftCondition().get("procs", true) != true)

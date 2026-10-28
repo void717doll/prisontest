@@ -17,9 +17,9 @@ pkg_check_modules(JSONCPP REQUIRED IMPORTED_TARGET jsoncpp)
 add_library(prison_core
     src/common.cpp src/game.cpp src/items.cpp src/inventory.cpp src/filter.cpp
     src/commands.cpp src/development.cpp src/tutorial.cpp
-    src/save.cpp src/world.cpp src/world_scenery.cpp src/world_collision.cpp
+    src/save.cpp src/world.cpp src/world_scenery.cpp src/world_collision.cpp src/quarry.cpp
     src/bombs.cpp src/companion.cpp src/rewards.cpp src/lore.cpp src/progression.cpp src/shaft.cpp
-    src/endgame.cpp src/equipment_bonuses.cpp src/guardians.cpp)
+    src/endgame.cpp src/equipment_bonuses.cpp src/guardians.cpp src/records.cpp)
 target_include_directories(prison_core PUBLIC include)
 target_link_libraries(prison_core PUBLIC PkgConfig::JSONCPP Threads::Threads)
 target_compile_options(prison_core PRIVATE -Wall -Wextra -Wpedantic)

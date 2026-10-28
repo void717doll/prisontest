@@ -1,4 +1,5 @@
 #include "prison/game.hpp"
+#include "prison/quarry.hpp"
 #include "prison/world.hpp"
 #include <cctype>
 #include <cstdlib>
@@ -495,7 +496,8 @@ void luckyReward(Game& game, MiningReward& reward) {
     reward.money += std::floor(tokens * field(cfg, "token_cache_money_ratio", .6));
 }
 MiningReward rollMiningReward(Game& game, const std::string& blockId, const std::string& source,
-                              const Json& context, bool allowLucky = false) {
+                              const Json& context, bool allowLucky = false, double pendingMoney = 0,
+                              double pendingTokens = 0) {
     MiningReward reward;
     Json block = game.data.blocks["default"];
     if (game.data.blocks.isObject() && game.data.blocks.isMember(blockId))
@@ -532,15 +534,20 @@ MiningReward rollMiningReward(Game& game, const std::string& blockId, const std:
     }
     const int greed = integer(context["enchants"], "greed", 0, 100000000),
               combo = integer(context["enchants"], "combo", 0, 100000000);
+    double greedMoney = 0, comboMoney = 0, comboTokens = 0;
     if (greed > 0 &&
         unit(game) < std::min({1.0, field(game.data.balance, "greed_proc_cap", 1),
                                field(game.data.balance, "greed_proc_base", .05) +
                                    greed * field(game.data.balance, "greed_proc_per_level", .008)})) {
         game.recordEnchantProc("greed");
+        greedMoney = reward.money;
         reward.money *= 2;
     }
     if (combo > 0 && unit(game) < std::min(.003, combo * .00005)) {
         game.recordEnchantProc("combo");
+        comboMoney = reward.money;
+        comboTokens = reward.tokens;
+        greedMoney *= 2;
         reward.money *= 2;
         reward.tokens *= 2;
     }
@@ -548,33 +555,61 @@ MiningReward rollMiningReward(Game& game, const std::string& blockId, const std:
                     ? 0
                     : experienced(integer(context["enchants"], "experienced", 0, 100000000)) *
                           field(context, "xp_mult", 1) * field(context, "pace_xp", 1);
+    const double beforeLuckyMoney = reward.money, beforeLuckyTokens = reward.tokens;
     if (allowLucky)
         luckyReward(game, reward);
-    if (reward.tokens > 0) {
-        const double ratio = std::min(100.0, 3.0 + std::max(0.0, moneyBoost - 1) * 1.75 +
-                                                 std::log10(fortuneLevel + 1.0) * 12.5);
-        reward.money = std::max(reward.money, std::floor(reward.tokens * ratio));
-    }
-    if (ore)
-        reward.money = 0;
-    reward.money =
-        currency(game, reward.money * field(context["specialization"], "money", 1) *
-                           field(context["robots"], "money", 1, 5) * field(context, "surge_mult", 1, 1.5));
-    reward.tokens =
-        currency(game, reward.tokens * field(context["specialization"], "token", 1) *
-                           field(context["robots"], "token", 1, 5) * field(context, "surge_mult", 1, 1.5));
+    const double luckyMoney = reward.money - beforeLuckyMoney,
+                 luckyTokens = reward.tokens - beforeLuckyTokens;
+    const double rawMoney = reward.money, rawTokens = reward.tokens;
+    const double ratio = std::min(100.0, 3.0 + std::max(0.0, moneyBoost - 1) * 1.75 +
+                                             std::log10(fortuneLevel + 1.0) * 12.5);
+    const auto finalMoney = [&](double money, double tokens) {
+        if (ore)
+            return 0.0;
+        if (tokens > 0)
+            money = std::max(money, std::floor(tokens * ratio));
+        return currency(game, money * field(context["specialization"], "money", 1) *
+                                  field(context["robots"], "money", 1, 5) *
+                                  field(context, "surge_mult", 1, 1.5));
+    };
+    const auto finalTokens = [&](double tokens) {
+        return currency(game, tokens * field(context["specialization"], "token", 1) *
+                                   field(context["robots"], "token", 1, 5) *
+                                   field(context, "surge_mult", 1, 1.5));
+    };
+    reward.money = finalMoney(rawMoney, rawTokens);
+    reward.tokens = finalTokens(rawTokens);
+    const double walletMoney = currency(game, field(game.state, "money") + pendingMoney),
+                 walletTokens = currency(game, field(game.state, "tokens") + pendingTokens);
+    const auto recordBonus = [&](const char* id, double money, double tokens) {
+        if (money <= 0 && tokens <= 0)
+            return;
+        // measure the accepted extra payout after all boosts and wallet limits.
+        const double withoutMoney = finalMoney(rawMoney - money, rawTokens - tokens);
+        const double withoutTokens = finalTokens(rawTokens - tokens);
+        game.recordEnchantPayout(id, "money", currency(game, walletMoney + reward.money) -
+                                                  currency(game, walletMoney + withoutMoney));
+        game.recordEnchantPayout(id, "tokens", currency(game, walletTokens + reward.tokens) -
+                                                   currency(game, walletTokens + withoutTokens));
+    };
+    recordBonus("greed", greedMoney, 0);
+    recordBonus("combo", comboMoney, comboTokens);
+    recordBonus("lucky", luckyMoney, luckyTokens);
     reward.xp =
         currency(game, reward.xp * field(context["specialization"], "xp", 1) *
                            field(context["robots"], "xp", 1, 5) * field(context, "overdrive_mult", 1, 2));
     return reward;
 }
-void applyMiningReward(Game& game, const MiningReward& reward) {
+void applyMiningReward(Game& game, MiningReward& reward) {
     game.recordIncome(reward);
     const double money = field(game.state, "money"), tokens = field(game.state, "tokens");
     game.state["money"] = currency(game, field(game.state, "money") + reward.money);
     game.state["tokens"] = currency(game, field(game.state, "tokens") + reward.tokens);
-    game.addStatistic("money_earned", game.state["money"].asDouble() - money);
-    game.addStatistic("tokens_earned", game.state["tokens"].asDouble() - tokens);
+    reward.money = game.state["money"].asDouble() - money;
+    reward.tokens = game.state["tokens"].asDouble() - tokens;
+    game.addStatistic("money_earned", reward.money);
+    game.addStatistic("tokens_earned", reward.tokens);
+    game.recordMiningIncome(reward.money, reward.tokens);
     game.state["xp"] = currency(game, field(game.state, "xp") + reward.xp);
     game.state["_summary_money"] = currency(game, field(game.state, "_summary_money") + reward.money);
     game.state["_summary_tokens"] = currency(game, field(game.state, "_summary_tokens") + reward.tokens);
@@ -677,8 +712,11 @@ void Game::newWorld(bool devmode) {
     state["autominer_bps"] = bps;
     state["autominer_active"] = false;
     state["pet_data"]["active_pet"] = Json();
+    state["pet_data"]["companion_sitting"] = false;
     state["pet_data"]["hatchery"] = Json(::Json::arrayValue);
+    state["quarry_style"] = sanitizeQuarryStyle(Json(), 0);
     state["cleaner_settings"] = filterProfile(Json());
+    resetRecords();
     loadProgression();
     loadEquipmentSets();
     loadShaft();
@@ -855,6 +893,7 @@ void Game::loadSnapshot(const Json& snapshot) {
         active["id"] = "pet";
     state["pet_data"] = Json(::Json::objectValue);
     state["pet_data"]["active_pet"] = cleanItem(active);
+    state["pet_data"]["companion_sitting"] = boolean(pets, "companion_sitting");
     state["pet_data"]["hatchery"] = Json(::Json::arrayValue);
     if (pets.isObject() && pets["hatchery"].isArray())
         for (const auto& raw : pets["hatchery"]) {
@@ -870,6 +909,8 @@ void Game::loadSnapshot(const Json& snapshot) {
             state["pet_data"]["hatchery"].append(egg);
         }
     state["cleaner_settings"] = filterProfile(snapshot["cleaner_settings"]);
+    state["quarry_style"] = sanitizeQuarryStyle(snapshot["quarry_style"],
+                                               static_cast<std::int64_t>(state["total_prestige"].asDouble()));
     state["autominer_unlocked_bps"] = std::clamp(
         integer(snapshot, "autominer_unlocked_bps", std::max(3, integer(snapshot, "autominer_bps", 3))), 3,
         10);
@@ -894,12 +935,14 @@ void Game::loadSnapshot(const Json& snapshot) {
     loadShaft();
     loadEndgame();
     loadGuardian();
+    loadRecords(snapshot);
     returnStoredItems();
     updateDerived(*this);
 }
 
 Json Game::snapshot() const {
     Json out = state;
+    saveRecords(out);
     out["autominer_active"] = false;
     for (const auto& key : out.getMemberNames())
         if (!key.empty() && key[0] == '_')
@@ -1120,6 +1163,7 @@ Result Game::prestige(bool confirmed) {
     state["tokens"] = std::floor(currency(
         *this, tokens + field(data.balance["prestige_token_rewards"], rewardKey.c_str())));
     addStatistic("tokens_earned", state["tokens"].asDouble() - tokens);
+    completePrestigeRecord();
     state["total_prestige"] = total + 1;
     state["prestige_level"] = next;
     state["rebirth"] = field(state, "rebirth") + (next == 0 ? 1 : 0);
@@ -1269,6 +1313,7 @@ void Game::premiumDrops() {
         const double reward = std::floor(field(data.enchants["effects"][enchant], "amount", 1));
         state[wallet] = currency(*this, before + reward);
         addStatistic(std::string(wallet) + "_earned", state[wallet].asDouble() - before);
+        recordEnchantPayout(enchant, wallet, state[wallet].asDouble() - before);
         const std::string summary = std::string("_summary_") + wallet;
         state[summary] = currency(*this, field(state, summary.c_str()) + state[wallet].asDouble() - before);
     }
@@ -1454,7 +1499,8 @@ void Game::awardBomb(int removed, int samples, int side, const Json& context, co
     for (int i = 0; i < samples; ++i) {
         const Json& block = sample[unit(*this) < field(sample, "ore_ratio") ? "ore" : "smooth"];
         const std::string blockId = block.isString() ? block.asString() : string(block, "id");
-        const auto rolled = rollMiningReward(*this, blockId, "minebomb", paid);
+        const auto rolled =
+            rollMiningReward(*this, blockId, "minebomb", paid, false, reward.money, reward.tokens);
         reward.money = currency(*this, reward.money + rolled.money);
         reward.tokens = currency(*this, reward.tokens + rolled.tokens);
     }
@@ -1510,8 +1556,8 @@ int Game::tickAutominer(double seconds, const Json& sample) {
         const bool ore = unit(*this) < field(sample, "ore_ratio", 0, 1);
         if (ore)
             ++ores;
-        const auto reward =
-            rollMiningReward(*this, sample[ore ? "ore" : "smooth"].asString(), "autominer", context);
+        const auto reward = rollMiningReward(*this, sample[ore ? "ore" : "smooth"].asString(), "autominer",
+                                             context, false, total.money, total.tokens);
         total.money += reward.money;
         total.tokens += reward.tokens;
         total.xp += reward.xp;

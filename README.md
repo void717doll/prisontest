@@ -3,7 +3,8 @@
 a singleplayer prison mining game. mine blocks, sell what you collect, upgrade
 your pickaxe and work through ranks and prestiges. collect pets, robots,
 crystals and pickaxe parts along the way. your equipped pet follows you around the
-mine; its appearance can be switched off in settings without losing its boost.
+mine, can sit in place and reacts to feeding. its appearance can be switched off
+in settings without losing its boost.
 
 this is the standalone C++ client, built with SDL2 and OpenGL.
 download packages from this repository's
@@ -61,6 +62,13 @@ current speed; stored time remains in the scoreboard.
 open Statistics from the pause menu or use `/stats` for this world's totals:
 mining, currency earned, enchant activations, pets, crystals and other actions.
 older worlds keep their recorded totals; actions that were never tracked start at zero.
+`/records` shows your fastest prestige, biggest enchant payouts and best mining minute.
+records belong to the world and exclude development worlds.
+
+`/quarry` changes the surroundings, paths, lamps, flowers and banners without
+refilling the mine. sakura, coral, crystal, frost, mushroom, bamboo, desert,
+volcanic, willow, cursed, golden, birch, jungle, redwood, baobab and emerald
+styles unlock through prestige.
 
 ## development
 
@@ -98,6 +106,8 @@ in the workspace repositories. standalone client checkouts still build normally.
 - void717doll — adaptation of the original concept.
 - [Luanti](https://www.luanti.org/) — the original game's engine and a reference for this client.
 - Minetest Game and its artists — scenery and flower textures.
+- [Ethereal NG](textures/ethereal/README.md) — by TenPlus1; quarry scenery and decoration textures.
+- [Everness](textures/everness/README.md) — by SaKeL; quarry scenery and decoration textures.
 - Minecraft and Roblox's OP Prison game modes — mining and progression inspiration.
 - Codex — help with coding and development.
 

@@ -1,5 +1,6 @@
 #include "prison/render.hpp"
 #include "prison/companion.hpp"
+#include "prison/quarry.hpp"
 #include "prison/guardians.hpp"
 #include "prison/world.hpp"
 #include <SDL_opengl.h>
@@ -193,6 +194,7 @@ struct Renderer::Impl {
     Mesh shell, heldMesh;
     GLuint heldTexture = 0;
     GLuint atlas = 0;
+    Json atlasStyle;
     RenderStats stats;
     void flushUi() {
         if (uiVertices.empty())
@@ -273,7 +275,7 @@ struct Renderer::Impl {
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-        makeAtlas();
+        makeAtlas(sanitizeQuarryStyle(Json(), 0));
         uiVertices.reserve(8192);
         uiCommands.reserve(256);
     }
@@ -462,23 +464,35 @@ struct Renderer::Impl {
         f.glyphs[cp] = result;
         return result;
     }
-    void makeAtlas() {
+    void makeAtlas(const Json& style) {
         Image stone = loadImage(data.root / "textures/prisontest_stone.png"),
               ore = loadImage(data.root / "textures/prisontest_ore.png"),
               bedrock = loadImage(data.root / "textures/prisontest_void.png");
         Image a;
         tint(bedrock, {0, 0, 0, 1}, 170.f / 255);
-        a.width = TerrainAtlasColumns * 16;
-        a.height = TerrainAtlasRows * 16;
+        a.width = TerrainAtlasColumns * TerrainTileSize;
+        a.height = TerrainAtlasRows * TerrainTileSize;
         a.pixels.resize(a.width * a.height * 4);
         auto putTile = [&](int tile, const Image& im) {
-            if (im.width != 16 || im.height != 16)
-                throw std::runtime_error("terrain textures must be 16 by 16 pixels");
-            for (int y = 0; y < 16; ++y) {
-                const int offset = ((tile / TerrainAtlasColumns * 16 + y) * a.width +
-                                    tile % TerrainAtlasColumns * 16) * 4;
-                std::memcpy(&a.pixels[offset], &im.pixels[y * 16 * 4], 16 * 4);
+            if (im.width < 1 || im.height < 1)
+                throw std::runtime_error("terrain texture is empty");
+            const int edge = std::max(im.width, im.height);
+            const int width = std::max(1, im.width * TerrainTileSize / edge);
+            const int height = std::max(1, im.height * TerrainTileSize / edge);
+            const int left = (TerrainTileSize - width) / 2, top = TerrainTileSize - height;
+            for (int y = 0; y < TerrainTileSize; ++y) {
+                const int offset = ((tile / TerrainAtlasColumns * TerrainTileSize + y) * a.width +
+                                    tile % TerrainAtlasColumns * TerrainTileSize) * 4;
+                std::fill_n(a.pixels.begin() + offset, TerrainTileSize * 4, 0);
             }
+            // smaller plant sprites keep their proportions and rest at ground level.
+            for (int y = 0; y < height; ++y)
+                for (int x = 0; x < width; ++x) {
+                    const int offset = ((tile / TerrainAtlasColumns * TerrainTileSize + top + y) * a.width +
+                                        tile % TerrainAtlasColumns * TerrainTileSize + left + x) * 4;
+                    const int source = (y * im.height / height * im.width + x * im.width / width) * 4;
+                    std::memcpy(&a.pixels[offset], &im.pixels[source], 4);
+                }
         };
         int i = 0;
         std::regex hex("#[0-9a-fA-F]{6}");
@@ -561,14 +575,433 @@ struct Renderer::Impl {
         Image grass = loadImage(scenery / "default_grass_side.png");
         tint(grassSide, hexColor("#695443"), .2f);
         tint(grass, hexColor("#668653"), .35f);
-        for (std::size_t p = 0; p < grassSide.pixels.size(); p += 4) {
-            const float alpha = grass.pixels[p + 3] / 255.f;
-            for (int k = 0; k < 3; ++k)
-                grassSide.pixels[p + k] = static_cast<unsigned char>(
-                    grassSide.pixels[p + k] * (1 - alpha) + grass.pixels[p + k] * alpha);
+        auto putGrassSide = [&](Image base, const Image& overlay) {
+            for (int y = 0; y < base.height; ++y)
+                for (int x = 0; x < base.width; ++x) {
+                    const int target = (y * base.width + x) * 4;
+                    const int source = (y * overlay.height / base.height * overlay.width +
+                                        x * overlay.width / base.width) * 4;
+                    const float alpha = overlay.pixels[source + 3] / 255.f;
+                    for (int k = 0; k < 3; ++k)
+                        base.pixels[target + k] = static_cast<unsigned char>(
+                            base.pixels[target + k] * (1 - alpha) + overlay.pixels[source + k] * alpha);
+                }
+            putTile(TerrainGrassSideTile, base);
+        };
+        putGrassSide(grassSide, grass);
+        auto replaceTiles = [&](std::initializer_list<Material> replacements) {
+            for (const auto& material : replacements)
+                putTile(material.tile, loadImage(data.root / "textures" / material.file));
+        };
+        const auto theme = style["theme"].asString();
+        if (theme == "sakura") {
+            replaceTiles({
+                {TerrainMasonryTile, "ethereal/ethereal_blue_marble_brick.png"},
+                {TerrainTimberTile, "ethereal/ethereal_sakura_wood.png"},
+                {TerrainTimberEndTile, "ethereal/ethereal_sakura_wood.png"},
+                {TerrainTrimTile, "ethereal/ethereal_blue_marble.png"},
+                {TerrainGrassTile, "ethereal/ethereal_grass_bamboo_top.png"},
+                {TerrainLeavesTile, "ethereal/ethereal_sakura_leaves.png"},
+                {TerrainTreeTile, "ethereal/ethereal_sakura_trunk.png"},
+                {TerrainTreeEndTile, "ethereal/ethereal_sakura_trunk_top.png"},
+                {TerrainTallGrassTile, "ethereal/ethereal_fern.png"},
+                {TerrainTallGrassTile + 1, "ethereal/ethereal_fern.png"},
+                {TerrainTallGrassTile + 2, "ethereal/ethereal_fern.png"}});
+            putGrassSide(grassSide, loadImage(data.root / "textures/ethereal/ethereal_grass_bamboo_side.png"));
+        } else if (theme == "coral") {
+            replaceTiles({
+                {TerrainMasonryTile, "everness/everness_coral_sandstone_brick.png"},
+                {TerrainTimberTile, "everness/everness_coral_wood.png"},
+                {TerrainTimberEndTile, "everness/everness_coral_wood.png"},
+                {TerrainTrimTile, "everness/everness_coral_sandstone.png"},
+                {TerrainGrassTile, "everness/everness_coral_grass.png"},
+                {TerrainLeavesTile, "everness/everness_coral_leaves.png"},
+                {TerrainDirtTile, "everness/everness_coral_dirt.png"},
+                {TerrainTreeTile, "everness/everness_coral_tree.png"},
+                {TerrainTreeEndTile, "everness/everness_coral_wood.png"},
+                {TerrainTallGrassTile, "everness/everness_coral_grass_1.png"},
+                {TerrainTallGrassTile + 1, "everness/everness_coral_grass_2.png"},
+                {TerrainTallGrassTile + 2, "everness/everness_coral_grass_3.png"}});
+            putGrassSide(loadImage(data.root / "textures/everness/everness_coral_dirt.png"),
+                         loadImage(data.root / "textures/everness/everness_coral_grass_side.png"));
+        } else if (theme == "crystal") {
+            replaceTiles({
+                {TerrainMasonryTile, "everness/everness_crystal_stone_brick.png"},
+                {TerrainTimberTile, "everness/everness_crystal_wood.png"},
+                {TerrainTimberEndTile, "everness/everness_crystal_wood.png"},
+                {TerrainTrimTile, "everness/everness_crystal_stone.png"},
+                {TerrainGrassTile, "everness/everness_crystal_grass.png"},
+                {TerrainLeavesTile, "everness/everness_crystal_leaves.png"},
+                {TerrainDirtTile, "everness/everness_crystal_dirt.png"},
+                {TerrainTreeTile, "everness/everness_crystal_tree.png"},
+                {TerrainTreeEndTile, "everness/everness_crystal_tree_top.png"},
+                {TerrainTallGrassTile, "everness/everness_crystal_grass_1.png"},
+                {TerrainTallGrassTile + 1, "everness/everness_crystal_grass_2.png"},
+                {TerrainTallGrassTile + 2, "everness/everness_crystal_grass_3.png"}});
+            putGrassSide(loadImage(data.root / "textures/everness/everness_crystal_dirt.png"),
+                         loadImage(data.root / "textures/everness/everness_crystal_grass_side.png"));
+        } else if (theme == "frost") {
+            replaceTiles({
+                {TerrainMasonryTile, "ethereal/ethereal_brick_ice.png"},
+                {TerrainTimberTile, "ethereal/ethereal_frost_wood.png"},
+                {TerrainTimberEndTile, "ethereal/ethereal_frost_wood.png"},
+                {TerrainTrimTile, "ethereal/ethereal_crystal_block.png"},
+                {TerrainGrassTile, "ethereal/ethereal_grass_crystal_top.png"},
+                {TerrainLeavesTile, "ethereal/ethereal_frost_leaves.png"},
+                {TerrainTreeTile, "ethereal/ethereal_frost_tree.png"},
+                {TerrainTreeEndTile, "ethereal/ethereal_frost_tree_top.png"},
+                {TerrainTallGrassTile, "ethereal/ethereal_snowygrass.png"},
+                {TerrainTallGrassTile + 1, "ethereal/ethereal_snowygrass.png"},
+                {TerrainTallGrassTile + 2, "ethereal/ethereal_snowygrass.png"}});
+            putGrassSide(grassSide, loadImage(data.root / "textures/ethereal/ethereal_grass_crystal_side.png"));
+        } else if (theme == "mushroom") {
+            replaceTiles({
+                {TerrainMasonryTile, "ethereal/ethereal_mushroom_pore.png"},
+                {TerrainTimberTile, "ethereal/ethereal_mushroom_trunk.png"},
+                {TerrainTimberEndTile, "ethereal/ethereal_mushroom_trunk_top.png"},
+                {TerrainTrimTile, "ethereal/ethereal_mushroom_pore.png"},
+                {TerrainGrassTile, "ethereal/ethereal_grass_mushroom_top.png"},
+                {TerrainLeavesTile, "ethereal/ethereal_mushroom_block.png"},
+                {TerrainTreeTile, "ethereal/ethereal_mushroom_trunk.png"},
+                {TerrainTreeEndTile, "ethereal/ethereal_mushroom_trunk_top.png"},
+                {TerrainTallGrassTile, "ethereal/ethereal_fern.png"},
+                {TerrainTallGrassTile + 1, "ethereal/ethereal_fern.png"},
+                {TerrainTallGrassTile + 2, "ethereal/ethereal_fern.png"}});
+            putGrassSide(grassSide, loadImage(data.root / "textures/ethereal/ethereal_grass_mushroom_side.png"));
+        } else if (theme == "bamboo") {
+            replaceTiles({
+                {TerrainTimberTile, "everness/everness_bamboo_block_side.png"},
+                {TerrainTimberEndTile, "everness/everness_bamboo_block_top.png"},
+                {TerrainTrimTile, "everness/everness_bamboo_mosaic.png"},
+                {TerrainGrassTile, "ethereal/ethereal_grass_bamboo_top.png"},
+                {TerrainLeavesTile, "ethereal/ethereal_bamboo_leaves.png"},
+                {TerrainTreeTile, "everness/everness_bamboo_block_side.png"},
+                {TerrainTreeEndTile, "everness/everness_bamboo_block_top.png"},
+                {TerrainTallGrassTile, "ethereal/ethereal_bamboo_sprout.png"},
+                {TerrainTallGrassTile + 1, "ethereal/ethereal_fern.png"},
+                {TerrainTallGrassTile + 2, "ethereal/ethereal_bamboo_sprout.png"}});
+            putGrassSide(grassSide, loadImage(data.root / "textures/ethereal/ethereal_grass_bamboo_side.png"));
+        } else if (theme == "desert") {
+            replaceTiles({
+                {TerrainMasonryTile, "everness/everness_forsaken_desert_brick.png"},
+                {TerrainTimberTile, "everness/everness_dry_wood.png"},
+                {TerrainTimberEndTile, "everness/everness_dry_wood.png"},
+                {TerrainTrimTile, "everness/everness_forsaken_desert_stone.png"},
+                {TerrainGrassTile, "everness/everness_forsaken_desert_sand.png"},
+                {TerrainGrassSideTile, "everness/everness_forsaken_desert_sand.png"},
+                {TerrainDirtTile, "everness/everness_forsaken_desert_stone.png"},
+                {TerrainLeavesTile, "everness/everness_dry_branches.png"},
+                {TerrainTreeTile, "everness/everness_dry_tree.png"},
+                {TerrainTreeEndTile, "everness/everness_dry_tree_top.png"},
+                {TerrainTallGrassTile, "everness/everness_forsaken_desert_plant_1.png"},
+                {TerrainTallGrassTile + 1, "everness/everness_forsaken_desert_plant_2.png"},
+                {TerrainTallGrassTile + 2, "everness/everness_forsaken_desert_plant_3.png"}});
+        } else if (theme == "volcanic") {
+            replaceTiles({
+                {TerrainMasonryTile, "everness/everness_volcanic_rock.png"},
+                {TerrainTimberTile, "ethereal/ethereal_scorched_tree.png"},
+                {TerrainTimberEndTile, "ethereal/ethereal_scorched_tree_top.png"},
+                {TerrainTrimTile, "everness/everness_volcanic_rock.png"},
+                {TerrainGrassTile, "ethereal/ethereal_grass_fiery_top.png"},
+                {TerrainDirtTile, "ethereal/ethereal_dry_dirt.png"},
+                {TerrainLeavesTile, "ethereal/ethereal_poplar_leaves_red.png"},
+                {TerrainTreeTile, "ethereal/ethereal_scorched_tree.png"},
+                {TerrainTreeEndTile, "ethereal/ethereal_scorched_tree_top.png"},
+                {TerrainTallGrassTile, "ethereal/ethereal_dry_shrub.png"},
+                {TerrainTallGrassTile + 1, "ethereal/ethereal_dry_shrub.png"},
+                {TerrainTallGrassTile + 2, "ethereal/ethereal_dry_shrub.png"}});
+            putGrassSide(loadImage(data.root / "textures/ethereal/ethereal_dry_dirt.png"),
+                         loadImage(data.root / "textures/ethereal/ethereal_grass_fiery_side.png"));
+        } else if (theme == "willow") {
+            replaceTiles({
+                {TerrainTimberTile, "ethereal/ethereal_willow_wood.png"},
+                {TerrainTimberEndTile, "ethereal/ethereal_willow_wood.png"},
+                {TerrainTrimTile, "ethereal/ethereal_willow_wood.png"},
+                {TerrainGrassTile, "ethereal/ethereal_grass_bamboo_top.png"},
+                {TerrainLeavesTile, "ethereal/ethereal_willow_twig_allfaces.png"},
+                {TerrainTreeTile, "ethereal/ethereal_willow_trunk.png"},
+                {TerrainTreeEndTile, "ethereal/ethereal_willow_trunk_top.png"},
+                {TerrainTallGrassTile, "ethereal/ethereal_fern.png"},
+                {TerrainTallGrassTile + 1, "ethereal/ethereal_fern.png"},
+                {TerrainTallGrassTile + 2, "ethereal/ethereal_fern.png"}});
+            putGrassSide(grassSide, loadImage(data.root / "textures/ethereal/ethereal_grass_bamboo_side.png"));
+        } else if (theme == "cursed") {
+            replaceTiles({
+                {TerrainMasonryTile, "everness/everness_cursed_brick.png"},
+                {TerrainTimberTile, "everness/everness_cursed_dream_stone.png"},
+                {TerrainTimberEndTile, "everness/everness_cursed_dream_stone.png"},
+                {TerrainTrimTile, "everness/everness_cursed_brick_carved.png"},
+                {TerrainGrassTile, "everness/everness_cursed_grass.png"},
+                {TerrainDirtTile, "everness/everness_cursed_dirt.png"},
+                {TerrainLeavesTile, "everness/everness_cursed_dry_pine_leaves.png"},
+                {TerrainTreeTile, "everness/everness_cursed_dream_stone.png"},
+                {TerrainTreeEndTile, "everness/everness_cursed_dream_stone.png"},
+                {TerrainTallGrassTile, "everness/everness_cursed_bush_stem.png"},
+                {TerrainTallGrassTile + 1, "everness/everness_dry_branches.png"},
+                {TerrainTallGrassTile + 2, "everness/everness_cursed_bush_stem.png"}});
+            putGrassSide(loadImage(data.root / "textures/everness/everness_cursed_dirt.png"),
+                         loadImage(data.root / "textures/everness/everness_cursed_grass_side.png"));
+        } else if (theme == "golden") {
+            replaceTiles({
+                {TerrainMasonryTile, "everness/everness_pyriteblock_brick.png"},
+                {TerrainTimberTile, "ethereal/ethereal_yellow_wood.png"},
+                {TerrainTimberEndTile, "ethereal/ethereal_yellow_wood.png"},
+                {TerrainTrimTile, "everness/everness_pyrite_block_polished.png"},
+                {TerrainGrassTile, "ethereal/ethereal_grass_grove_top.png"},
+                {TerrainLeavesTile, "ethereal/ethereal_yellow_leaves.png"},
+                {TerrainTreeTile, "ethereal/ethereal_yellow_tree.png"},
+                {TerrainTreeEndTile, "ethereal/ethereal_yellow_tree_top.png"},
+                {TerrainTallGrassTile, "ethereal/ethereal_fern.png"},
+                {TerrainTallGrassTile + 1, "ethereal/ethereal_fern.png"},
+                {TerrainTallGrassTile + 2, "ethereal/ethereal_fern.png"}});
+            putGrassSide(grassSide, loadImage(data.root / "textures/ethereal/ethereal_grass_grove_side.png"));
+        } else if (theme == "birch") {
+            replaceTiles({
+                {TerrainMasonryTile, "everness/everness_coral_white_sandstone_brick.png"},
+                {TerrainTimberTile, "ethereal/moretrees_birch_wood.png"},
+                {TerrainTimberEndTile, "ethereal/moretrees_birch_wood.png"},
+                {TerrainTrimTile, "everness/everness_coral_white_sandstone.png"},
+                {TerrainLeavesTile, "ethereal/moretrees_birch_leaves.png"},
+                {TerrainTreeTile, "ethereal/moretrees_birch_trunk.png"},
+                {TerrainTreeEndTile, "ethereal/moretrees_birch_trunk_top.png"}});
+        } else if (theme == "jungle") {
+            replaceTiles({
+                {TerrainMasonryTile, "everness/everness_coral_desert_mossy_cobble.png"},
+                {TerrainTimberTile, "ethereal/ethereal_banana_wood.png"},
+                {TerrainTimberEndTile, "ethereal/ethereal_banana_wood.png"},
+                {TerrainTrimTile, "everness/everness_coral_desert_mossy_cobble.png"},
+                {TerrainGrassTile, "ethereal/ethereal_grass_jungle_top.png"},
+                {TerrainLeavesTile, "ethereal/ethereal_banana_leaf.png"},
+                {TerrainTreeTile, "ethereal/ethereal_banana_trunk.png"},
+                {TerrainTreeEndTile, "ethereal/ethereal_banana_trunk_top.png"},
+                {TerrainTallGrassTile, "ethereal/ethereal_fern.png"},
+                {TerrainTallGrassTile + 1, "ethereal/ethereal_vine.png"},
+                {TerrainTallGrassTile + 2, "ethereal/ethereal_fern.png"}});
+            putGrassSide(grassSide, loadImage(data.root / "textures/ethereal/ethereal_grass_jungle_side.png"));
+        } else if (theme == "redwood") {
+            replaceTiles({
+                {TerrainTimberTile, "ethereal/ethereal_redwood_wood.png"},
+                {TerrainTimberEndTile, "ethereal/ethereal_redwood_wood.png"},
+                {TerrainTrimTile, "ethereal/ethereal_redwood_wood.png"},
+                {TerrainGrassTile, "ethereal/ethereal_grass_tawny_top.png"},
+                {TerrainLeavesTile, "ethereal/ethereal_redwood_leaves.png"},
+                {TerrainTreeTile, "ethereal/ethereal_redwood_trunk.png"},
+                {TerrainTreeEndTile, "ethereal/ethereal_redwood_trunk_top.png"},
+                {TerrainTallGrassTile, "ethereal/ethereal_fern.png"},
+                {TerrainTallGrassTile + 1, "ethereal/ethereal_shrub_red.png"},
+                {TerrainTallGrassTile + 2, "ethereal/ethereal_fern.png"}});
+            putGrassSide(grassSide, loadImage(data.root / "textures/ethereal/ethereal_grass_tawny_side.png"));
+        } else if (theme == "baobab") {
+            replaceTiles({
+                {TerrainMasonryTile, "everness/everness_forsaken_desert_brick.png"},
+                {TerrainTimberTile, "everness/everness_baobab_wood.png"},
+                {TerrainTimberEndTile, "everness/everness_baobab_wood.png"},
+                {TerrainTrimTile, "everness/everness_forsaken_desert_stone.png"},
+                {TerrainGrassTile, "ethereal/ethereal_grass_prairie_top.png"},
+                {TerrainLeavesTile, "everness/everness_baobab_tree_leaves.png"},
+                {TerrainTreeTile, "everness/everness_baobab_tree_side.png"},
+                {TerrainTreeEndTile, "everness/everness_baobab_tree_top.png"},
+                {TerrainTallGrassTile, "ethereal/ethereal_dry_shrub.png"},
+                {TerrainTallGrassTile + 1, "everness/everness_forsaken_desert_plant_2.png"},
+                {TerrainTallGrassTile + 2, "ethereal/ethereal_dry_shrub.png"}});
+            putGrassSide(grassSide, loadImage(data.root / "textures/ethereal/ethereal_grass_prairie_side.png"));
+        } else if (theme == "emerald") {
+            replaceTiles({
+                {TerrainMasonryTile, "everness/everness_ancient_emerald_ice.png"},
+                {TerrainTimberTile, "everness/everness_dense_emerald_ice.png"},
+                {TerrainTimberEndTile, "everness/everness_dense_emerald_ice.png"},
+                {TerrainTrimTile, "everness/everness_emerald_ice.png"},
+                {TerrainGrassTile, "everness/everness_mineral_cave_moss.png"},
+                {TerrainDirtTile, "everness/everness_mineral_stone_under.png"},
+                {TerrainLeavesTile, "everness/everness_emerald_ice.png"},
+                {TerrainTreeTile, "everness/everness_dense_emerald_ice.png"},
+                {TerrainTreeEndTile, "everness/everness_dense_emerald_ice.png"},
+                {TerrainTallGrassTile, "everness/everness_crystal_grass_1.png"},
+                {TerrainTallGrassTile + 1, "everness/everness_crystal_grass_2.png"},
+                {TerrainTallGrassTile + 2, "everness/everness_crystal_grass_3.png"}});
+            putGrassSide(loadImage(data.root / "textures/everness/everness_mineral_stone_under.png"),
+                         loadImage(data.root / "textures/everness/everness_mineral_cave_moss_side.png"));
         }
-        putTile(TerrainGrassSideTile, grassSide);
-        atlas = upload(a);
+        if (style["path"] == "sakura")
+            replaceTiles({{TerrainPavingTile, "ethereal/ethereal_bamboo_floor.png"}});
+        else if (style["path"] == "coral")
+            replaceTiles({{TerrainPavingTile, "everness/everness_coral_sandstone_chiseled.png"}});
+        else if (style["path"] == "crystal")
+            replaceTiles({{TerrainPavingTile, "everness/everness_crystal_stone.png"}});
+        else if (style["path"] == "frost")
+            replaceTiles({{TerrainPavingTile, "ethereal/ethereal_brick_snow.png"}});
+        else if (style["path"] == "mushroom")
+            replaceTiles({{TerrainPavingTile, "ethereal/ethereal_mushroom_pore.png"}});
+        else if (style["path"] == "bamboo")
+            replaceTiles({{TerrainPavingTile, "everness/everness_bamboo_mosaic.png"}});
+        else if (style["path"] == "desert")
+            replaceTiles({{TerrainPavingTile, "everness/everness_forsaken_desert_chiseled_stone_top.png"}});
+        else if (style["path"] == "volcanic")
+            replaceTiles({{TerrainPavingTile, "everness/everness_volcanic_rock.png"}});
+        else if (style["path"] == "willow")
+            replaceTiles({{TerrainPavingTile, "ethereal/ethereal_willow_wood.png"}});
+        else if (style["path"] == "cursed")
+            replaceTiles({{TerrainPavingTile, "everness/everness_cursed_brick.png"}});
+        else if (style["path"] == "golden")
+            replaceTiles({{TerrainPavingTile, "ethereal/ethereal_yellow_wood.png"}});
+        else if (style["path"] == "birch")
+            replaceTiles({{TerrainPavingTile, "everness/everness_coral_white_sandstone.png"}});
+        else if (style["path"] == "jungle")
+            replaceTiles({{TerrainPavingTile, "everness/everness_coral_desert_mossy_cobble.png"}});
+        else if (style["path"] == "redwood")
+            replaceTiles({{TerrainPavingTile, "ethereal/ethereal_redwood_wood.png"}});
+        else if (style["path"] == "baobab")
+            replaceTiles({{TerrainPavingTile, "everness/everness_baobab_wood.png"}});
+        else if (style["path"] == "emerald")
+            replaceTiles({{TerrainPavingTile, "everness/everness_mineral_stone_block.png"}});
+        if (style["lamps"] == "sakura")
+            replaceTiles({{TerrainLampTile, "ethereal/ethereal_glostone.png"}});
+        else if (style["lamps"] == "coral")
+            replaceTiles({{TerrainLampTile, "everness/everness_coral_forest_deep_ocean_lantern_top.png"}});
+        else if (style["lamps"] == "crystal")
+            replaceTiles({{TerrainLampTile, "everness/everness_crystal_block_cyan_top.png"}});
+        else if (style["lamps"] == "frost")
+            replaceTiles({{TerrainLampTile, "ethereal/ethereal_crystal_block.png"}});
+        else if (style["lamps"] == "mushroom")
+            replaceTiles({{TerrainLampTile, "everness/everness_amaranita_lantern_light.png"}});
+        else if (style["lamps"] == "bamboo")
+            replaceTiles({{TerrainLampTile, "everness/everness_pyrite_lantern.png"}});
+        else if (style["lamps"] == "desert")
+            replaceTiles({{TerrainLampTile, "everness/everness_crystal_block_orange.png"}});
+        else if (style["lamps"] == "volcanic")
+            replaceTiles({{TerrainLampTile, "everness/everness_crystal_block_orange_top.png"}});
+        else if (style["lamps"] == "willow")
+            replaceTiles({{TerrainLampTile, "everness/everness_emerald_ice.png"}});
+        else if (style["lamps"] == "cursed")
+            replaceTiles({{TerrainLampTile, "everness/everness_blue_weeping_obsidian.png"}});
+        else if (style["lamps"] == "golden")
+            replaceTiles({{TerrainLampTile, "everness/everness_pyrite_block_polished.png"}});
+        else if (style["lamps"] == "birch")
+            replaceTiles({{TerrainLampTile, "everness/everness_frosted_ice.png"}});
+        else if (style["lamps"] == "jungle")
+            replaceTiles({{TerrainLampTile, "everness/everness_amaranita_lantern_light.png"}});
+        else if (style["lamps"] == "redwood")
+            replaceTiles({{TerrainLampTile, "everness/everness_crystal_block_orange.png"}});
+        else if (style["lamps"] == "baobab")
+            replaceTiles({{TerrainLampTile, "everness/everness_pyrite_lantern.png"}});
+        else if (style["lamps"] == "emerald")
+            replaceTiles({{TerrainLampTile, "everness/everness_emerald_ice.png"}});
+        if (style["flowers"] == "sakura")
+            replaceTiles({
+                {TerrainFlowerTile, "ethereal/ethereal_cactus_flower.png"},
+                {TerrainFlowerTile + 1, "ethereal/ethereal_fire_flower.png"},
+                {TerrainFlowerTile + 2, "ethereal/ethereal_cactus_flower.png"}});
+        else if (style["flowers"] == "coral")
+            replaceTiles({
+                {TerrainFlowerTile, "everness/everness_coral_grass_orange.png"},
+                {TerrainFlowerTile + 1, "everness/everness_coral_mushrooms_bioluminescent.png"},
+                {TerrainFlowerTile + 2, "everness/everness_coral_grass_globulagus.png"}});
+        else if (style["flowers"] == "crystal")
+            replaceTiles({
+                {TerrainFlowerTile, "everness/everness_crystal_lily_flower_small.png"},
+                {TerrainFlowerTile + 1, "everness/everness_crystal_mushrooms.png"},
+                {TerrainFlowerTile + 2, "everness/everness_crystal_lily_flower_small.png"}});
+        else if (style["flowers"] == "frost")
+            replaceTiles({
+                {TerrainFlowerTile, "ethereal/ethereal_snowygrass.png"},
+                {TerrainFlowerTile + 1, "ethereal/ethereal_illumishroom_cyan.png"},
+                {TerrainFlowerTile + 2, "ethereal/ethereal_snowygrass.png"}});
+        else if (style["flowers"] == "mushroom")
+            replaceTiles({
+                {TerrainFlowerTile, "ethereal/ethereal_illumishroom_red.png"},
+                {TerrainFlowerTile + 1, "ethereal/ethereal_illumishroom_green.png"},
+                {TerrainFlowerTile + 2, "ethereal/ethereal_illumishroom_cyan.png"}});
+        else if (style["flowers"] == "bamboo")
+            replaceTiles({
+                {TerrainFlowerTile, "everness/everness_lotus_flower_white_item.png"},
+                {TerrainFlowerTile + 1, "everness/everness_lotus_flower_pink_item.png"},
+                {TerrainFlowerTile + 2, "everness/everness_lotus_flower_white_item.png"}});
+        else if (style["flowers"] == "desert")
+            replaceTiles({
+                {TerrainFlowerTile, "ethereal/ethereal_cactus_flower.png"},
+                {TerrainFlowerTile + 1, "everness/everness_forsaken_desert_plant_3.png"},
+                {TerrainFlowerTile + 2, "everness/everness_forsaken_desert_plant_2.png"}});
+        else if (style["flowers"] == "volcanic")
+            replaceTiles({
+                {TerrainFlowerTile, "ethereal/ethereal_fire_flower.png"},
+                {TerrainFlowerTile + 1, "ethereal/ethereal_firethorn.png"},
+                {TerrainFlowerTile + 2, "ethereal/ethereal_illumishroom_red.png"}});
+        else if (style["flowers"] == "willow")
+            replaceTiles({
+                {TerrainFlowerTile, "everness/everness_lotus_flower_white_item.png"},
+                {TerrainFlowerTile + 1, "everness/everness_lotus_flower_pink_item.png"},
+                {TerrainFlowerTile + 2, "everness/everness_lotus_flower_purple_item.png"}});
+        else if (style["flowers"] == "cursed")
+            replaceTiles({
+                {TerrainFlowerTile, "everness/everness_cursed_lands_deep_ocean_coral_darkilluma.png"},
+                {TerrainFlowerTile + 1, "everness/everness_cursed_lands_deep_ocean_coral_anemone.png"},
+                {TerrainFlowerTile + 2, "everness/everness_cursed_lands_deep_ocean_coral_demon.png"}});
+        else if (style["flowers"] == "golden")
+            replaceTiles({
+                {TerrainFlowerTile, "luanti/flowers_dandelion_yellow.png"},
+                {TerrainFlowerTile + 1, "ethereal/ethereal_fire_flower.png"},
+                {TerrainFlowerTile + 2, "luanti/flowers_dandelion_yellow.png"}});
+        else if (style["flowers"] == "birch")
+            replaceTiles({
+                {TerrainFlowerTile, "everness/everness_lotus_flower_white_item.png"},
+                {TerrainFlowerTile + 1, "luanti/flowers_dandelion_yellow.png"},
+                {TerrainFlowerTile + 2, "everness/everness_lotus_flower_white_item.png"}});
+        else if (style["flowers"] == "jungle")
+            replaceTiles({
+                {TerrainFlowerTile, "everness/everness_blooming_cooksonia.png"},
+                {TerrainFlowerTile + 1, "everness/everness_lotus_flower_pink_item.png"},
+                {TerrainFlowerTile + 2, "ethereal/ethereal_cactus_flower.png"}});
+        else if (style["flowers"] == "redwood")
+            replaceTiles({
+                {TerrainFlowerTile, "ethereal/ethereal_shrub_red.png"},
+                {TerrainFlowerTile + 1, "everness/everness_coral_grass_orange.png"},
+                {TerrainFlowerTile + 2, "ethereal/ethereal_shrub_red.png"}});
+        else if (style["flowers"] == "baobab")
+            replaceTiles({
+                {TerrainFlowerTile, "everness/everness_forsaken_desert_plant_2.png"},
+                {TerrainFlowerTile + 1, "everness/everness_forsaken_desert_plant_3.png"},
+                {TerrainFlowerTile + 2, "ethereal/ethereal_dry_shrub.png"}});
+        else if (style["flowers"] == "emerald")
+            replaceTiles({
+                {TerrainFlowerTile, "everness/everness_illumi_root.png"},
+                {TerrainFlowerTile + 1, "everness/everness_crystal_lily_flower_small.png"},
+                {TerrainFlowerTile + 2, "ethereal/ethereal_illumishroom_green.png"}});
+        if (style["banner"] == "sakura")
+            replaceTiles({{TerrainBannerTile, "ethereal/ethereal_blue_marble_tile.png"}});
+        else if (style["banner"] == "coral")
+            replaceTiles({{TerrainBannerTile, "everness/everness_coral_sandstone_chiseled.png"}});
+        else if (style["banner"] == "crystal")
+            replaceTiles({{TerrainBannerTile, "everness/everness_crystal_sandstone_chiseled.png"}});
+        else if (style["banner"] == "frost")
+            replaceTiles({{TerrainBannerTile, "ethereal/ethereal_crystal_block.png"}});
+        else if (style["banner"] == "mushroom")
+            replaceTiles({{TerrainBannerTile, "ethereal/ethereal_mushroom_block.png"}});
+        else if (style["banner"] == "bamboo")
+            replaceTiles({{TerrainBannerTile, "everness/everness_bamboo_block_top.png"}});
+        else if (style["banner"] == "desert")
+            replaceTiles({{TerrainBannerTile, "everness/everness_forsaken_desert_engraved_stone.png"}});
+        else if (style["banner"] == "volcanic")
+            replaceTiles({{TerrainBannerTile, "everness/everness_crystal_block_orange_top.png"}});
+        else if (style["banner"] == "willow")
+            replaceTiles({{TerrainBannerTile, "ethereal/ethereal_willow_trunk_top.png"}});
+        else if (style["banner"] == "cursed")
+            replaceTiles({{TerrainBannerTile, "everness/everness_cursed_brick_carved.png"}});
+        else if (style["banner"] == "golden")
+            replaceTiles({{TerrainBannerTile, "everness/everness_pyrite_block_spiral.png"}});
+        else if (style["banner"] == "birch")
+            replaceTiles({{TerrainBannerTile, "ethereal/moretrees_birch_trunk_top.png"}});
+        else if (style["banner"] == "jungle")
+            replaceTiles({{TerrainBannerTile, "ethereal/ethereal_banana_trunk_top.png"}});
+        else if (style["banner"] == "redwood")
+            replaceTiles({{TerrainBannerTile, "ethereal/ethereal_redwood_trunk_top.png"}});
+        else if (style["banner"] == "baobab")
+            replaceTiles({{TerrainBannerTile, "everness/everness_baobab_tree_top.png"}});
+        else if (style["banner"] == "emerald")
+            replaceTiles({{TerrainBannerTile, "everness/everness_ancient_emerald_ice.png"}});
+        const GLuint nextAtlas = upload(a);
+        glDeleteTextures(1, &atlas);
+        atlas = nextAtlas;
+        atlasStyle = style;
     }
     void mesh(Mesh& gpu, const ChunkMesh& cpu) {
         if (cpu.vertices.empty())
@@ -829,6 +1262,8 @@ void Renderer::unclip() {
 }
 void Renderer::world(const Mine& mine, Vec3 eye, float yaw, float pitch, float fov) {
     p->flushUi();
+    if (p->atlasStyle != mine.quarryStyle())
+        p->makeAtlas(mine.quarryStyle());
     glDisable(GL_BLEND);
     glEnable(GL_ALPHA_TEST);
     glAlphaFunc(GL_GREATER, .5f);
@@ -995,10 +1430,12 @@ void Renderer::companion(const PetCompanion& companion, const Json& pet, float y
     glDisable(GL_CULL_FACE);
     glEnable(GL_TEXTURE_2D);
     const auto position = companion.position();
+    const auto scale = companion.scale();
     glPushMatrix();
     glTranslatef(position.x, position.y, position.z);
     glRotatef(companion.facing() * 180 / 3.14159265f, 0, 1, 0);
-    glScalef(PetCompanion::Size, PetCompanion::Size, PetCompanion::Size);
+    glRotatef(companion.tilt() * 180 / 3.14159265f, 0, 0, 1);
+    glScalef(PetCompanion::Size * scale.x, PetCompanion::Size * scale.y, PetCompanion::Size * scale.z);
     p->petCube(pet, {1, 1, 1, 1});
     glPopMatrix();
 
@@ -1007,7 +1444,7 @@ void Renderer::companion(const PetCompanion& companion, const Json& pet, float y
     const std::string name = pet.get("mood", "Joyful").asString() + " " +
                              pet.get("pet_type", "Rabbit").asString();
     glPushMatrix();
-    glTranslatef(position.x, position.y + PetCompanion::Size * .5f + .23f, position.z);
+    glTranslatef(position.x, position.y + PetCompanion::Size * scale.y * .5f + .23f, position.z);
     glRotatef(yaw * 180 / 3.14159265f, 0, 1, 0);
     glRotatef(pitch * 180 / 3.14159265f, 1, 0, 0);
     glScalef(.007f, -.007f, .007f);

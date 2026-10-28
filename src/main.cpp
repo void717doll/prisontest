@@ -3,6 +3,7 @@
 #include "prison/game.hpp"
 #include "prison/guardians.hpp"
 #include "prison/help.hpp"
+#include "prison/quarry.hpp"
 #include "prison/rewards.hpp"
 #include "prison/save.hpp"
 #include "prison/settings.hpp"
@@ -117,9 +118,15 @@ void finishReset(Mine& mine) {
     while (mine.resetting() || mine.pendingChunks())
         mine.step(2048, 4);
 }
-void startMine(Mine& mine, const Game& game) {
-    mine.takePocketDrops(std::numeric_limits<int>::max());
+void configureMine(Mine& mine, Game& game) {
+    game.state["quarry_style"] =
+        sanitizeQuarryStyle(game.state["quarry_style"], game.state["total_prestige"].asInt64());
     mine.configure(game.mineOptions());
+    mine.setQuarryStyle(game.state["quarry_style"]);
+}
+void startMine(Mine& mine, Game& game) {
+    mine.takePocketDrops(std::numeric_limits<int>::max());
+    configureMine(mine, game);
     if (!mine.loadSnapshot(game.state["mine_state"], game.state["rank_index"].asInt(),
                            game.state["total_prestige"].asInt64()))
         mine.reset(game.state["rank_index"].asInt(), game.state["total_prestige"].asInt64());
@@ -249,7 +256,7 @@ int run(const Options& options) {
             if (!result.ok)
                 return 2;
             if (result.resetMine) {
-                mine.configure(game.mineOptions());
+                configureMine(mine, game);
                 mine.reset(game.state["rank_index"].asInt(), game.state["total_prestige"].asInt64());
                 finishReset(mine);
             }
@@ -367,7 +374,7 @@ int run(const Options& options) {
     auto reset = [&]() {
         companion.clear();
         game.state["guardian"]["active"] = false;
-        mine.configure(game.mineOptions());
+        configureMine(mine, game);
         mine.reset(game.state["rank_index"].asInt(), game.state["total_prestige"].asInt64());
         position = mine.spawn();
         yaw = mine.spawnYaw();
@@ -380,7 +387,7 @@ int run(const Options& options) {
     auto apply = [&](const Result& r) {
         ui.apply(r);
         if (r.ok)
-            mine.configure(game.mineOptions());
+            configureMine(mine, game);
         if (r.resetMine)
             reset();
     };
@@ -569,8 +576,8 @@ int run(const Options& options) {
                     break;
                 } else if (action.kind == "save")
                     save(false);
-                else if (action.kind == "mine_options" && ctx.playing)
-                    mine.configure(game.mineOptions());
+                else if ((action.kind == "mine_options" || action.kind == "quarry_style") && ctx.playing)
+                    configureMine(mine, game);
                 else if (action.kind == "shaft" && ctx.playing) {
                     if (!procJobs.empty()) {
                         const bool queued =
@@ -856,7 +863,8 @@ int run(const Options& options) {
             float gui = std::clamp(ctx.settings.get("gui_scale", 1).asFloat(), .75f, 1.5f);
             const auto& activePet = game.state["pet_data"]["active_pet"];
             if (ctx.settings.get("show_pet_companion", true).asBool())
-                companion.tick(mine, activePet, position, yaw, dt);
+                companion.tick(mine, activePet, position, yaw, dt,
+                               game.state["pet_data"].get("companion_sitting", false).asBool());
             else
                 companion.clear();
             int ww, wh;

@@ -1,4 +1,5 @@
 #include "prison/guardians.hpp"
+#include "prison/quarry.hpp"
 #include "prison/world.hpp"
 #include "ui_internal.hpp"
 #include <array>
@@ -41,6 +42,10 @@ void UI::Impl::credits() {
         {"Luanti", "Engine used by the original Prisontest game and a reference for this client."},
         {"Minetest Game", "Scenery and flower textures by its community artists. Full attribution is "
                           "included in ASSET_CREDITS.md and the texture licenses."},
+        {"Ethereal NG", "by TenPlus1. Quarry textures. Additional artists and licenses are "
+                        "listed in ASSET_CREDITS.md and textures/ethereal/license.txt."},
+        {"Everness", "by SaKeL. Quarry textures. Full attribution and licenses are "
+                     "included in ASSET_CREDITS.md and textures/everness/LICENSE.txt."},
         {"Minecraft and Roblox", "Their OP Prison game modes inspired the mining and progression."},
         {"Codex", "Help with coding and development."}};
     for (const auto& [name, contribution] : entries) {
@@ -106,13 +111,13 @@ void UI::Impl::pause() {
 void UI::Impl::statistics() {
     Rect box = panel("Statistics", 730, 570);
     const float x = box.x + 22, width = box.w - 44;
-    label(x, box.y + 60, "Totals for this world", 14);
+    label(x, box.y + 60,
+          statisticsCategory == "Records" ? "Personal records for this world" : "Totals for this world", 14);
     std::vector<std::string> categories;
     for (const auto& entry : statisticDefinitions())
         if (std::find(categories.begin(), categories.end(), entry.category) == categories.end())
             categories.push_back(entry.category);
-    if (categories.empty())
-        return;
+    categories.push_back("Records");
     if (std::find(categories.begin(), categories.end(), statisticsCategory) == categories.end())
         statisticsCategory = categories.front();
     const float categoryWidth = std::min(152.f, width * .25f);
@@ -129,8 +134,10 @@ void UI::Impl::statistics() {
     const float listX = x + categoryWidth + 18;
     Rect list{listX, box.y + 127, x + width - listX, box.h - 187};
     const bool enchants = statisticsCategory == "Enchants";
-    label(list.x, box.y + 95, "Statistic", 14);
-    label(list.x + list.w - draw.textWidth("Total", 14) - 10, box.y + 95, "Total", 14);
+    const bool records = statisticsCategory == "Records";
+    const std::string valueHeading = records ? "Best" : "Total";
+    label(list.x, box.y + 95, records ? "Record" : "Statistic", 14);
+    label(list.x + list.w - draw.textWidth(valueHeading, 14) - 10, box.y + 95, valueHeading, 14);
     draw.rect({list.x, box.y + 118, list.w, 1}, outline);
     beginScroll(list);
     float y = list.y - scroll;
@@ -139,6 +146,47 @@ void UI::Impl::statistics() {
         label(list.x + list.w - draw.textWidth(value, 14) - 10, y + 5, value, 14);
         y += 32;
     };
+    if (records) {
+        const auto& best = game.state["records"];
+        auto amount = [&](const Json& record) {
+            if (!record["amount"].isNumeric())
+                return std::string("Not set");
+            const double total = record["amount"].asDouble();
+            auto value = compact(total);
+            if (draw.textWidth(value, 14) > list.w * .45f) {
+                std::ostringstream text;
+                text << std::scientific << std::setprecision(2) << total;
+                value = text.str();
+            }
+            return value;
+        };
+        const auto& prestige = best["fastest_prestige"];
+        row("Fastest prestige", prestige["seconds"].isNumeric()
+                                    ? clockText(prestige["seconds"].asDouble()) : "Not set");
+        if (prestige["seconds"].isNumeric()) {
+            label(list.x, y, "Prestige " + blockCount(prestige["prestige"].asDouble()), 12);
+            y += 24;
+        }
+        for (const auto* currency : {"money", "tokens"}) {
+            const auto& minute = best[std::string("mining_minute_") + currency];
+            row(std::string("Best mining minute · ") + currency, amount(minute));
+        }
+        y += 8;
+        label(list.x, y + 5, "Biggest enchant payouts", 14);
+        y += 32;
+        for (const auto* currency : {"money", "tokens", "rubies", "sapphires", "points"}) {
+            const auto& payout = best["enchant_payouts"][currency];
+            const auto id = payout.get("enchant", "").asString();
+            const auto& definition = game.data.enchants["defs"][id];
+            const auto name = payout["amount"].isNumeric()
+                                  ? definition.get("label", id).asString() : "Not set";
+            row(currency, amount(payout));
+            if (payout["amount"].isNumeric()) {
+                label(list.x, y - 3, name, 12);
+                y += 24;
+            }
+        }
+    }
     for (const auto& entry : statisticDefinitions()) {
         if (entry.category != statisticsCategory)
             continue;
@@ -165,7 +213,10 @@ void UI::Impl::statistics() {
     }
     endScroll(y);
     paragraph(x, box.y + box.h - 43, width,
-              "Older worlds only include activity that was recorded.", 12);
+              records ? game.state.get("devmode", false).asBool()
+                            ? "Devmode worlds do not set records."
+                            : "Older worlds start prestige timing after their next prestige."
+                      : "Older worlds only include activity that was recorded.", 12);
 }
 
 void UI::Impl::settings() {
@@ -639,6 +690,18 @@ void UI::Impl::pets() {
                                         "%";
         label(start + i * 70, y + 173, caption, 12);
     }
+    const bool sitting = game.state["pet_data"].get("companion_sitting", false).asBool();
+    label(x, box.y + 293, "Companion", 14);
+    for (int i = 0; i < 2; ++i) {
+        const bool sit = i == 0;
+        Rect control{x + 96 + i * 84, box.y + 285, 76, 32};
+        button(control, sit ? "Sit" : "Follow", [this, sit] {
+            game.state["pet_data"]["companion_sitting"] = sit;
+            action("save");
+        }, pet.isObject() && pet.get("id", "") == "pet" && sitting != sit);
+        if (pet.isObject() && sitting == sit)
+            draw.border(control, foreground, 2);
+    }
     pageButton({box.x + box.w - 180, box.y + 285, 154, 32}, "Expeditions", "expeditions");
     inventory(box);
 }
@@ -735,6 +798,7 @@ void UI::Impl::more() {
                                                            {"Combine Multipliers", "combinemulti"},
                                                            {"Settings", "settings"},
                                                            {"Mines", "mines"},
+                                                           {"Quarry Styles", "quarry"},
                                                            {"Mine Upgrades", "mine_upgrades"},
                                                            {"Contracts", "contracts"},
                                                            {"Expeditions", "expeditions"},
@@ -789,6 +853,55 @@ void UI::Impl::mines() {
     endScroll(y);
     pageButton({x, box.y + box.h - 60, 180, 34}, "Mine Upgrades", "mine_upgrades");
     pageButton({x + 190, box.y + box.h - 60, 180, 34}, "Challenge Shaft", "shaft");
+    pageButton({x + 380, box.y + box.h - 60, 180, 34}, "Quarry Styles", "quarry");
+}
+
+void UI::Impl::quarry() {
+    Rect box = panel("Quarry Styles", 690, 490);
+    const float x = box.x + 24, width = box.w - 48;
+    const auto prestige = game.state["total_prestige"].asInt64();
+    const auto style = sanitizeQuarryStyle(game.state["quarry_style"], prestige);
+    label(x, box.y + 62, "Total prestige: " + blockCount(prestige), 14);
+    const float categoryWidth = 138;
+    const auto& categories = quarryCategories();
+    for (unsigned i = 0; i < categories.size(); ++i) {
+        const auto& category = categories[i];
+        Rect tab{x, box.y + 103 + i * 40, categoryWidth, 32};
+        button(tab, category.label, [this, id = category.id] {
+            quarryCategory = id;
+            scroll = 0;
+        });
+        if (quarryCategory == category.id)
+            draw.border(tab, foreground, 2);
+    }
+    Rect list{x + categoryWidth + 20, box.y + 103, width - categoryWidth - 20, box.h - 168};
+    beginScroll(list);
+    float y = list.y - scroll;
+    for (const auto& choice : quarryChoices(quarryCategory)) {
+        const bool current = style[quarryCategory] == choice.id;
+        const bool unlocked = prestige >= choice.prestige;
+        label(list.x, y + 3, choice.label, 16);
+        label(list.x, y + 29,
+              choice.prestige == 0 ? "Available from the start"
+                                   : "Prestige " + blockCount(choice.prestige), 12);
+        button({list.x + list.w - 90, y + 3, 82, 34},
+               current ? "Selected" : unlocked ? "Use" : "Locked",
+               [this, category = quarryCategory, choice] {
+                   const auto total = game.state["total_prestige"].asInt64();
+                   if (total < choice.prestige)
+                       return;
+                   auto next = sanitizeQuarryStyle(game.state["quarry_style"], total);
+                   next[category] = choice.id;
+                   game.state["quarry_style"] = next;
+                   action("quarry_style");
+                   action("save");
+               }, unlocked && !current);
+        y += 70;
+    }
+    endScroll(y);
+    paragraph(x, box.y + box.h - 43, width,
+              game.inShaft() ? "Styles appear in your normal quarry when you return."
+                             : "Free once unlocked. Changes save with this world.", 12);
 }
 
 void UI::Impl::mineUpgrades() {

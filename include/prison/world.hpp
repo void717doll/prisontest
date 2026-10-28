@@ -8,6 +8,7 @@ namespace prison {
 // mine blocks occupy the first 52 tiles; the remaining tiles are scenery.
 constexpr int TerrainAtlasColumns = 8;
 constexpr int TerrainAtlasRows = 16;
+constexpr int TerrainTileSize = 64;
 constexpr int TerrainBedrockTile = 52;
 constexpr int TerrainPocketTile = 53;
 constexpr int TerrainMasonryTile = 54;
@@ -28,6 +29,7 @@ constexpr int TerrainTallGrassTile = 68;
 constexpr int TerrainTallGrassVariants = 3;
 constexpr int TerrainFlowerTile = 71;
 constexpr int TerrainFlowerVariants = 3;
+constexpr int TerrainBannerTile = 74;
 struct Vertex {
     float x, y, z, u, v, r, g, b;
 };
@@ -62,6 +64,10 @@ class Mine {
   public:
     explicit Mine(const Data& data);
     void configure(const Json& options);
+    void setQuarryStyle(const Json& style);
+    const Json& quarryStyle() const {
+        return quarryStyle_;
+    }
     int upgradeLevel(const std::string& id) const;
     void reset(int rank, std::int64_t totalPrestige = 0, std::uint64_t seed = 0);
     // Work is bounded by counts as well as a 3 ms clock budget. Returns true
@@ -168,7 +174,7 @@ class Mine {
     int rank_ = 0, smooth_ = 1, ore_ = 2;
     std::int64_t prestige_ = 0;
     std::uint64_t seed_ = 0, generation_ = 0;
-    Json options_, nextOptions_;
+    Json options_, nextOptions_, quarryStyle_;
     std::string layout_ = "scattered";
     float oreRatio_ = .06f;
     std::vector<std::uint8_t> cells_;

@@ -57,6 +57,16 @@
           "keywords": ["statistics", "stats", "totals", "earned", "procs", "world"]
         },
         {
+          "id": "records",
+          "title": "personal records",
+          "body": [
+            "open /records or the Records tab in /stats for your fastest prestige, biggest enchant payouts and best mining minute in this world.",
+            "money, tokens and other enchant currencies have separate records. payouts count only currency received, after wallet limits. a mining minute is a rolling 60 seconds of play.",
+            "prestige time runs from the start of a new world or your previous prestige. older worlds start timing at their next prestige. records save with the world; development worlds do not set records."
+          ],
+          "keywords": ["records", "best", "fastest", "minute", "prestige", "payout"]
+        },
+        {
           "id": "progression",
           "title": "Ranks and prestige",
           "body": [
@@ -102,6 +112,18 @@
             "More ore means more token blocks and fewer money blocks. Pocket upgrades improve rewards when a discovery appears."
           ],
           "keywords": ["mines", "rebirth", "upgrades", "density"]
+        },
+        {
+          "id": "quarry",
+          "title": "quarry styles",
+          "body": [
+            "open /quarry to choose the surroundings, paths, lamps, flowers and banners for this world. classic is available from the start; sakura unlocks at 1 total prestige, coral at 3, crystal at 5, frost at 8, mushroom at 12 and bamboo at 20.",
+            "desert unlocks at 30 total prestige, volcanic at 40, willow at 50 and cursed at 75.",
+            "golden unlocks at 100 total prestige, birch at 125, jungle at 150, redwood at 200, baobab at 250 and emerald at 300.",
+            "choose each part separately. styles are free once unlocked, save with your world and change without refilling the mine. they do not change mining rewards or challenge shafts.",
+            "styles use Ethereal NG textures by TenPlus1 and Everness textures by SaKeL. see Credits for the artists and asset licences."
+          ],
+          "keywords": ["quarry", "style", "scenery", "paths", "lamps", "flowers", "banners", "sakura", "coral", "crystal", "frost", "mushroom", "bamboo", "desert", "volcanic", "willow", "cursed", "golden", "birch", "jungle", "redwood", "baobab", "emerald"]
         },
         {
           "id": "contracts",
@@ -288,7 +310,8 @@
           "title": "pets, companions and hatchery",
           "body": [
             "Use an egg or drag it into /pets to start hatching. Mining advances it; drag a ready pet out to claim it. Equip a pet for its boost and feed it when ready.",
-            "your active pet follows beside you as a floating companion, with its own colour, mood and species name. it catches up after mine resets and travel. Pet Companion in Settings hides the companion without changing its boost.",
+            "your active pet follows beside you, with its own colour, mood and species name. choose Sit or Follow in /pets. companions move while idle and react when successfully fed; they catch up after mine resets and travel.",
+            "Pet Companion in Settings hides the companion without changing its boost. sitting also keeps the boost active, and your choice saves with the world.",
             "in /pets, choose Make Pet Food to select spare pets or Select All. Convert Selected shows the pets and food total before confirmation. matching food stacks together.",
             "/petmerge combines eligible pets. Rare hatch mutations can save robot fuel, improve egg discovery or add pickaxe EXP. Only the active pet grants its trait.",
             "Traits stay with pets through storage and expeditions. Merging inherits the most common parent trait, or rolls for one if no parent has a mutation."
@@ -538,6 +561,12 @@
       "usage": "/mines"
     },
     {
+      "command": "quarry",
+      "category": "Mining",
+      "description": "choose prestige-unlocked surroundings, paths, lamps, flowers and banners.",
+      "usage": "/quarry"
+    },
+    {
       "command": "mineupgrades",
       "category": "Mining",
       "description": "buy permanent ore density and pocket size upgrades.",
@@ -647,6 +676,12 @@
       "description": "view this world's mining, currency earned, enchant activations, pets and item statistics.",
       "usage": "/stats",
       "aliases": ["statistics"]
+    },
+    {
+      "command": "records",
+      "category": "Settings & Chat",
+      "description": "view this world's fastest prestige, best mining minute and biggest enchant payouts.",
+      "usage": "/records"
     },
     {
       "command": "endmulti",

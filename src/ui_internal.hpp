@@ -58,6 +58,7 @@ struct UI::Impl {
     std::string helpQuery;
     std::string statisticsCategory = "General";
     std::string statisticsReturn;
+    std::string quarryCategory = "theme";
     float helpListScroll = 0, helpListMaximum = 0;
     Rect helpListBox{};
     Json devChoices;
@@ -133,6 +134,7 @@ struct UI::Impl {
     void storage();
     void more();
     void mines();
+    void quarry();
     void mineUpgrades();
     void equipmentSets();
     void shaft();
