@@ -1,4 +1,5 @@
 #include "prison/bombs.hpp"
+#include "prison/companion.hpp"
 #include "prison/game.hpp"
 #include "prison/guardians.hpp"
 #include "prison/help.hpp"
@@ -212,6 +213,7 @@ int run(const Options& options) {
     traceStartup("creating mine");
     Mine mine(data);
     Bombs bombs;
+    PetCompanion companion;
     RewardQueue procJobs;
     traceStartup("opening save directory");
     SaveStore saves(options.saveDir);
@@ -314,6 +316,7 @@ int run(const Options& options) {
     int guardianTarget = -1;
     std::future<Json> saving;
     auto restorePlayer = [&]() {
+        companion.clear();
         position = mine.spawn();
         velocity = {};
         vertical = 0;
@@ -362,6 +365,7 @@ int run(const Options& options) {
         saveTime = 0;
     };
     auto reset = [&]() {
+        companion.clear();
         game.state["guardian"]["active"] = false;
         mine.configure(game.mineOptions());
         mine.reset(game.state["rank_index"].asInt(), game.state["total_prestige"].asInt64());
@@ -850,6 +854,11 @@ int run(const Options& options) {
                 game.state.removeMember("mining_summary");
             }
             float gui = std::clamp(ctx.settings.get("gui_scale", 1).asFloat(), .75f, 1.5f);
+            const auto& activePet = game.state["pet_data"]["active_pet"];
+            if (ctx.settings.get("show_pet_companion", true).asBool())
+                companion.tick(mine, activePet, position, yaw, dt);
+            else
+                companion.clear();
             int ww, wh;
             SDL_GetWindowSize(window.get(), &ww, &wh);
             gui = std::min(gui, std::min(ww / 760.f, wh / 600.f));
@@ -861,6 +870,7 @@ int run(const Options& options) {
             renderer.guardian(game.state["guardian"], guardianTarget, damage);
             for (const auto& bomb : bombs.projectiles())
                 renderer.billboard(bomb.position, .45f, "textures/minebomb.png", yaw, pitch);
+            renderer.companion(companion, activePet, yaw, pitch);
             renderer.beginUI();
             renderer.mineHologram(mine, eye, yaw, pitch, ctx.settings.get("fov", 72).asFloat(),
                                   game.state["rank_index"].asInt(), game.state["shaft"]);

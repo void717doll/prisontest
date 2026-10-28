@@ -1,4 +1,5 @@
 #include "prison/render.hpp"
+#include "prison/companion.hpp"
 #include "prison/guardians.hpp"
 #include "prison/world.hpp"
 #include <SDL_opengl.h>
@@ -377,6 +378,39 @@ struct Renderer::Impl {
             tint(im, glint, 32.f / 255);
         GLuint tex = upload(im);
         return textures.emplace(key, Texture{tex, std::move(im)}).first->second;
+    }
+    void petCube(const Json& pet, Color glint) {
+        const auto face = itemTexture(pet, 0, glint).id;
+        const auto fur = itemTexture(pet, 0, glint, true).id;
+        glBindTexture(GL_TEXTURE_2D, face);
+        for (int side = 0; side < 2; ++side) {
+            const float z = side == 0 ? .3f : -.3f;
+            color(side == 0 ? Color{1, 1, 1, 1} : Color{.78f, .78f, .78f, 1});
+            glBegin(GL_QUADS);
+            glTexCoord2f(0, 0);
+            glVertex3f(-.5f, .5f, z);
+            glTexCoord2f(1, 0);
+            glVertex3f(.5f, .5f, z);
+            glTexCoord2f(1, 1);
+            glVertex3f(.5f, -.5f, z);
+            glTexCoord2f(0, 1);
+            glVertex3f(-.5f, -.5f, z);
+            glEnd();
+        }
+        glBindTexture(GL_TEXTURE_2D, fur);
+        glBegin(GL_QUADS);
+        for (int side = 0; side < 4; ++side) {
+            color(side == 0 ? Color{1, 1, 1, 1} : Color{.65f, .65f, .65f, 1});
+            for (int i = 0; i < 4; ++i) {
+                const float a = (i == 1 || i == 2) ? .5f : -.5f, z = i >= 2 ? .3f : -.3f;
+                glTexCoord2f(i == 1 || i == 2 ? 1 : 0, i >= 2 ? 1 : 0);
+                if (side < 2)
+                    glVertex3f(side == 0 ? .5f : -.5f, a, z);
+                else
+                    glVertex3f(a, side == 2 ? .5f : -.5f, z);
+            }
+        }
+        glEnd();
     }
     Font& font(int size) {
         if (!fonts.count(size) && fonts.size() >= 8) {
@@ -949,6 +983,44 @@ void Renderer::guardian(const Json& state, int targetedPart, float progress) {
     }
 }
 
+void Renderer::companion(const PetCompanion& companion, const Json& pet, float yaw, float pitch) {
+    if (!companion.visible())
+        return;
+    p->flushUi();
+    glEnable(GL_DEPTH_TEST);
+    glDepthMask(GL_TRUE);
+    glDisable(GL_BLEND);
+    glEnable(GL_ALPHA_TEST);
+    glAlphaFunc(GL_GREATER, .1f);
+    glDisable(GL_CULL_FACE);
+    glEnable(GL_TEXTURE_2D);
+    const auto position = companion.position();
+    glPushMatrix();
+    glTranslatef(position.x, position.y, position.z);
+    glRotatef(companion.facing() * 180 / 3.14159265f, 0, 1, 0);
+    glScalef(PetCompanion::Size, PetCompanion::Size, PetCompanion::Size);
+    p->petCube(pet, {1, 1, 1, 1});
+    glPopMatrix();
+
+    // draw the name in world space so terrain also hides it behind walls.
+    glEnable(GL_BLEND);
+    const std::string name = pet.get("mood", "Joyful").asString() + " " +
+                             pet.get("pet_type", "Rabbit").asString();
+    glPushMatrix();
+    glTranslatef(position.x, position.y + PetCompanion::Size * .5f + .23f, position.z);
+    glRotatef(yaw * 180 / 3.14159265f, 0, 1, 0);
+    glRotatef(pitch * 180 / 3.14159265f, 1, 0, 0);
+    glScalef(.007f, -.007f, .007f);
+    glDepthMask(GL_FALSE);
+    const float left = -textWidth(name, 16) * .5f;
+    text(left + 1, 1, name, {0, 0, 0, .85f}, 16);
+    text(left, 0, name, {.92f, .92f, .94f, 1}, 16);
+    p->flushUi();
+    glDepthMask(GL_TRUE);
+    glPopMatrix();
+    glDisable(GL_ALPHA_TEST);
+}
+
 void Renderer::billboard(Vec3 position, float size, const std::string& path, float yaw, float pitch) {
     glEnable(GL_BLEND);
     glPushMatrix();
@@ -1036,48 +1108,17 @@ void Renderer::held(const Json& value, int prestige, const Json& settings, float
         return;
     }
     Color glint = hexColor(settings.get("glint", "#b56cff").asString());
-    auto& texture = p->itemTexture(value, prestige, glint);
-    GLuint face = texture.id;
     bool pet = value.get("id", "") == "pet";
     glRotatef(pet ? 0 : settings.get("tool_angle", 90).asFloat(), 0, 1, 0);
     glEnable(GL_TEXTURE_2D);
-    glBindTexture(GL_TEXTURE_2D, face);
     color({1, 1, 1, 1});
-    if (!pet) {
+    if (pet)
+        p->petCube(value, glint);
+    else {
+        auto& texture = p->itemTexture(value, prestige, glint);
+        glBindTexture(GL_TEXTURE_2D, texture.id);
         p->heldItem(texture);
-        return;
     }
-    auto plane = [&](float x0, float y0, float x1, float y1, float z, float u0, float v0, float u1,
-                     float v1) {
-        glBegin(GL_QUADS);
-        glTexCoord2f(u0, v0);
-        glVertex3f(x0, y1, z);
-        glTexCoord2f(u1, v0);
-        glVertex3f(x1, y1, z);
-        glTexCoord2f(u1, v1);
-        glVertex3f(x1, y0, z);
-        glTexCoord2f(u0, v1);
-        glVertex3f(x0, y0, z);
-        glEnd();
-    };
-    constexpr float d = .3f;
-    plane(-.5f, -.5f, .5f, .5f, d, 0, 0, 1, 1);
-    color({.78f, .78f, .78f, 1});
-    plane(-.5f, -.5f, .5f, .5f, -d, 0, 0, 1, 1);
-    glBindTexture(GL_TEXTURE_2D, p->itemTexture(value, prestige, glint, true).id);
-    glBegin(GL_QUADS);
-    for (int side = 0; side < 4; ++side) {
-        color(side == 0 ? Color{1, 1, 1, 1} : Color{.65f, .65f, .65f, 1});
-        for (int i = 0; i < 4; ++i) {
-            float a = (i == 1 || i == 2) ? .5f : -.5f, z = i >= 2 ? d : -d;
-            glTexCoord2f(i == 1 || i == 2 ? 1 : 0, i >= 2 ? 1 : 0);
-            if (side < 2)
-                glVertex3f(side == 0 ? .5f : -.5f, a, z);
-            else
-                glVertex3f(a, side == 2 ? .5f : -.5f, z);
-        }
-    }
-    glEnd();
 }
 void Renderer::screenshot(const std::filesystem::path& path) {
     p->flushUi();

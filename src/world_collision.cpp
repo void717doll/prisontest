@@ -141,6 +141,11 @@ bool Mine::collisionBox(const Box& b) const {
                     return true;
     return false;
 }
+bool Mine::spaceFree(Vec3 feet, float radius, float height) const {
+    return validPosition(feet) &&
+           !collisionBox({{feet.x - radius, feet.y, feet.z - radius},
+                          {feet.x + radius, feet.y + height, feet.z + radius}});
+}
 Vec3 Mine::confinePlayer(Vec3 feet, float radius) const {
     if (!validPosition(feet))
         return spawn_;

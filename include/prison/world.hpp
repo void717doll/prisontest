@@ -133,6 +133,7 @@ class Mine {
     bool nextTarget(Cell& cell) const;
     Hit raycast(Vec3 origin, Vec3 direction, float reach) const;
     Vec3 confinePlayer(Vec3 feet, float radius = .30f) const;
+    bool spaceFree(Vec3 feet, float radius, float height) const;
     MoveResult movePlayer(Vec3 feet, Vec3 displacement, float radius = .30f, float height = 1.80f) const;
     std::size_t enchantTargetCount(const std::string& id, int level, Cell origin) const;
     void applyVirtualMining(std::size_t count, std::uint64_t generation);

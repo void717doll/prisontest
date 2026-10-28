@@ -230,6 +230,8 @@ void UI::Impl::settings() {
     button(effects, std::string("Enchant Visuals: ") + (visual ? "On" : "Off"),
            [this, visual] { game.state["message_settings"]["visual_enchants"] = !visual; }, ctx.playing);
     hints.push_back({effects, "All mine enchants. On removes blocks; off keeps the rewards without changing terrain."});
+    toggle({x, y + 400, half, 38}, "Pet Companion", "show_pet_companion");
+    hints.push_back({{x, y + 400, half, 38}, "Show your active pet beside you. Its boost applies either way."});
 }
 
 void UI::Impl::bindings() {

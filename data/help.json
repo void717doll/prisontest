@@ -285,15 +285,17 @@
         },
         {
           "id": "pets",
-          "title": "Pets and hatchery",
+          "title": "pets, companions and hatchery",
           "body": [
             "Use an egg or drag it into /pets to start hatching. Mining advances it; drag a ready pet out to claim it. Equip a pet for its boost and feed it when ready.",
+            "your active pet follows beside you as a floating companion, with its own colour, mood and species name. it catches up after mine resets and travel. Pet Companion in Settings hides the companion without changing its boost.",
             "in /pets, choose Make Pet Food to select spare pets or Select All. Convert Selected shows the pets and food total before confirmation. matching food stacks together.",
             "/petmerge combines eligible pets. Rare hatch mutations can save robot fuel, improve egg discovery or add pickaxe EXP. Only the active pet grants its trait.",
             "Traits stay with pets through storage and expeditions. Merging inherits the most common parent trait, or rolls for one if no parent has a mutation."
           ],
           "keywords": [
             "pet",
+            "companion",
             "egg",
             "hatchery",
             "food",
@@ -396,6 +398,7 @@
           "title": "Settings and HUD",
           "body": [
             "/settings opens the world settings. Title and pause Settings include volume, GUI scale, FOV, Hand view, Tool angle, Left hand and key bindings.",
+            "Pet Companion shows or hides your equipped pet beside you. its mining boost stays active when hidden.",
             "Right Shift opens the HUD editor; F8 also works. Crosshair, held-item name and tool progress stay fixed. Escape closes menus directly to gameplay.",
             "/scoreboard [on|off|toggle], or /sc, controls scoreboard visibility. This is saved with the world."
           ],
@@ -503,7 +506,7 @@
     {
       "command": "pets",
       "category": "Pets & Robots",
-      "description": "manage your active pet, hatchery, feeding and conversion of spare pets into food.",
+      "description": "equip a pet companion, manage your hatchery, feed pets and convert spare pets into food.",
       "usage": "/pets"
     },
     {

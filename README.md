@@ -2,7 +2,8 @@
 
 a singleplayer prison mining game. mine blocks, sell what you collect, upgrade
 your pickaxe and work through ranks and prestiges. collect pets, robots,
-crystals and pickaxe parts along the way.
+crystals and pickaxe parts along the way. your equipped pet follows you around the
+mine; its appearance can be switched off in settings without losing its boost.
 
 this is the standalone C++ client, built with SDL2 and OpenGL.
 download packages from this repository's

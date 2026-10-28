@@ -24,6 +24,7 @@ Json defaultSettings() {
     settings["vsync"] = true;
     settings["fullscreen"] = false;
     settings["show_inventory_icon"] = true;
+    settings["show_pet_companion"] = true;
     settings["inventory_key"] = int(SDLK_e);
     settings["pickaxe_key"] = int(SDLK_m);
     settings["show_max_labels"] = true;
