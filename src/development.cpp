@@ -165,7 +165,7 @@ Json makeTestPet(Game& game, const Json& fields, const std::string& rarity) {
     return pet;
 }
 const std::map<std::string, std::string> usage = {
-    {"test", "/test [mine [max|normal|0-50]|guardian|stress <mine|resetmine|rankup|prestige|stop|status>]"},
+    {"test", "/test [mine [max|normal|0-50]|stress <mine|resetmine|rankup|prestige|stop|status>]"},
     {"givecrystal", "/givecrystal <tier> [count] [sell|token|exp] [percent]"},
     {"givedust", "/givedust <tier> [count]"},
     {"givepart", "/givepart <sell|token|exp> <tier> [head|binding|rod] [percent] [count]"},
@@ -238,8 +238,6 @@ Result Game::developmentCommand(const std::string& name, const std::vector<std::
                                       : "Mine size set to prestige " + std::to_string(int(prestige)) + ".",
                     "test:mine:apply", true};
         }
-        if (args.size() == 1 && lower(args[0]) == "guardian")
-            return {true, "", "guardian:summon"};
         if (args.size() == 2 && lower(args[0]) == "stress") {
             const auto kind = lower(args[1]);
             if (kind == "mine" || kind == "resetmine" || kind == "rankup" || kind == "prestige") {

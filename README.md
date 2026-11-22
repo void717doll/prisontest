@@ -70,6 +70,11 @@ refilling the mine. sakura, coral, crystal, frost, mushroom, bamboo, desert,
 volcanic, willow, cursed, golden, birch, jungle, redwood, baobab and emerald
 styles unlock through prestige.
 
+`/daily` shows money, tokens, one crystal and points to claim once per utc day.
+rewards grow with total prestige, rebirths and consecutive claims. missing a day
+resets the streak; its bonus grows through day 30. `/rewards` also lists mining
+milestones. each world keeps its own claims and streak.
+
 ## development
 
 the core checks can use the repository's asset files:

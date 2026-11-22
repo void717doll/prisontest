@@ -497,8 +497,6 @@ Result Game::itemAction(const std::string& action, const Json& args) {
         addStatistic("robot_fuel_used", loaded);
         return success("Added " + std::to_string(loaded * perItem) + " fuel.");
     }
-    if (action.rfind("equipment_set_", 0) == 0)
-        return equipmentSetAction(action, args);
     if (action == "mine_select" || action == "mine_upgrade" || action.rfind("contract_", 0) == 0 ||
         action.rfind("expedition_", 0) == 0)
         return progressionAction(action, args);
@@ -823,27 +821,21 @@ Result Game::itemAction(const std::string& action, const Json& args) {
         consume(slots, index, count(item));
         return success("Applied to your pickaxe.");
     }
-    if (action == "salvage_parts") {
-        const auto& selected = args["parts"];
+    if (action == "bin_items") {
+        const auto& selected = args["items"];
         if (!selected.isArray() || selected.empty() || selected.size() >= slots.size())
-            return fail("Select the parts to salvage first.");
-        bool allowed = false;
-        for (const auto& eligible : data.systems["salvage"]["eligible_items"])
-            if (eligible == "pick_part")
-                allowed = true;
-        if (!allowed)
-            return fail("Parts cannot be salvaged.");
+            return fail("Select the items to discard first.");
         std::set<int> seen;
         std::int64_t total = 0;
         for (const auto& row : selected) {
             if (!row.isObject() || !row["index"].isInt())
-                return fail("Choose a part from your inventory.");
+                return fail("Choose an inventory item other than your pickaxe.");
             const int slot = row["index"].asInt();
             if (slot <= 0 || slot >= int(slots.size()) || !seen.insert(slot).second ||
-                id(slots[slot]) != "pick_part")
-                return fail("Choose a part from your inventory.");
+                !slots[slot].isObject() || id(slots[slot]) == "pickaxe")
+                return fail("Choose an inventory item other than your pickaxe.");
             if (row["item"] != slots[slot])
-                return fail("A selected part changed. Select it again.");
+                return fail("A selected item changed. Select it again.");
             total += count(slots[slot]);
         }
         for (const auto& row : selected) {
@@ -851,7 +843,7 @@ Result Game::itemAction(const std::string& action, const Json& args) {
             salvage(*this, slots[slot]);
             consume(slots, slot, count(slots[slot]));
         }
-        return success("Salvaged " + std::to_string(total) + (total == 1 ? " part." : " parts."));
+        return success("Discarded " + std::to_string(total) + (total == 1 ? " item." : " items."));
     }
     if (action == "buy_point") {
         for (const auto& product : pointShopProducts())
@@ -1211,8 +1203,6 @@ std::vector<std::string> Game::itemLore(const Json& item) const {
         lines.push_back("Drag onto your pickaxe!");
     } else if (name == "crystal" || name == "pick_part") {
         if (item.get("identified", false).asBool()) {
-            if (item.get("guardian_forged", false).asBool())
-                lines.push_back("Guardian EXP part · 10% stronger roll.");
             if (name == "pick_part" && item["specialization"].isString()) {
                 const auto& profile = specialization(item["specialization"].asString());
                 if (profile.isObject()) {

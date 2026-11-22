@@ -243,7 +243,6 @@ void Mine::beginReset(int rank, std::int64_t prestige, std::uint64_t seed, const
     cursor_ = total_ = virtualMined_ = 0;
     resetRemaining_ = -1;
     blasts_.clear();
-    guardianBoxes_.clear();
     live_.clear();
     std::fill(cells_.begin(), cells_.end(), 0);
     std::fill(livePositions_.begin(), livePositions_.end(), Missing);

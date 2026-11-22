@@ -15,6 +15,7 @@ const std::vector<StatisticDefinition>& statisticDefinitions() {
         {"sapphires_earned", "Sapphires earned", "Economy", StatisticFormat::Currency},
         {"rubies_earned", "Rubies earned", "Economy", StatisticFormat::Currency},
         {"points_earned", "Points earned", "Economy", StatisticFormat::Currency},
+        {"daily_rewards_claimed", "Daily rewards claimed", "Progression"},
         {"pickaxe_xp_earned", "Pickaxe XP earned", "Economy", StatisticFormat::Currency},
         {"pets_fed", "Pets fed", "Pets"},
         {"pet_food_used", "Pet food used", "Pets"},
@@ -717,11 +718,10 @@ void Game::newWorld(bool devmode) {
     state["quarry_style"] = sanitizeQuarryStyle(Json(), 0);
     state["cleaner_settings"] = filterProfile(Json());
     resetRecords();
+    loadDailyRewards();
     loadProgression();
-    loadEquipmentSets();
     loadShaft();
     loadEndgame();
-    loadGuardian();
     updateDerived(*this);
 }
 
@@ -733,6 +733,9 @@ void Game::loadSnapshot(const Json& snapshot) {
         if (key.empty() || key[0] != '_')
             state[key] = snapshot[key];
     }
+    state.removeMember("guardian");
+    state.removeMember("equipment_sets");
+    loadDailyRewards();
     state["devmode"] = boolean(snapshot, "devmode");
     state["tutorial"] = snapshot["tutorial"];
     loadTutorial();
@@ -931,10 +934,8 @@ void Game::loadSnapshot(const Json& snapshot) {
                     item = cleanItem(item);
         }
     loadProgression();
-    loadEquipmentSets();
     loadShaft();
     loadEndgame();
-    loadGuardian();
     loadRecords(snapshot);
     returnStoredItems();
     updateDerived(*this);
@@ -1070,7 +1071,6 @@ double Game::boost(const std::string& type) const {
                      field(pet, "base_boost_pct") * (1 + effective * field(cfg, "growth_per_level", .035)));
         value *= 1 + percent / 100 * endgameMultiplier("adrenaline");
     }
-    value *= 1 + std::clamp(crystalResonance().get(kind, 0).asDouble(), 0.0, .04);
     value *= 1 + mutationBonus(kind);
     return std::min(value, field(data.balance, (kind + "_effective_multiplier_cap").c_str(), 1e20));
 }

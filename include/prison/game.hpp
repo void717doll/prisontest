@@ -1,5 +1,6 @@
 #pragma once
 #include "common.hpp"
+#include <ctime>
 #include <deque>
 #include <random>
 namespace prison {
@@ -53,14 +54,9 @@ class Game {
     TimedMultiplier activeMultiplier(const std::string& kind) const;
     double pickXpNeeded(int level) const;
     int crystalSlots() const;
-    const Json& crystalResonance() const;
     const Json& petMutation(const Json& pet) const;
     double mutationBonus(const std::string& kind) const;
     void rollPetMutation(Json& pet);
-    void loadGuardian();
-    bool spawnGuardian(Vec3 position, bool development = false);
-    bool tickGuardian(double seconds);
-    Result strikeGuardian(int part);
     double rankCost(int index) const;
     double prestigeCost() const;
     double enchantCost(const std::string& id, int count = 1) const;
@@ -97,8 +93,6 @@ class Game {
     Json mineUpgradeQuote(const std::string& id) const;
     const Json& specialization(const std::string& id) const;
     Json specializationModifiers() const;
-    void loadEquipmentSets();
-    Result equipmentSetAction(const std::string& action, const Json& args);
     void loadShaft();
     bool inShaft() const;
     bool shaftComplete() const;
@@ -113,6 +107,8 @@ class Game {
     std::string contractText(const Json& contract) const;
     void recordProgress(const std::string& kind, int count, const Json& context);
     Json expeditionQuote(int inventoryIndex) const;
+    Json dailyReward(std::time_t now = std::time(nullptr)) const;
+    Result claimDailyReward(std::time_t now = std::time(nullptr));
     int vaultPages() const;
     Json vaultSlots(int page) const;
     std::string vaultName(int page) const;
@@ -125,6 +121,7 @@ class Game {
     std::vector<std::string> itemLore(const Json& item) const;
 
   private:
+    void loadDailyRewards();
     Result developmentCommand(const std::string& name, const std::vector<std::string>& args);
     Result configureFilter(const std::string& action, const Json& args);
     double autominerElapsed_ = 0;

@@ -44,7 +44,7 @@ struct UI::Impl {
     Json confirmArgs;
     std::string confirmAction;
     std::map<int, Json> petFoodSelection;
-    std::map<int, Json> partSelection;
+    std::map<int, Json> binSelection;
     std::vector<std::string> history;
     int historyIndex = 0;
     bool filterFamily = false;
@@ -127,8 +127,6 @@ struct UI::Impl {
     void maximumAmount();
     void enchantDetail();
     void equipment();
-    void resonance();
-    void guardian();
     void robots();
     void pets();
     void storage();
@@ -136,7 +134,6 @@ struct UI::Impl {
     void mines();
     void quarry();
     void mineUpgrades();
-    void equipmentSets();
     void shaft();
     void contracts();
     void expeditions();

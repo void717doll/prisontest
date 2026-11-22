@@ -19,7 +19,7 @@ add_library(prison_core
     src/commands.cpp src/development.cpp src/tutorial.cpp
     src/save.cpp src/world.cpp src/world_scenery.cpp src/world_collision.cpp src/quarry.cpp
     src/bombs.cpp src/companion.cpp src/rewards.cpp src/lore.cpp src/progression.cpp src/shaft.cpp
-    src/endgame.cpp src/equipment_bonuses.cpp src/guardians.cpp src/records.cpp)
+    src/endgame.cpp src/equipment_bonuses.cpp src/records.cpp src/daily.cpp)
 target_include_directories(prison_core PUBLIC include)
 target_link_libraries(prison_core PUBLIC PkgConfig::JSONCPP Threads::Threads)
 target_compile_options(prison_core PRIVATE -Wall -Wextra -Wpedantic)
@@ -31,7 +31,7 @@ endif()
 include(CTest)
 if(BUILD_TESTING)
     set(PRISON_TEST_ASSETS "${CMAKE_CURRENT_SOURCE_DIR}" CACHE PATH "asset directory for checks")
-    foreach(name game world items save integration rewards lore)
+    foreach(name game world items save integration rewards lore daily)
         add_executable(${name}_test tests/${name}_test.cpp)
         target_link_libraries(${name}_test PRIVATE prison_core)
         target_compile_definitions(${name}_test PRIVATE PRISON_SOURCE_DIR="${PRISON_TEST_ASSETS}")

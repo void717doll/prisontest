@@ -1,7 +1,6 @@
 #include "prison/render.hpp"
 #include "prison/companion.hpp"
 #include "prison/quarry.hpp"
-#include "prison/guardians.hpp"
 #include "prison/world.hpp"
 #include <SDL_opengl.h>
 #include <ft2build.h>
@@ -1363,61 +1362,6 @@ void Renderer::selection(Cell c, float progress) {
     glEnd();
     glDisable(GL_POLYGON_OFFSET_FILL);
 }
-void Renderer::guardian(const Json& state, int targetedPart, float progress) {
-    if (!state.get("active", false).asBool())
-        return;
-    const auto parts = guardianParts(state);
-    const int weak = guardianWeakPart(state);
-    glEnable(GL_DEPTH_TEST);
-    glDisable(GL_CULL_FACE);
-    glEnable(GL_TEXTURE_2D);
-    glBindTexture(GL_TEXTURE_2D, p->texture("textures/prisontest_stone.png").id);
-    auto box = [](const GuardianPart& part, Color tint) {
-        const float low[] = {part.low.x, part.low.y, part.low.z};
-        const float high[] = {part.high.x, part.high.y, part.high.z};
-        for (int axis = 0; axis < 3; ++axis)
-            for (int side = 0; side < 2; ++side) {
-                const float shade = axis == 1 ? (side ? 1.f : .55f) : axis == 0 ? .75f : .9f;
-                color({tint.r * shade, tint.g * shade, tint.b * shade, tint.a});
-                for (int i = 0; i < 4; ++i) {
-                    float vertex[] = {low[0], low[1], low[2]};
-                    vertex[axis] = side ? high[axis] : low[axis];
-                    const int u = (axis + 1) % 3, v = (axis + 2) % 3;
-                    if (i == 1 || i == 2)
-                        vertex[u] = high[u];
-                    if (i >= 2)
-                        vertex[v] = high[v];
-                    glTexCoord2f(i == 1 || i == 2 ? 1 : 0, i >= 2 ? 1 : 0);
-                    glVertex3fv(vertex);
-                }
-            }
-    };
-    glBegin(GL_QUADS);
-    for (int i = 0; i < int(parts.size()); ++i)
-        box(parts[i], i == weak ? Color{.65f, .95f, 1, 1} : Color{.48f, .52f, .59f, 1});
-    glEnd();
-    glDisable(GL_TEXTURE_2D);
-    glBegin(GL_QUADS);
-    const auto& head = parts[3];
-    for (int side = 0; side < 2; ++side) {
-        const float x = head.low.x + .18f + side * .56f;
-        for (float z : {head.low.z - .012f, head.high.z})
-            box({{x, head.low.y + .55f, z}, {x + .24f, head.low.y + .72f, z + .012f}}, {.5f, .9f, 1, 1});
-    }
-    glEnd();
-    if (targetedPart == weak && progress > 0) {
-        glEnable(GL_TEXTURE_2D);
-        glBindTexture(GL_TEXTURE_2D, p->texture("textures/mining_crack.png").id);
-        glEnable(GL_BLEND);
-        glEnable(GL_POLYGON_OFFSET_FILL);
-        glPolygonOffset(-1, -1);
-        glBegin(GL_QUADS);
-        box(parts[weak], {1, 1, 1, std::clamp(progress, 0.f, 1.f)});
-        glEnd();
-        glDisable(GL_POLYGON_OFFSET_FILL);
-    }
-}
-
 void Renderer::companion(const PetCompanion& companion, const Json& pet, float yaw, float pitch) {
     if (!companion.visible())
         return;

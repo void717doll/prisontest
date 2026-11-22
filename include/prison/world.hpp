@@ -133,7 +133,6 @@ class Mine {
     const Json& definition(Cell cell) const;
     bool solid(Cell cell) const;
     bool solidAt(Vec3 point) const;
-    void setGuardian(const Json& guardian);
     bool inside(Cell cell) const;
     std::string dig(Cell cell);
     bool nextTarget(Cell& cell) const;
@@ -187,7 +186,6 @@ class Mine {
     ChunkMesh shellMesh_;
     std::vector<Box> shell_;
     std::vector<Plant> plants_;
-    std::vector<Box> guardianBoxes_;
     std::deque<std::size_t> dirty_;
     std::vector<bool> dirtyFlags_;
     std::deque<Blast> blasts_;

@@ -24,9 +24,10 @@ void UI::Impl::rightClick(const Slot& value) {
         return;
     if (value.container == "inventory") {
         if (page == "pet_food" || page == "bin") {
-            const bool parts = page == "bin";
-            auto& selection = parts ? partSelection : petFoodSelection;
-            if (value.index > 0 && value.item["id"] == (parts ? "pick_part" : "pet")) {
+            const bool bin = page == "bin";
+            auto& selection = bin ? binSelection : petFoodSelection;
+            if (value.index > 0 && value.item.isObject() &&
+                (bin ? value.item["id"] != "pickaxe" : value.item["id"] == "pet")) {
                 if (selection.count(value.index))
                     selection.erase(value.index);
                 else
@@ -196,7 +197,7 @@ void UI::Impl::event(const SDL_Event& event) {
             setPage("pets");
         else if (page == "confirm" && confirmAction == "pet_food")
             setPage(confirmArgs.get("pets", Json()).isArray() ? "pet_food" : "pets");
-        else if (page == "confirm" && confirmAction == "salvage_parts")
+        else if (page == "confirm" && confirmAction == "bin_items")
             setPage("bin");
         else
             setPage(ctx.playing ? (page.empty() ? "pause" : "") : "title");

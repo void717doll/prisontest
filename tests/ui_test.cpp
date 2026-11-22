@@ -259,9 +259,9 @@ void inventory(Fixture& f) {
     f.game.state["cleaner_settings"]["default_action"] = "salvage";
     f.game.state["cleaner_settings"]["rules"] = Value(::Json::arrayValue);
     f.open("crystals");
-    Rect crystals = panel(690, 590);
+    Rect crystals = panel(690, 540);
     Point equipped{640 - 24 + 22, crystals.y + 96 + 22};
-    f.drag(inventorySlot(1, 590), equipped);
+    f.drag(inventorySlot(1, 540), equipped);
     check(f.game.state["inventory_slots"][1].isNull(), "drag removes original inventory item immediately");
     check(f.game.state["equipped_crystals"][0] == identified, "drag preserves equipped metadata");
     f.click(equipped, SDL_BUTTON_RIGHT);
@@ -278,7 +278,7 @@ void inventory(Fixture& f) {
     part["uid"] = "ui-test-head";
     f.game.state["inventory_slots"][2] = part;
     f.open("parts");
-    f.click(inventorySlot(2, 590), SDL_BUTTON_RIGHT);
+    f.click(inventorySlot(2, 500), SDL_BUTTON_RIGHT);
     check(f.game.state["equipped_parts"]["head"] == part, "part right-click equips correct slot and tier");
     check(f.game.state["inventory_slots"][2].isNull(), "equipped part removed from original slot");
     f.paint("parts");
@@ -305,6 +305,37 @@ void inventory(Fixture& f) {
     f.paint("inventory-over-hotbar");
     f.key(SDLK_ESCAPE);
     check(f.ui.menu().empty() && !f.ui.capturesInput(), "escape closes equipment menu to gameplay");
+}
+
+void binAndDaily(Fixture& f) {
+    f.fresh();
+    f.game.state["inventory_slots"][1] = item("pet");
+    f.game.state["inventory_slots"][2] = item("robot_fuel");
+    f.open("bin");
+    const auto before = f.game.snapshot();
+    const auto box = panel(690, 445), confirm = panel(530, 440);
+    f.click({box.x + 76, box.y + 167});
+    f.click({box.x + box.w - 96, box.y + 167});
+    check(f.ui.menu() == "confirm" && f.game.snapshot() == before,
+          "select all previews mixed bin items without consuming them");
+    f.paint("bin-confirm");
+    f.click({confirm.x + confirm.w - 100, confirm.y + confirm.h - 66});
+    check(f.ui.menu() == "bin" && f.game.snapshot() == before, "cancel preserves the selected items");
+    f.click({box.x + box.w - 96, box.y + 167});
+    f.click({confirm.x + 100, confirm.y + confirm.h - 66});
+    check(f.ui.menu() == "bin" && f.game.state["inventory_slots"][1].isNull() &&
+              f.game.state["inventory_slots"][2].isNull() &&
+              f.game.state["inventory_slots"][0]["id"] == "pickaxe",
+          "confirmed bin removes selected items and keeps the pickaxe");
+    f.paint("bin-items");
+    f.open("rewards");
+    f.paint("daily-reward");
+    const auto rewards = panel(730, 570);
+    f.click({rewards.x + 90, rewards.y + 190});
+    check(f.game.statistic("daily_rewards_claimed") == 1 && f.action("save"),
+          "daily claim button awards the reward and requests an immediate save");
+    f.click({rewards.x + 90, rewards.y + 190});
+    check(f.game.statistic("daily_rewards_claimed") == 1, "claimed daily button cannot pay twice");
 }
 
 void storage(Fixture& f) {
@@ -361,10 +392,12 @@ void settings(Fixture& f) {
     check(f.action("settings"), "vsync toggle requests persistence");
     f.click({x + half / 2, y + 269});
     check(f.ui.menu() == "itemviewer", "settings item viewer button opens dedicated page");
-    f.click({x + (box.w - 44) * .8f, y + 69});
+    Rect viewer = panel(690, 270);
+    viewer.y = 16;
+    f.click({viewer.x + 22 + (viewer.w - 44) * .8f, viewer.y + 62 + 69});
     check(f.context.settings["held_item_scale"].asDouble() > 1.5, "held item scale slider updates setting");
     check(f.action("settings"), "slider change requests persistence");
-    f.click({box.x + box.w - 49, box.y + 26});
+    f.click({viewer.x + viewer.w - 49, viewer.y + 26});
     check(f.ui.menu() == "settings", "item viewer done returns to settings");
     f.key(SDLK_ESCAPE);
     check(!f.ui.capturesInput(), "settings escape closes directly to gameplay");
@@ -800,8 +833,6 @@ void discoveryViews(Fixture& f) {
     f.renderer.world(mine, mine.spawn() + Vec3{0, 1.62f, 0}, 0, -.25f, 72);
     if (!f.screenshots.empty())
         f.renderer.screenshot(f.screenshots / "rank-theme.png");
-    f.open("guardian");
-    f.paint("guardian-points");
     f.open("mines");
     f.paint("rebirth-mines");
     f.open("more");
@@ -962,6 +993,34 @@ void rendererChecks(Fixture& f) {
     check(fonts(false) == fonts(true),
           "font cache eviction must flush pending text before deleting an atlas");
 
+    f.fresh();
+    f.context.settings = defaultSettings();
+    f.open("itemviewer");
+    for (bool left : {false, true}) {
+        f.context.settings["left_handed"] = left;
+        f.renderer.begin(1);
+        f.renderer.world(mine, {0, 3, 18}, 0, -.3f, 72);
+        const auto empty = f.readPixels();
+        f.renderer.held(pickaxe, 3, f.context.settings, 0);
+        const auto heldImage = f.readPixels();
+        f.renderer.beginUI();
+        f.ui.draw();
+        const auto viewer = f.readPixels();
+        int heldPixels = 0, visiblePixels = 0;
+        for (int y = 80; y < 500; ++y)
+            for (int x = 0; x < 1280; ++x) {
+                const int i = (y * 1280 + x) * 4;
+                if (std::memcmp(empty.data() + i, heldImage.data() + i, 3) != 0) {
+                    ++heldPixels;
+                    visiblePixels += std::memcmp(viewer.data() + i, heldImage.data() + i, 3) == 0;
+                }
+            }
+        check(heldPixels > 100 && visiblePixels > heldPixels * .9,
+              "item viewer keeps the actual held pickaxe visible in either hand");
+        if (!f.screenshots.empty())
+            f.renderer.screenshot(f.screenshots / (left ? "viewer-left.png" : "viewer-right.png"));
+    }
+
     auto clippedText = [&](bool flushEach) {
         f.renderer.begin(1);
         f.renderer.beginUI();
@@ -993,6 +1052,7 @@ int main(int argc, char** argv) {
         Fixture fixture(data, argc > 2 ? argv[2] : "");
         enchants(fixture);
         inventory(fixture);
+        binAndDaily(fixture);
         storage(fixture);
         settings(fixture);
         tutorial(fixture);

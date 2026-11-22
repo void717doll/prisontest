@@ -1,7 +1,6 @@
 #include "prison/bombs.hpp"
 #include "prison/companion.hpp"
 #include "prison/game.hpp"
-#include "prison/guardians.hpp"
 #include "prison/help.hpp"
 #include "prison/quarry.hpp"
 #include "prison/rewards.hpp"
@@ -320,7 +319,6 @@ int run(const Options& options) {
     bool held = false;
     double saveTime = 0;
     std::uint64_t generation = mine.generation();
-    int guardianTarget = -1;
     std::future<Json> saving;
     auto restorePlayer = [&]() {
         companion.clear();
@@ -373,7 +371,6 @@ int run(const Options& options) {
     };
     auto reset = [&]() {
         companion.clear();
-        game.state["guardian"]["active"] = false;
         configureMine(mine, game);
         mine.reset(game.state["rank_index"].asInt(), game.state["total_prestige"].asInt64());
         position = mine.spawn();
@@ -395,28 +392,12 @@ int run(const Options& options) {
         apply(game.command(command));
     if (ctx.playing && !options.stress.empty())
         apply(game.command("/test stress " + options.stress));
-    auto summonGuardian = [&](bool development) {
-        if (!game.spawnGuardian(mine.spawn() + Vec3{0, -.5f, -1.5f}, development))
-            return false;
-        for (const auto& part : guardianParts(game.state["guardian"]))
-            if (position.x + .35f > part.low.x && position.x - .35f < part.high.x &&
-                position.y + 1.8f > part.low.y && position.y < part.high.y &&
-                position.z + .35f > part.low.z && position.z - .35f < part.high.z) {
-                position = mine.spawn();
-                velocity = {};
-                vertical = 0;
-                break;
-            }
-        return true;
-    };
     auto reward = [&](const std::string& block, Cell origin, bool manual) {
         auto result = game.mineBlock(block, manual, manual);
         if (result.ok)
             game.recordShaftMining(1);
         for (const auto& proc : result.procs)
             procJobs.enqueue(game, mine, proc, origin, result.context);
-        if (result.ok && manual && mine.resetRemaining() < 0 && summonGuardian(false))
-            ctx.say("A Stone Guardian has awakened. Use /guardian to reach the mine entrance.");
     };
     Clock::time_point last = Clock::now();
     std::vector<double> frameTimes;
@@ -616,13 +597,6 @@ int run(const Options& options) {
                         ui.open("");
                     }
                     ui.apply(result);
-                } else if (action.kind == "guardian" && ctx.playing) {
-                    if (!mine.resetting() && summonGuardian(true)) {
-                        ui.open("");
-                        ctx.say("Stone Guardian summoned at the mine entrance.");
-                    } else
-                        ui.apply({false, "Guardian unavailable. Leave the shaft, stop automining or finish "
-                                         "the current fight."});
                 } else if (action.kind == "reset" && ctx.playing) {
                     if (game.inShaft())
                         ui.apply({false, "Use /shaft to descend or return to your mine."});
@@ -692,7 +666,6 @@ int run(const Options& options) {
             procJobs.step(game, mine);
             mine.tick(dt);
             if (generation != mine.generation()) {
-                game.state["guardian"]["active"] = false;
                 generation = mine.generation();
                 position = mine.spawn();
                 yaw = 0;
@@ -740,9 +713,6 @@ int run(const Options& options) {
             ctx.resetting = mine.resetting();
             ctx.mineSize = {mine.width(), mine.height(), mine.depth()};
             bool input = !ui.capturesInput() && focused && !mine.resetting();
-            if (input && game.tickGuardian(elapsed))
-                ctx.say("The Stone Guardian returned to stone.");
-            mine.setGuardian(game.state["guardian"]);
             const Uint8* keys = SDL_GetKeyboardState(nullptr);
             if (input) {
                 float forward = (keys[SDL_SCANCODE_W] ? 1.f : 0) - (keys[SDL_SCANCODE_S] ? 1.f : 0),
@@ -789,32 +759,14 @@ int run(const Options& options) {
             Vec3 eye = position + Vec3{0, 1.62f, 0},
                  dir{-std::sin(yaw) * std::cos(pitch), std::sin(pitch), -std::cos(yaw) * std::cos(pitch)};
             auto hit = mine.raycast(eye, dir, 8);
-            const auto guardianHit = raycastGuardian(game.state["guardian"], eye, dir,
-                                                     hit.hit ? std::min(8.f, hit.distance) : 8.f);
-            if (guardianHit.part != guardianTarget ||
-                (guardianHit.part < 0 &&
-                 (!hit.hit || target.x != hit.cell.x || target.y != hit.cell.y || target.z != hit.cell.z))) {
+            if (!hit.hit || target.x != hit.cell.x || target.y != hit.cell.y || target.z != hit.cell.z) {
                 damage = 0;
                 target = hit.cell;
             }
-            guardianTarget = guardianHit.part;
             int index = game.state.get("selected_hotbar_index", 0).asInt();
             bool pick = game.state["inventory_slots"][index].get("id", "") == "pickaxe";
-            if (held && input && pick && guardianTarget >= 0 &&
-                guardianTarget == guardianWeakPart(game.state["guardian"]) &&
-                !game.state["autominer_active"].asBool()) {
-                damage += dt / std::max(.2, game.data.systems["guardians"]["strike_seconds"].asDouble());
-                swing = std::fmod(swing + float(dt) * 4, 1.f);
-                if (damage >= 1) {
-                    const auto result = game.strikeGuardian(guardianTarget);
-                    if (!result.message.empty())
-                        ui.apply(result);
-                    if (result.ok)
-                        audio.play(MiningSound::Break, ctx.settings.get("master_volume", 1).asFloat());
-                    damage = 0;
-                }
-            } else if (held && input && guardianTarget < 0 && hit.mineable && pick && procJobs.size() < 61 &&
-                       !game.state["autominer_active"].asBool() && !game.shaftComplete()) {
+            if (held && input && hit.mineable && pick && procJobs.size() < 61 &&
+                !game.state["autominer_active"].asBool() && !game.shaftComplete()) {
                 digSoundDelay -= float(dt);
                 if (digSoundDelay <= 0) {
                     audio.play(MiningSound::Dig, ctx.settings.get("master_volume", 1).asFloat());
@@ -873,9 +825,8 @@ int run(const Options& options) {
             renderer.begin(gui, mine.skyColor());
             renderer.world(mine, eye, yaw, pitch,
                            std::clamp(ctx.settings.get("fov", 72).asFloat(), 50.f, 120.f));
-            if (input && guardianTarget < 0 && hit.mineable)
+            if (input && hit.mineable)
                 renderer.selection(hit.cell, damage);
-            renderer.guardian(game.state["guardian"], guardianTarget, damage);
             for (const auto& bomb : bombs.projectiles())
                 renderer.billboard(bomb.position, .45f, "textures/minebomb.png", yaw, pitch);
             renderer.companion(companion, activePet, yaw, pitch);

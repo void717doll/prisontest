@@ -1,4 +1,3 @@
-#include "prison/guardians.hpp"
 #include "prison/quarry.hpp"
 #include "prison/world.hpp"
 #include "ui_internal.hpp"
@@ -220,7 +219,8 @@ void UI::Impl::statistics() {
 }
 
 void UI::Impl::settings() {
-    Rect box = panel(page == "itemviewer" ? "Item Viewer" : page == "theme" ? "Theme" : "Settings", 690, 555);
+    Rect box = panel(page == "itemviewer" ? "Item Viewer" : page == "theme" ? "Theme" : "Settings",
+                     690, page == "itemviewer" ? 270 : 555);
     float x = box.x + 22, y = box.y + 62;
     float width = box.w - 44, half = (width - 12) * 0.5f;
     if (page == "itemviewer") {
@@ -228,10 +228,6 @@ void UI::Impl::settings() {
         slider({x, y + 50, width, 38}, "Item Size", "held_item_scale", 0.5, 2, "%", 100);
         slider({x, y + 100, width, 38}, "Tool Angle", "tool_angle", 0, 180);
         toggle({x, y + 150, width, 38}, "Left Hand", "left_handed");
-        if (ctx.playing)
-            draw.item({box.x + (box.w - 100) * 0.5f, y + 230, 100, 100},
-                      game.state["inventory_slots"][game.state.get("selected_hotbar_index", 0).asInt()],
-                      game.state.get("parts_prestige", 0).asInt(), glint);
         return;
     }
     if (page == "theme") {
@@ -484,7 +480,7 @@ void UI::Impl::enchantDetail() {
 }
 
 void UI::Impl::equipment() {
-    Rect box = panel(page == "parts" ? "Pickaxe Parts" : "Crystals", 690, 590);
+    Rect box = panel(page == "parts" ? "Pickaxe Parts" : "Crystals", 690, page == "parts" ? 500 : 540);
     float center = box.x + box.w * 0.5f;
     if (page == "parts") {
         const char* keys[] = {"head", "binding", "rod"};
@@ -512,8 +508,6 @@ void UI::Impl::equipment() {
                   "Slot " + std::to_string(count + 1) + " unlocks at Level " +
                       std::to_string(game.data.crystals["slot_levels"][count].asInt()),
                   15);
-        label(box.x + 24, box.y + 225,
-              "Resonance: " + game.crystalResonance().get("label", "None").asString(), 14);
         button({center - 90, box.y + 250, 180, 28}, "Unequip All", [this, count] {
             for (int i = count - 1; i >= 0; --i)
                 if (game.state["equipped_crystals"][i].isObject()) {
@@ -525,75 +519,7 @@ void UI::Impl::equipment() {
                 }
         });
     }
-    if (page == "crystals")
-        pageButton({box.x + 24, box.y + 286, 160, 30}, "Resonance", "resonance");
     inventory(box);
-}
-
-void UI::Impl::resonance() {
-    Rect box = panel("Crystal Resonance", 620, 420);
-    Rect list{box.x + 24, box.y + 60, box.w - 48, box.h - 138};
-    beginScroll(list);
-    float y = paragraph(list.x, list.y - scroll, list.w,
-                        "Use the first three crystal slots. All three must be identified, the same tier, "
-                        "and T5 or higher.") +
-              12;
-    const auto& active = game.crystalResonance();
-    label(list.x, y, "Active: " + active.get("label", "None").asString());
-    y += 32;
-    for (const auto& set : game.data.systems["resonance"]["sets"]) {
-        label(list.x, y, set["label"].asString(), 16);
-        y = paragraph(list.x, y + 22, list.w, set["description"].asString(), 14) + 16;
-    }
-    endScroll(y);
-    pageButton({box.x + 24, box.y + box.h - 56, 160, 32}, "Crystals", "crystals");
-}
-
-void UI::Impl::guardian() {
-    Rect box = panel("Mine Guardian", 620, 430);
-    const auto& state = game.state["guardian"];
-    const auto& cfg = game.data.systems["guardians"];
-    const float x = box.x + 24, width = box.w - 48;
-    Rect list{x, box.y + 62, width, box.h - 142};
-    beginScroll(list);
-    float y = paragraph(x, list.y - scroll, width,
-                        "Stone Guardians can awaken at the mine entrance while manually mining at "
-                        "pickaxe level 1,000 or higher.") +
-              14;
-    y = paragraph(x, y, width,
-                  "Mine the bright arm, then the other arm, then the head. Only exposed weak points take "
-                  "damage. Finish within three minutes.") +
-        14;
-    label(x, y, "Defeated: " + state["defeated"].asString(), 15);
-    y += 32;
-    y = paragraph(x, y, width,
-                  "Each defeat gives " + cfg.get("points", 3).asString() +
-                      " points for the Point Shop. Leaving or resetting ends the fight "
-                      "without a reward.",
-                  14) +
-        14;
-    if (state["active"].asBool()) {
-        label(x, y, guardianWeakName(state) + " exposed · " + clockText(state["remaining"].asDouble()), 15);
-    } else
-        label(x, y, "Next encounter eligible in " + clockText(state["cooldown"].asDouble()), 14);
-    endScroll(y + 28);
-    if (state["active"].asBool()) {
-        button(
-            {x, box.y + box.h - 60, 158, 34}, "Go to Guardian",
-            [this] {
-                action("mine_entry");
-                setPage("");
-            },
-            !game.state["autominer_active"].asBool());
-        button({x + 170, box.y + box.h - 60, 150, 34}, "Leave Fight", [this] {
-            apply(game.command("/guardian leave"));
-            setPage("");
-        });
-    }
-    if (game.state["devmode"].asBool() && !state["active"].asBool())
-        button(
-            {box.x + box.w - 205, box.y + box.h - 60, 180, 34}, "Summon (Devmode)",
-            [this] { apply(game.command("/test guardian")); }, !state["active"].asBool());
 }
 
 void UI::Impl::robots() {
@@ -802,10 +728,7 @@ void UI::Impl::more() {
                                                            {"Mine Upgrades", "mine_upgrades"},
                                                            {"Contracts", "contracts"},
                                                            {"Expeditions", "expeditions"},
-                                                           {"Equipment Sets", "equipment_sets"},
-                                                           {"Challenge Shaft", "shaft"},
-                                                           {"Mine Guardian", "guardian"},
-                                                           {"Crystal Resonance", "resonance"}};
+                                                           {"Challenge Shaft", "shaft"}};
     float width = (box.w - 60) * 0.5f;
     Rect list{box.x + 24, box.y + 66, box.w - 48, box.h - 210};
     beginScroll(list);
@@ -934,34 +857,6 @@ void UI::Impl::mineUpgrades() {
         y += 108;
     }
     endScroll(y);
-}
-
-void UI::Impl::equipmentSets() {
-    Rect box = panel("Equipment Sets", 690, 440);
-    paragraph(box.x + 24, box.y + 60, box.w - 48,
-              "Save your parts, crystals and active pet. Saved items must be equipped or in your inventory.",
-              14);
-    for (int i = 0; i < 3; ++i) {
-        const float y = box.y + 124 + i * 91;
-        const auto key = "set_name_" + std::to_string(i);
-        input({box.x + 24, y, 224, 34}, key);
-        button({box.x + 262, y, 175, 34}, "Save Current", [this, i, key] {
-            Json args;
-            args["index"] = i;
-            args["name"] = inputs[key];
-            apply(game.itemAction("equipment_set_save", args));
-        });
-        button(
-            {box.x + 451, y, 140, 34}, "Equip",
-            [this, i] {
-                Json args;
-                args["index"] = i;
-                apply(game.itemAction("equipment_set_equip", args));
-            },
-            game.state["equipment_sets"][i]["saved"].asBool());
-        label(box.x + 24, y + 41,
-              game.state["equipment_sets"][i]["saved"].asBool() ? "Equipment saved" : "Empty set", 13);
-    }
 }
 
 void UI::Impl::shaft() {
@@ -1134,14 +1029,14 @@ void UI::Impl::expeditions() {
 void UI::Impl::confirm() {
     const bool petBatch = page == "confirm" && confirmAction == "pet_food" &&
                           confirmArgs.isMember("pets") && confirmArgs["pets"].isArray();
-    const bool partBatch = page == "confirm" && confirmAction == "salvage_parts" &&
-                           confirmArgs.isMember("parts") && confirmArgs["parts"].isArray();
+    const bool binBatch = page == "confirm" && confirmAction == "bin_items" &&
+                          confirmArgs.isMember("items") && confirmArgs["items"].isArray();
     const bool dust = page == "confirm" && confirmAction == "crystal_dust";
     const bool craft = page == "confirm" && confirmAction == "crystal_craft";
     const auto total = confirmArgs.get("count", 0).asInt64();
     const bool bulk = (dust && !confirmArgs["item"].get("identified", false).asBool() && total > 0) ||
                       (craft && total >= 8);
-    Rect box = panel("Confirm", 530, petBatch || partBatch ? 440 : 330);
+    Rect box = panel("Confirm", 530, petBatch || binBatch ? 440 : 330);
     std::string text;
     if (page == "prestige" || page == "confirm_prestige")
         text = "Prestige for " + compact(game.prestigeCost()) + " money? Your rank returns to A.";
@@ -1178,12 +1073,12 @@ void UI::Impl::confirm() {
         const auto count = confirmArgs["pets"].size();
         text = "Convert " + std::to_string(count) + (count == 1 ? " pet into " : " pets into ") +
                std::to_string(food) + " pet food? This cannot be undone.";
-    } else if (partBatch) {
+    } else if (binBatch) {
         std::int64_t count = 0;
-        for (const auto& row : confirmArgs["parts"])
+        for (const auto& row : confirmArgs["items"])
             count += row["item"].get("count", 1).asInt();
-        text = "Salvage " + std::to_string(count) + (count == 1 ? " part" : " parts") +
-               " for tokens? This cannot be undone.";
+        text = "Discard " + std::to_string(count) + (count == 1 ? " item" : " items") +
+               " and any pouch contents? Eligible items give tokens. This cannot be undone.";
     } else if (confirmAction == "pet_food")
         text = "Convert this pet into food?";
     else if (confirmAction == "combinemulti")
@@ -1192,8 +1087,8 @@ void UI::Impl::confirm() {
     else
         text = "Confirm this action?";
     paragraph(box.x + 28, box.y + 85, box.w - 56, text, 17);
-    if (petBatch || partBatch) {
-        const auto& selected = confirmArgs[petBatch ? "pets" : "parts"];
+    if (petBatch || binBatch) {
+        const auto& selected = confirmArgs[petBatch ? "pets" : "items"];
         const float x = box.x + (box.w - 9 * 40) / 2;
         for (unsigned i = 0; i < selected.size(); ++i)
             slot({x + (i % 9) * 40, box.y + 160 + (i / 9) * 40, 38, 38}, "preview", int(i),
@@ -1208,7 +1103,7 @@ void UI::Impl::confirm() {
                        (dust ? "returned." : "left over.");
         paragraph(box.x + 28, box.y + 142, box.w - 56, details, 15);
     }
-    auto convert = [this, petBatch, partBatch](bool all) {
+    auto convert = [this, petBatch, binBatch](bool all) {
         if (page == "confirm" && confirmAction == "shaft_leave") {
             action("shaft", "leave");
             return;
@@ -1228,8 +1123,8 @@ void UI::Impl::confirm() {
             if (petBatch) {
                 petFoodSelection.clear();
                 setPage("pet_food");
-            } else if (partBatch) {
-                partSelection.clear();
+            } else if (binBatch) {
+                binSelection.clear();
                 setPage("bin");
             } else
                 setPage(confirmAction == "pet_food" ? "pets" : "inventory");
@@ -1243,7 +1138,7 @@ void UI::Impl::confirm() {
     if (bulk)
         button({box.x + 42 + width, y, width, 38}, dust ? "Dust All" : "Craft All",
                [convert] { convert(true); });
-    button({box.x + box.w - 28 - width, y, width, 38}, "Cancel", [this, petBatch, partBatch] {
+    button({box.x + box.w - 28 - width, y, width, 38}, "Cancel", [this, petBatch, binBatch] {
         std::string destination = "inventory";
         if (page == "confirm") {
             if (confirmAction == "vault_buy")
@@ -1262,7 +1157,7 @@ void UI::Impl::confirm() {
                 destination = "shaft";
             else if (confirmAction == "pet_food")
                 destination = petBatch ? "pet_food" : "pets";
-            else if (partBatch)
+            else if (binBatch)
                 destination = "bin";
         }
         setPage(destination);
@@ -1270,40 +1165,40 @@ void UI::Impl::confirm() {
 }
 
 void UI::Impl::itemSelection() {
-    const bool parts = page == "bin";
-    auto& selection = parts ? partSelection : petFoodSelection;
-    Rect box = panel(parts ? "Bin" : "Make Pet Food", 690, 445);
+    const bool bin = page == "bin";
+    auto& selection = bin ? binSelection : petFoodSelection;
+    Rect box = panel(bin ? "Bin" : "Make Pet Food", 690, 445);
     const auto& items = game.state["inventory_slots"];
     std::int64_t total = 0;
     for (auto it = selection.begin(); it != selection.end();) {
         if (it->first >= int(items.size()) || items[it->first] != it->second)
             it = selection.erase(it);
         else {
-            total += parts ? it->second.get("count", 1).asInt() : game.petFoodValue(it->second);
+            total += bin ? it->second.get("count", 1).asInt() : game.petFoodValue(it->second);
             ++it;
         }
     }
     paragraph(box.x + 26, box.y + 69, box.w - 52,
-              parts ? "Select parts to salvage for tokens. Nothing is consumed until you confirm."
+              bin ? "Select items to discard. Salvageable items give tokens. Your pickaxe stays."
                     : "Select pets to turn into food. Nothing is consumed until you confirm.");
     label(box.x + 26, box.y + 112,
-          parts ? std::to_string(total) + (total == 1 ? " part selected" : " parts selected")
+          bin ? std::to_string(total) + (total == 1 ? " item selected" : " items selected")
                 : std::to_string(selection.size()) + " selected · " + std::to_string(total) + " pet food");
-    button({box.x + 26, box.y + 150, 110, 34}, "Select All", [this, parts] {
-        auto& selection = parts ? partSelection : petFoodSelection;
+    button({box.x + 26, box.y + 150, 110, 34}, "Select All", [this, bin] {
+        auto& selection = bin ? binSelection : petFoodSelection;
         const auto& items = game.state["inventory_slots"];
         for (int i = 1; i < int(items.size()); ++i)
-            if (items[i]["id"] == (parts ? "pick_part" : "pet"))
+            if (items[i].isObject() && (bin ? items[i]["id"] != "pickaxe" : items[i]["id"] == "pet"))
                 selection[i] = items[i];
     });
     button({box.x + 146, box.y + 150, 80, 34}, "Clear",
-           [this, parts] { (parts ? partSelection : petFoodSelection).clear(); }, !selection.empty());
+           [this, bin] { (bin ? binSelection : petFoodSelection).clear(); }, !selection.empty());
     button(
-        {box.x + box.w - 166, box.y + 150, 140, 34}, parts ? "Salvage Selected" : "Convert Selected",
-        [this, parts] {
-            const auto& selection = parts ? partSelection : petFoodSelection;
-            const char* key = parts ? "parts" : "pets";
-            confirmAction = parts ? "salvage_parts" : "pet_food";
+        {box.x + box.w - 166, box.y + 150, 140, 34}, bin ? "Discard Selected" : "Convert Selected",
+        [this, bin] {
+            const auto& selection = bin ? binSelection : petFoodSelection;
+            const char* key = bin ? "items" : "pets";
+            confirmAction = bin ? "bin_items" : "pet_food";
             confirmArgs = Json();
             confirmArgs[key] = Json(::Json::arrayValue);
             for (const auto& selected : selection) {
@@ -1711,9 +1606,6 @@ void UI::Impl::information() {
                   15);
             y += 28;
         }
-        const auto& resonance = game.crystalResonance();
-        if (resonance.isObject())
-            y = paragraph(list.x, y, list.w, "Resonance: " + resonance["description"].asString(), 14) + 16;
         const auto& mutation = game.petMutation(game.state["pet_data"]["active_pet"]);
         if (mutation.isObject())
             y = paragraph(list.x, y, list.w,
@@ -1723,6 +1615,29 @@ void UI::Impl::information() {
                [this] { apply(game.itemAction("endmulti")); });
         y += 48;
     } else if (page == "rewards") {
+        const auto daily = game.dailyReward();
+        const bool available = daily["available"].asBool();
+        label(list.x, y, "Daily Reward · " + daily["streak"].asString() + " day streak", 18);
+        y += 30;
+        currencyLabel(list.x, y, "Money: " + compact(daily["money"].asDouble()) +
+                                    "  |  Tokens: " + compact(daily["tokens"].asDouble()), 15);
+        y += 26;
+        label(list.x, y, "1 T" + daily["crystal_tier"].asString() + " Crystal  |  " +
+                            daily["points"].asString() + " Points", 15);
+        y += 28;
+        y = paragraph(list.x, y, list.w, "Total prestige " + daily["prestige"].asString() +
+                                          "+ · Rebirth: " + number(daily["rebirth_multiplier"].asDouble(), 2) +
+                                          "x · Streak: " + number(daily["streak_multiplier"].asDouble(), 2) + "x", 14) + 10;
+        button({list.x, y, 190, 34}, available ? "Claim Daily Reward" : "Claimed",
+               [this] { apply(game.claimDailyReward()); }, available);
+        y += 46;
+        y = paragraph(list.x, y, list.w, std::string(available ? "Resets in " : "Next claim in ") +
+                                          clockText(daily["wait_seconds"].asDouble()) + " · 00:00 UTC", 14) + 8;
+        y = paragraph(list.x, y, list.w,
+                      "Claim on consecutive days to grow your reward. Missing a day resets the streak. "
+                      "The bonus caps at day 30; your streak keeps counting.", 14) + 20;
+        label(list.x, y, "Mining Milestones", 18);
+        y += 30;
         for (const auto& milestone : game.data.systems["reward_milestones"]) {
             bool achieved = game.state.get("blocks_mined", 0).asDouble() >= milestone["blocks"].asDouble();
             currencyLabel(list.x, y,

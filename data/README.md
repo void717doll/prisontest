@@ -11,7 +11,7 @@ from the repository root to preview edits before rebuilding the client.
 | `blocks.json` | legacy block ids and fallback money/EXP rewards; retained for older items and tests |
 | `mine.json` | mine bounds, spawn, refill timing and the 26 smooth/ore block pairs with source texture expressions |
 | `native_economy.json` | native-only currency labels, enchant price overrides, gem/fuel chances and robot progression |
-| `native_content.json` | native-only guardians, crystal resonance and pet mutations |
+| `native_content.json` | pet mutation traits and their chances |
 | `enchants.json` | enchant order, labels, colors, prices, caps, progression scaling and proc parameters |
 | `crystals.json` | the fourteen pickaxe levels that unlock crystal slots |
 | `source_systems.json` | pouches, autominer upgrades, pet tiers, milestones, salvage, lucky drops, book eligibility and native progression |
@@ -58,14 +58,7 @@ vaults retain pending items until room is available. retired materials convert
 to points and crate upgrades refund their historical costs once. existing item
 metadata, excavations and non-retired upgrades remain intact.
 
-`native_content.json` defines guardian spawn chance, pickaxe gate, health,
-duration, cooldown and point rewards. guardian parts from older saves keep their
-rolled boost. bosses remain separate from block rewards and enchant procs.
-
-resonance definitions match the first three identified crystals of one tier,
-at or above `minimum_tier`. only one set applies: matching sell/token/EXP gives
-4% in that category, or one of each gives 2% in every category. additional slots
-keep their ordinary boosts. resonance is derived from equipment, not saved.
+`native_content.json` defines pet mutation traits.
 
 mutations roll once at hatch completion with probability `chance`. saved pet
 metadata retains the trait and roll marker; merging inherits a valid parent
@@ -94,9 +87,23 @@ and point rewards scale by `1 + min(rebirth, 10)`. accepted terms stay in the sa
 native `expeditions` defines up to three concurrent trips and routes keyed by
 region. a matching pet species uses its unlocked route, otherwise the quarry.
 level reduces the route's block target by 0.2% per level, capped at level 75;
-rarity adds two points per tier above common. each route also supplies the
-listed food or egg stack. pet payloads, terms and progress are saved; these are
-mining counters rather than offline timers.
+routes award 1 point, or 2 for ember; rarity adds no points. each route also
+supplies the listed food or egg stack. pet payloads and progress are saved.
+older unclaimed points are capped to the current route. expeditions advance
+through mining rather than offline timers.
+
+mine upgrades are available before rebirth: ore density costs 50b/10 points,
+250b/25 points and 1t/50 points for its first three levels. the last two cost
+5t/100 points at rebirth 1 and 25t/250 points at rebirth 2. ore pockets cost
+250b/25 points, then 2.5t/100 points at rebirth 1. owned levels stay unchanged.
+
+`daily_rewards.milestones` sets money, tokens, points and crystal tier at total
+prestige 0, 1, 5, 10, 25, 50 and 100. claims use utc calendar days from the device
+clock. consecutive claims add 10% per day through day 30; missing a day resets
+the streak. rebirth adds 50% per level, capped at 100. crystal tier gains one at
+streak days 7 and 14 and each of the first two rebirths, capped at T10; quantity
+stays at one. the world saves the last claim day, streak and best streak.
+full inventory prevents the entire claim; claims bypass automatic filters.
 
 run the static audit after editing:
 

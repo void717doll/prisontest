@@ -44,7 +44,6 @@ class Renderer {
     void unclip();
     void world(const Mine& mine, Vec3 eye, float yaw, float pitch, float fov);
     void selection(Cell cell, float progress);
-    void guardian(const Json& state, int targetedPart, float progress);
     void companion(const PetCompanion& companion, const Json& pet, float yaw, float pitch);
     void billboard(Vec3 position, float size, const std::string& path, float yaw, float pitch);
     void mineHologram(const Mine& mine, Vec3 eye, float yaw, float pitch, float fov, int rank,

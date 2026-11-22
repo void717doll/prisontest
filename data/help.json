@@ -94,24 +94,20 @@
           ]
         },
         {
-          "id": "guardians",
-          "title": "Mine guardians",
-          "body": [
-            "Stone Guardians rarely awaken while manually mining with an advanced pickaxe. Open /guardian and choose Go to Guardian to reach one.",
-            "Mine the bright arm, then the other arm, then the head. The boss bar shows its health, exposed weak point and time left. Defeating it awards Point Shop points.",
-            "Menus and offline time pause the fight. Leaving or refilling ends it without rewards. Devmode can summon one with /test guardian."
-          ],
-          "keywords": ["guardian", "boss", "weak point", "fight", "bossbar"]
-        },
-        {
           "id": "rebirth_mines",
           "title": "Rebirth mines and upgrades",
           "body": [
             "Rebirth opens new regions in /mines. Each has its own ore layout; changing regions refills your mine.",
             "/mineupgrades offers permanent ore and pocket upgrades. Purchases survive prestige and take effect on a fresh refill.",
-            "More ore means more token blocks and fewer money blocks. Pocket upgrades improve rewards when a discovery appears."
+            "More ore means more token blocks and fewer money blocks. Pocket upgrades improve rewards when a discovery appears.",
+            "ore density starts at 50b and 10 points. the first three density levels and first pocket upgrade need no rebirth; later levels require rebirth 1 or 2."
           ],
-          "keywords": ["mines", "rebirth", "upgrades", "density"]
+          "keywords": [
+            "mines",
+            "rebirth",
+            "upgrades",
+            "density"
+          ]
         },
         {
           "id": "quarry",
@@ -214,15 +210,13 @@
           "body": [
             "Identify a crystal by using it or right-clicking it in inventory, then drag it into an unlocked slot in /crystals.",
             "Convert spare crystals into dust. Use matching dust to preview crafting a higher-tier crystal.",
-            "Dust All processes matching unidentified crystals together, crafting one higher-tier crystal per group of four and keeping leftover dust. Craft All works on matching dust. review the totals before choosing either action.",
-            "The first three crystal slots can resonate when they hold identified crystals of one tier, T5 or higher. Match their boost types or use one of each. /resonance shows the combinations and your active bonus."
+            "Dust All processes matching unidentified crystals together, crafting one higher-tier crystal per group of four and keeping leftover dust. Craft All works on matching dust. review the totals before choosing either action."
           ],
           "keywords": [
             "crystal",
             "dust",
             "craft",
-            "slots",
-            "resonance"
+            "slots"
           ]
         },
         {
@@ -231,7 +225,7 @@
           "body": [
             "Identify a part, then equip it in the matching Head, Binding or Rod slot in /parts.",
             "Equip all three parts at the required tier to prestige the parts. This consumes that set and advances the tool tier; it is separate from rank prestige.",
-            "open /bin to select spare inventory parts, choose Salvage Selected, then review and confirm. only the selected parts are consumed; equipped parts stay in place."
+            "open /bin to select inventory items, choose Discard Selected, then review and confirm. the pickaxe is protected; equipped items stay in place."
           ],
           "keywords": [
             "parts",
@@ -240,14 +234,6 @@
             "binding",
             "pickaxe prestige"
           ]
-        },
-        {
-          "id": "sets",
-          "title": "equipment sets",
-          "body": [
-            "use /sets to save or equip three named combinations of your owned parts, crystals and active pet. a saved set uses existing items."
-          ],
-          "keywords": ["sets", "equipment", "parts", "crystals", "pet"]
         },
         {
           "id": "rename",
@@ -276,7 +262,7 @@
           "body": [
             "Drag items between inventory, equipment and storage. Matching items stack while keeping their metadata.",
             "Right-click a held pouch to open it. /pv opens your vault, where you can buy and name extra pages.",
-            "open /bin to select spare parts, review them and confirm the salvage. /salvage, /scrap and /trash open the same selector."
+            "open /bin to select any inventory item except your pickaxe, then review and confirm. eligible items give tokens; other items and any pouch contents are discarded. /salvage, /scrap and /trash open the same selector."
           ],
           "keywords": [
             "pouch",
@@ -331,9 +317,35 @@
           "title": "Pet expeditions",
           "body": [
             "Send spare pets through /expeditions for points, food and eggs. Species and unlocked regions determine their routes.",
-            "Mining advances trips. Return to collect a finished trip, or recall the pet early without rewards. Full inventory keeps the pet and rewards safely stored."
+            "Mining advances trips. Return to collect a finished trip, or recall the pet early without rewards. Full inventory keeps the pet and rewards safely stored.",
+            "quarry, frost and deep mine trips award 1 point; ember trips award 2. rarity adds no points. pet levels reduce the mining target, and food or egg rewards stay the same."
           ],
-          "keywords": ["expedition", "pets", "species", "points", "spare pets", "trip"]
+          "keywords": [
+            "expedition",
+            "pets",
+            "species",
+            "points",
+            "spare pets",
+            "trip"
+          ]
+        },
+        {
+          "id": "daily",
+          "title": "daily rewards and streaks",
+          "body": [
+            "open /daily or /rewards to claim money, tokens, one unidentified crystal and points once per utc calendar day. a fresh world starts at 1m money, 1m tokens, a T1 crystal and 5 points.",
+            "base rewards increase at total prestige 1, 5, 10, 25, 50 and 100. each rebirth adds 50% to money, tokens and points, up to 100 rebirths; total prestige keeps your reward tier through rebirth.",
+            "each consecutive claim adds 10% to money, tokens and points, up to 3.9x at day 30. crystal tier also improves at streak days 7 and 14 and the first two rebirths, up to T10. there is always one crystal per claim.",
+            "claims reset at 00:00 UTC. missing a day resets the streak to 1, while prestige, rebirth and your best streak stay. a full inventory leaves the entire reward unclaimed until its crystal fits. rewards and streaks belong to each world."
+          ],
+          "keywords": [
+            "daily",
+            "streak",
+            "login",
+            "reward",
+            "points",
+            "crystal"
+          ]
         },
         {
           "id": "boosts",
@@ -342,7 +354,7 @@
             "Use multiplier items to activate them. /boosts shows your equipment bonuses and active effects; matching multipliers extend their duration.",
             "active sell, token and EXP multipliers have countdown bars above the mine. temporary enchant effects use these bars too; /boosts lists the full bonuses.",
             "/endmulti returns your active sell multiplier as an item. /combinemulti combines matching sell multipliers into a stronger one.",
-            "/rewards lists mining milestones. Mining income appears in a one-minute chat summary."
+            "/rewards lists daily rewards and mining milestones. Mining income appears in a one-minute chat summary."
           ],
           "keywords": [
             "boost",
@@ -421,6 +433,7 @@
           "title": "Settings and HUD",
           "body": [
             "/settings opens the world settings. Title and pause Settings include volume, GUI scale, FOV, Hand view, Tool angle, Left hand and key bindings.",
+            "item viewer leaves your held tool visible while adjusting its size, angle, field of view and handedness.",
             "Pet Companion shows or hides your equipped pet beside you. its mining boost stays active when hidden.",
             "Right Shift opens the HUD editor; F8 also works. Crosshair, held-item name and tool progress stay fixed. Escape closes menus directly to gameplay.",
             "/scoreboard [on|off|toggle], or /sc, controls scoreboard visibility. This is saved with the world."
@@ -473,7 +486,7 @@
     {
       "command": "crystals",
       "category": "Pickaxe",
-      "description": "equip crystals and view their slots and resonance bonus.",
+      "description": "equip crystals and view unlocked slots.",
       "usage": "/crystals"
     },
     {
@@ -573,24 +586,6 @@
       "usage": "/mineupgrades"
     },
     {
-      "command": "guardian",
-      "category": "Mining",
-      "description": "view mine guardian encounters and defeats, or leave a fight.",
-      "usage": "/guardian [leave]"
-    },
-    {
-      "command": "resonance",
-      "category": "Pickaxe",
-      "description": "view crystal combinations and your active resonance bonus.",
-      "usage": "/resonance"
-    },
-    {
-      "command": "sets",
-      "category": "Pickaxe",
-      "description": "save or equip three named combinations of owned parts, crystals and a pet.",
-      "usage": "/sets"
-    },
-    {
       "command": "shaft",
       "category": "Mining",
       "description": "enter challenge floors, view depth records, descend or return to your mine.",
@@ -648,15 +643,21 @@
       ]
     },
     {
+      "command": "daily",
+      "category": "Ranks & Prestige",
+      "description": "view or claim the daily reward and streak for this world.",
+      "usage": "/daily [claim]"
+    },
+    {
       "command": "rewards",
       "category": "Pickaxe",
-      "description": "View block milestones and their rewards.",
+      "description": "claim daily rewards and view mining milestones.",
       "usage": "/rewards"
     },
     {
       "command": "salvage",
       "category": "Items & Storage",
-      "description": "select spare parts and confirm salvaging them for tokens.",
+      "description": "select inventory items to discard after confirmation; the pickaxe is protected.",
       "usage": "/salvage",
       "aliases": [
         "scrap",
@@ -713,8 +714,8 @@
     {
       "command": "test",
       "category": "Devmode",
-      "description": "Open item, pickaxe and mine editors, progression actions and stress controls, or summon a guardian.",
-      "usage": "/test [mine [max|normal|0-50]|guardian|stress <mine|resetmine|rankup|prestige|stop|status>]",
+      "description": "open item, pickaxe and mine editors, progression actions and stress controls.",
+      "usage": "/test [mine [max|normal|0-50]|stress <mine|resetmine|rankup|prestige|stop|status>]",
       "devmode": true
     },
     {

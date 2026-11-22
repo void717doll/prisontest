@@ -43,6 +43,48 @@ void full(prison::Game& game) {
         game.state["inventory_slots"][i] = value;
     }
 }
+void binning(const prison::Data& data) {
+    prison::Game game(data);
+    clear(game);
+    game.state["inventory_slots"][1] = item("pick_part", 3);
+    game.state["inventory_slots"][2] = item("pet");
+    game.state["inventory_slots"][3] = item("pouch");
+    game.state["inventory_slots"][3]["items"][0] = item("robot_fuel", 20);
+    game.state["inventory_slots"][4] = item("robot_fuel", 99);
+    game.state["equipped_parts"]["head"] = item("pick_part");
+    const auto equipped = game.state["equipped_parts"];
+    auto selection = [&](std::initializer_list<int> indices) {
+        Value result;
+        for (int i : indices) {
+            Value row;
+            row["index"] = i;
+            row["item"] = game.state["inventory_slots"][i];
+            result["items"].append(row);
+        }
+        return result;
+    };
+    const auto before = game.snapshot();
+    check(!game.itemAction("bin_items", selection({1, 0})).ok && game.snapshot() == before,
+          "pickaxe protection rejects the whole selection");
+    check(!game.itemAction("bin_items", selection({1, 1})).ok && game.snapshot() == before,
+          "duplicate selections cannot pay twice");
+    auto stale = selection({1, 2});
+    stale["items"][1]["item"]["count"] = 2;
+    check(!game.itemAction("bin_items", stale).ok && game.snapshot() == before,
+          "changed selections cannot partially discard items");
+    game.state["inventory_slots"][5] = item("pickaxe");
+    check(!game.itemAction("bin_items", selection({5})).ok,
+          "pickaxes remain protected outside the reserved slot");
+    check(game.itemAction("bin_items", selection({1, 2, 3, 4})).ok,
+          "parts, pets, filled pouches and fuel can be discarded together");
+    for (int i = 1; i <= 4; ++i)
+        check(game.state["inventory_slots"][i].isNull(), "selected items are removed");
+    check(game.state["inventory_slots"][0]["id"] == "pickaxe" && game.state["equipped_parts"] == equipped,
+          "bin only changes the selected inventory items");
+    check(game.statistic("parts_salvaged") == 3 && game.statistic("tokens_earned") > 0,
+          "eligible items keep their salvage payout");
+}
+
 void filterRouting(const prison::Data& data) {
     prison::Game game(data);
     clear(game);
@@ -97,6 +139,7 @@ int main(int argc, char** argv) {
     try {
         prison::Data data;
         data.load(argc > 1 ? argv[1] : "..");
+        binning(data);
         filterRouting(data);
         prison::Game game(data);
         clear(game);

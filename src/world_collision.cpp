@@ -1,5 +1,4 @@
 #include "prison/world.hpp"
-#include "prison/guardians.hpp"
 #include "world_internal.hpp"
 #include <array>
 
@@ -12,23 +11,12 @@ bool validPosition(Vec3 point) {
 }
 } // namespace
 
-void Mine::setGuardian(const Json& guardian) {
-    guardianBoxes_.clear();
-    if (guardian.get("active", false).asBool())
-        for (const auto& part : guardianParts(guardian))
-            guardianBoxes_.push_back({part.low, part.high});
-}
-
 bool Mine::solidAt(Vec3 p) const {
     if (!validPosition(p))
         return false;
     if (code(rounded(p)))
         return true;
     for (const auto& b : shell_)
-        if (p.x >= b.low.x && p.x < b.high.x && p.y >= b.low.y && p.y < b.high.y && p.z >= b.low.z &&
-            p.z < b.high.z)
-            return true;
-    for (const auto& b : guardianBoxes_)
         if (p.x >= b.low.x && p.x < b.high.x && p.y >= b.low.y && p.y < b.high.y && p.z >= b.low.z &&
             p.z < b.high.z)
             return true;
@@ -81,8 +69,6 @@ Hit Mine::raycast(Vec3 origin, Vec3 direction, float reach) const {
     };
     for (const auto& box : shell_)
         intersect(box);
-    for (const auto& box : guardianBoxes_)
-        intersect(box);
     Cell cell = rounded(origin);
     float travelled = 0;
     Vec3 normal{};
@@ -127,9 +113,6 @@ bool Mine::collisionBox(const Box& b) const {
                b.low.z < o.high.z && b.high.z > o.low.z;
     };
     for (const auto& box : shell_)
-        if (overlaps(box))
-            return true;
-    for (const auto& box : guardianBoxes_)
         if (overlaps(box))
             return true;
     const auto lo = rounded(b.low), hi = rounded(b.high);
@@ -182,8 +165,6 @@ MoveResult Mine::movePlayer(Vec3 feet, Vec3 delta, float radius, float height) c
                 allowed = std::max(allowed, std::min(0.0f, axis(obstacle.high, a) - axis(body.low, a)));
         };
         for (const auto& b : shell_)
-            clip(b);
-        for (const auto& b : guardianBoxes_)
             clip(b);
         Box sweep = body;
         if (wanted > 0)

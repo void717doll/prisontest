@@ -146,22 +146,6 @@ def check(root):
     require(len(levels) == 14 and all(type(level) is int and level > 0 for level in levels)
             and levels == sorted(set(levels)), "crystals: expected fourteen increasing unlock levels")
     content = tables["native_content"]
-    resonance = content["resonance"]
-    require(type(resonance["minimum_tier"]) is int and 5 <= resonance["minimum_tier"] <= 10,
-            "resonance: invalid tier gate")
-    require(unique(resonance["sets"], "id", "resonance") ==
-            {"prosperity", "treasury", "insight", "harmony"}, "resonance: unsupported set")
-    combinations = set()
-    for row in resonance["sets"]:
-        kinds = row["kinds"]
-        require(len(kinds) == 3 and set(kinds) <= {"money", "token", "xp"},
-                "resonance: three known crystal boosts required")
-        combination = tuple(sorted(kinds))
-        require(combination not in combinations, "resonance: duplicate combination")
-        combinations.add(combination)
-        require(all(numeric(row.get(kind, 0)) and row.get(kind, 0) <= .04
-                    for kind in ("money", "token", "xp")), "resonance: bonus exceeds cap")
-        require(row["label"] and row["description"], "resonance: missing text")
     mutations = content["mutations"]
     require(0 < mutations["chance"] <= .001, "mutations: invalid chance")
     require(unique(mutations["traits"], "id", "mutations") == {"efficient", "brood", "studious"},
@@ -172,19 +156,6 @@ def check(root):
         bonuses = [row.get(kind, 0) for kind in ("fuel_saving", "eggs", "xp")]
         require(all(numeric(value) and value <= .05 for value in bonuses) and
                 sum(value > 0 for value in bonuses) == 1, "mutations: one bounded bonus required")
-    guardians = content["guardians"]
-    require(type(guardians["required_pickaxe_level"]) is int and
-            1000 <= guardians["required_pickaxe_level"] <= 5000 and
-            0 < guardians["chance"] <= 1 / 50000, "guardians: invalid encounter gate/rate")
-    require(type(guardians["health"]) is int and 3 <= guardians["health"] <= 3000 and
-            guardians["health"] % 3 == 0 and .2 <= guardians["strike_seconds"] <= 2,
-            "guardians: invalid health/strike speed")
-    require(30 <= guardians["duration"] <= 600 and 600 <= guardians["cooldown"] <= 7200 and
-            guardians["duration"] < guardians["cooldown"], "guardians: invalid timers")
-    require(type(guardians["points"]) is int and 1 <= guardians["points"] <= 10,
-            "guardians: invalid point reward")
-    require(re.fullmatch(r"#[0-9a-fA-F]{6}", guardians["color"]) and guardians["label"],
-            "guardians: invalid color/text")
     mine = tables["mine"]
     require(len(mine["blocks"]) == 52, "mine: expected smooth/ore pairs for A-Z")
     unique(mine["blocks"], "id", "mine")
@@ -299,6 +270,18 @@ def check(root):
         for key, maximum in (("goal", 9000000), ("points", 1900)):
             require(type(contract[key]) is int and 1 <= contract[key] <= maximum,
                     f"contracts: invalid {key}")
+
+    milestones = systems["daily_rewards"]["milestones"]
+    require([row["prestige"] for row in milestones] == [0, 1, 5, 10, 25, 50, 100],
+            "daily: invalid prestige milestones")
+    previous = {"money": 0, "tokens": 0, "points": 0, "crystal_tier": 1}
+    for row in milestones:
+        for wallet in ("money", "tokens", "points"):
+            require(numeric(row[wallet], 1) and previous[wallet] < row[wallet] <= 1e12,
+                    f"daily: invalid {wallet} reward")
+        require(type(row["points"]) is int and type(row["crystal_tier"]) is int and
+                previous["crystal_tier"] <= row["crystal_tier"] <= 6, "daily: invalid points/crystal tier")
+        previous = row
 
     expeditions = systems["expeditions"]
     require(type(expeditions["slots"]) is int and 1 <= expeditions["slots"] <= 3,

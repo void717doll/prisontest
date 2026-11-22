@@ -57,7 +57,7 @@ void UI::Impl::setPage(const std::string& name) {
     if (name != "pet_food" && name != "confirm")
         petFoodSelection.clear();
     if (name != "bin" && name != "confirm")
-        partSelection.clear();
+        binSelection.clear();
     if (ctx.playing)
         game.returnStoredItems();
     if (page == "tutorial" && name.empty() && game.state["tutorial"].get("status", "") == "new") {
@@ -139,9 +139,6 @@ void UI::Impl::setPage(const std::string& name) {
     }
     if (page == "rename")
         inputs["rename"] = game.state.get("_rename_old", "Prison Tool").asString();
-    if (page == "equipment_sets")
-        for (int i = 0; i < 3; ++i)
-            inputs["set_name_" + std::to_string(i)] = game.state["equipment_sets"][i]["name"].asString();
     if (page == "help") {
         inputs["help_search"] = game.state.get("_help_search", "").asString();
         if (!inputs["help_search"].empty() && inputs["help_search"][0] == '/')
@@ -178,8 +175,9 @@ void UI::Impl::apply(const Result& result) {
         devTab = "mine";
     } else if (result.menu == "test:mine:apply") {
         setPage("");
-    } else if (result.menu == "guardian:summon") {
-        action("guardian");
+    } else if (result.menu == "daily:claimed") {
+        action("save");
+        setPage("rewards");
     } else if (result.menu == "autominer:start" || result.menu == "autominer:stop") {
         if (result.menu == "autominer:start")
             action("mine_entry");
@@ -319,7 +317,10 @@ Rect UI::Impl::panel(const std::string& title, float width, float height) {
     width = std::min(width, draw.width() - 28);
     height = std::min(height, draw.height() - 32);
     Rect box{(draw.width() - width) * 0.5f, (draw.height() - height) * 0.5f, width, height};
-    draw.rect({0, 0, draw.width(), draw.height()}, {0, 0, 0, 0.4f});
+    if (page == "itemviewer" && ctx.playing)
+        box.y = 16;
+    else
+        draw.rect({0, 0, draw.width(), draw.height()}, {0, 0, 0, 0.4f});
     draw.rect({box.x + 4, box.y + 4, box.w, box.h}, {0, 0, 0, 0.28f});
     draw.rect(box, background);
     draw.border(box, outline);
@@ -333,7 +334,7 @@ Rect UI::Impl::panel(const std::string& title, float width, float height) {
             setPage("pets");
         else if (page == "confirm" && confirmAction == "pet_food")
             setPage(confirmArgs.get("pets", Json()).isArray() ? "pet_food" : "pets");
-        else if (page == "confirm" && confirmAction == "salvage_parts")
+        else if (page == "confirm" && confirmAction == "bin_items")
             setPage("bin");
         else
             setPage(ctx.playing ? "" : "title");
@@ -371,7 +372,7 @@ void UI::Impl::slot(Rect box, const std::string& container, int index, const Jso
     if (page == "pet_food" && container == "inventory")
         selected = petFoodSelection.count(index) != 0;
     else if (page == "bin" && container == "inventory")
-        selected = partSelection.count(index) != 0;
+        selected = binSelection.count(index) != 0;
     if (active && (selected || box.contains(mouseX, mouseY)))
         draw.border(box, foreground, selected ? 2 : 1);
     draw.item({box.x + 4, box.y + 4, box.w - 8, box.h - 8}, value,
@@ -393,7 +394,7 @@ void UI::Impl::inventory(Rect box) {
             if (page == "pet_food")
                 active = index > 0 && items[index]["id"] == "pet";
             else if (page == "bin")
-                active = index > 0 && items[index]["id"] == "pick_part";
+                active = index > 0 && items[index].isObject() && items[index]["id"] != "pickaxe";
             slot({x + col * size, y + row * size + (row == 3 ? 5.f : 0.f), size - 2, size - 2}, "inventory",
                  index, items[index], active);
         }
@@ -442,10 +443,6 @@ void UI::Impl::paint() {
         enchantDetail();
     else if (page == "crystals" || page == "parts")
         equipment();
-    else if (page == "resonance")
-        resonance();
-    else if (page == "guardian")
-        guardian();
     else if (page == "pets")
         pets();
     else if (page == "robots")
@@ -460,8 +457,6 @@ void UI::Impl::paint() {
         quarry();
     else if (page == "mine_upgrades")
         mineUpgrades();
-    else if (page == "equipment_sets")
-        equipmentSets();
     else if (page == "shaft")
         shaft();
     else if (page == "contracts")

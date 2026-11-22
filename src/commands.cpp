@@ -84,7 +84,6 @@ const std::map<std::string, std::string> menus = {{"inventory", "inventory"},
                                                   {"mines", "mines"},
                                                   {"quarry", "quarry"},
                                                   {"mineupgrades", "mine_upgrades"},
-                                                  {"sets", "equipment_sets"},
                                                   {"shaft", "shaft"},
                                                   {"contracts", "contracts"},
                                                   {"expeditions", "expeditions"},
@@ -98,8 +97,6 @@ const std::map<std::string, std::string> menus = {{"inventory", "inventory"},
                                                   {"hatchery", "pets"},
                                                   {"parts", "parts"},
                                                   {"crystals", "crystals"},
-                                                  {"resonance", "resonance"},
-                                                  {"guardian", "guardian"},
                                                   {"boosts", "boosts"},
                                                   {"rewards", "rewards"},
                                                   {"pv", "vault"},
@@ -127,6 +124,13 @@ Result Game::command(const std::string& input) {
         args.push_back(word);
     if (name.empty())
         return error("Type /help for commands.");
+    if (name == "daily") {
+        if (args.empty())
+            return {true, "", "rewards"};
+        if (args.size() == 1 && lower(args[0]) == "claim")
+            return claimDailyReward();
+        return error("Usage: /daily [claim]");
+    }
     if (name == "tutorial") {
         if (args.size() > 1)
             return error("Usage: /tutorial [start|skip|restart]");
@@ -164,10 +168,6 @@ Result Game::command(const std::string& input) {
         if (page > vaultPages())
             return error("You own " + std::to_string(vaultPages()) + " vault pages. Buy more in /pv.");
         return {true, "", "vault:" + std::to_string(page - 1)};
-    }
-    if (name == "guardian" && args.size() == 1 && lower(args[0]) == "leave") {
-        state["guardian"]["active"] = false;
-        return ok("Guardian fight left.");
     }
     if (menus.count(name)) {
         if (!args.empty())

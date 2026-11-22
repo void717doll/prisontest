@@ -407,15 +407,15 @@
   ],
   "mine_upgrades": [
     {"id": "ore_density", "label": "Ore Density", "description": "+2 percentage points of ore per level. More tokens, less money.", "levels": [
-      {"money": 1e15, "points": 250, "rebirth": 0},
-      {"money": 5e17, "points": 1000, "rebirth": 1},
-      {"money": 5e19, "points": 4000, "rebirth": 2},
-      {"money": 1e21, "points": 10000, "rebirth": 3},
-      {"money": 2.5e22, "points": 25000, "rebirth": 5}
+      {"money": 5e10, "points": 10, "rebirth": 0},
+      {"money": 2.5e11, "points": 25, "rebirth": 0},
+      {"money": 1e12, "points": 50, "rebirth": 0},
+      {"money": 5e12, "points": 100, "rebirth": 1},
+      {"money": 2.5e13, "points": 250, "rebirth": 2}
     ]},
     {"id": "pocket_size", "label": "Ore Pockets", "description": "+1 block in each rare pocket per level.", "levels": [
-      {"money": 2.5e17, "points": 500, "rebirth": 1},
-      {"money": 5e20, "points": 5000, "rebirth": 3}
+      {"money": 2.5e11, "points": 25, "rebirth": 0},
+      {"money": 2.5e12, "points": 100, "rebirth": 1}
     ]}
   ],
   "shaft": {
@@ -440,10 +440,21 @@
   "expeditions": {
     "slots": 3,
     "routes": [
-      {"id": "quarry", "blocks": 25000, "species": [], "loot": {"id": "pet_food", "count": 4, "food_value": 1}, "points": 4},
-      {"id": "frost", "blocks": 50000, "species": ["Rabbit", "Fox", "Wolf", "Bear", "Deer", "Moose", "Penguin", "Seal"], "loot": {"id": "pet_egg", "count": 1, "tier_id": "uncommon"}, "points": 5},
-      {"id": "caverns", "blocks": 75000, "species": ["Owl", "Badger", "Mole", "Raccoon", "Hedgehog", "Hamster", "Beaver"], "loot": {"id": "pet_food", "count": 8, "food_value": 1}, "points": 6},
-      {"id": "ember", "blocks": 100000, "species": ["Lizard", "Gecko", "Iguana", "Snake", "Crocodile", "Alligator", "Camel", "Rhino"], "loot": {"id": "pet_egg", "count": 1, "tier_id": "rare"}, "points": 8}
+      {"id": "quarry", "blocks": 25000, "species": [], "loot": {"id": "pet_food", "count": 4, "food_value": 1}, "points": 1},
+      {"id": "frost", "blocks": 50000, "species": ["Rabbit", "Fox", "Wolf", "Bear", "Deer", "Moose", "Penguin", "Seal"], "loot": {"id": "pet_egg", "count": 1, "tier_id": "uncommon"}, "points": 1},
+      {"id": "caverns", "blocks": 75000, "species": ["Owl", "Badger", "Mole", "Raccoon", "Hedgehog", "Hamster", "Beaver"], "loot": {"id": "pet_food", "count": 8, "food_value": 1}, "points": 1},
+      {"id": "ember", "blocks": 100000, "species": ["Lizard", "Gecko", "Iguana", "Snake", "Crocodile", "Alligator", "Camel", "Rhino"], "loot": {"id": "pet_egg", "count": 1, "tier_id": "rare"}, "points": 2}
+    ]
+  },
+  "daily_rewards": {
+    "milestones": [
+      {"prestige": 0, "money": 1e6, "tokens": 1e6, "points": 5, "crystal_tier": 1},
+      {"prestige": 1, "money": 5e6, "tokens": 1e7, "points": 6, "crystal_tier": 1},
+      {"prestige": 5, "money": 5e7, "tokens": 1e8, "points": 8, "crystal_tier": 2},
+      {"prestige": 10, "money": 2.5e8, "tokens": 5e8, "points": 10, "crystal_tier": 3},
+      {"prestige": 25, "money": 2.5e9, "tokens": 5e9, "points": 15, "crystal_tier": 4},
+      {"prestige": 50, "money": 2.5e10, "tokens": 5e10, "points": 20, "crystal_tier": 5},
+      {"prestige": 100, "money": 2.5e11, "tokens": 5e11, "points": 30, "crystal_tier": 6}
     ]
   },
   "vault": {

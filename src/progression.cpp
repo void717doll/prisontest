@@ -77,7 +77,9 @@ void Game::loadProgression() {
             Json trip = saved;
             const auto& place = find(regions, saved["region"].isString() ? saved["region"].asString() : "");
             trip["region"] = place.isObject() ? place["id"] : Json("quarry");
-            trip["points"] = amount(saved["points"], 2000) + amount(saved["materials"], 1000);
+            const auto& route = find(data.systems["expeditions"]["routes"], trip["region"].asString());
+            trip["points"] = std::min(route["points"].asInt(),
+                                      amount(saved["points"], 2000) + amount(saved["materials"], 1000));
             trip.removeMember("material");
             trip.removeMember("materials");
             trip["goal"] = std::max(1, amount(saved["goal"], 100000000));
@@ -333,17 +335,13 @@ Json Game::expeditionQuote(int inventoryIndex) const {
             if (species == pet.get("pet_type", "Rabbit"))
                 route = candidate;
     }
-    int rarity = 0;
-    for (unsigned i = 0; i < data.systems["pets"]["tiers"].size(); ++i)
-        if (data.systems["pets"]["tiers"][i]["id"] == pet.get("tier_id", "common"))
-            rarity = int(i);
     Json quote;
     quote["index"] = inventoryIndex;
     quote["pet"] = pet;
     quote["region"] = route["id"];
     quote["goal"] = std::max(1, int(std::ceil(route["blocks"].asDouble() *
                                               (1 - std::clamp(amount(pet["level"], 75), 1, 75) * .002))));
-    quote["points"] = route["points"].asInt() + rarity * 2;
+    quote["points"] = route["points"];
     quote["loot"].append(route["loot"]);
     return quote;
 }

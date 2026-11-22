@@ -64,8 +64,7 @@ void Data::load(const std::filesystem::path& sourceRoot) {
     for (const auto& id : economy["effects"].getMemberNames())
         enchants["effects"][id] = economy["effects"][id];
     enchants["defs"]["token_greed"]["color"] = systems["currencies"]["tokens"]["color"];
-    for (const char* key : {"resonance", "mutations", "guardians"})
-        systems[key] = content[key];
+    systems["mutations"] = content["mutations"];
     mine = readJson(root / "data/mine.json");
     help = readJson(root / "data/help.json");
 }

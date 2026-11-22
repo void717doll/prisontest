@@ -1,4 +1,3 @@
-#include "prison/guardians.hpp"
 #include "ui_internal.hpp"
 #include <array>
 
@@ -44,12 +43,6 @@ Rect UI::Impl::bossBars() {
                             clockText(std::ceil(multiplier.remaining)),
                         multiplier.remaining / multiplier.duration, colors[i]});
     }
-    const auto& guardian = game.state["guardian"];
-    if (guardian["active"].asBool())
-        bars.push_back({"Stone Guardian · " + guardianWeakName(guardian) + " · " +
-                            clockText(std::ceil(guardian["remaining"].asDouble())),
-                        guardian["health"].asDouble() / std::max(1, guardian["maximum"].asInt()),
-                        hexColor(game.data.systems["guardians"]["color"].asString())});
     for (const auto& entry : game.data.systems["endgame"]) {
         const auto id = entry.asString();
         const double remaining = game.state["endgame"][id].get("remaining", 0).asDouble();

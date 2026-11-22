@@ -1,5 +1,4 @@
 #include "prison/game.hpp"
-#include "prison/guardians.hpp"
 #include <cmath>
 #include <iostream>
 #include <limits>
@@ -65,20 +64,12 @@ void nativeContent(prison::Data data) {
     game.state["pick_level"] = 200;
     for (int i = 0; i < 3; ++i)
         game.state["equipped_crystals"][i] = equipped("crystal", "sell", 0, 5);
-    check(game.crystalResonance()["id"] == "prosperity", "matching crystals activate resonance");
-    near(game.boost("money"), 1.04, "resonance applies once");
-    game.state["equipped_crystals"][1]["tier"] = 6;
-    check(game.crystalResonance().isNull(), "mixed tiers cannot resonate");
-    game.state["equipped_crystals"][1]["tier"] = 5;
-    game.state["equipped_crystals"][1]["boost_type"] = "exp";
-    game.state["equipped_crystals"][2]["boost_type"] = "token";
-    check(game.crystalResonance()["id"] == "harmony", "mixed boost order activates harmony");
-    near(game.boost("money"), 1.02, "harmony uses its smaller bonus");
-    game.state["equipped_crystals"][0]["identified"] = false;
-    check(game.crystalResonance().isNull(), "unidentified crystal cannot resonate");
-    game.state["equipped_crystals"][0]["identified"] = true;
-    game.state["pick_level"] = 79;
-    check(game.crystalResonance().isNull(), "locked slots cannot resonate");
+    near(game.boost("money"), 1.0, "matching crystals add no resonance bonus");
+    for (int i = 0; i < 3; ++i)
+        game.state["equipped_crystals"][i]["boost"] = .1;
+    near(game.boost("money"), 1.3, "ordinary crystal boosts remain");
+    check(!game.command("/resonance").ok && !game.command("/sets").ok,
+          "removed equipment menus cannot be opened");
 
     game.newWorld();
     data.systems["mutations"]["chance"] = 1.0;
@@ -123,40 +114,67 @@ void nativeContent(prison::Data data) {
                       "batching cannot change remaining fuel or fractional savings");
             }
 
-    game.newWorld();
-    check(!game.command("/test guardian").ok && !game.spawnGuardian({}, true),
-          "ordinary worlds cannot force guardians");
-    data.systems["guardians"]["chance"] = 1.0;
-    game.state["pick_level"] = 999;
-    check(!game.spawnGuardian({}), "guardian pickaxe-level gate");
-    game.state["pick_level"] = 1000;
-    check(game.spawnGuardian({}), "eligible manual encounter can spawn");
-    const auto& guardian = game.state["guardian"];
-    check(prison::raycastGuardian(guardian, {-3, 1.5f, 0}, {1, 0, 0}, 8).part == 4,
-          "shared guardian geometry targets the exposed arm");
-    check(prison::raycastGuardian(guardian, {-3, 1.5f, 0}, {1, 0, 0}, 1).part == -1,
-          "terrain occlusion bounds guardian reach");
-    check(!game.strikeGuardian(2).ok && guardian["health"] == 120, "armor rejects strikes");
-    for (int i = 0; i < 40; ++i)
-        check(game.strikeGuardian(4).ok, "first exposed arm accepts mining");
-    check(prison::guardianWeakPart(guardian) == 5 && !game.strikeGuardian(4).ok,
-          "weak spot moves after the first phase");
-    game.tickGuardian(10);
-    const auto saved = guardian;
     game.loadSnapshot(game.snapshot());
-    check(game.state["guardian"] == saved, "guardian health and timers survive reload");
-    for (int i = 0; i < 80; ++i)
-        check(game.strikeGuardian(prison::guardianWeakPart(game.state["guardian"])).ok,
-              "remaining guardian phases accept mining");
-    check(game.state["points"].asDouble() == 3 && !game.strikeGuardian(3).ok &&
-              game.state["guardian"]["defeated"] == 1,
-          "guardian death awards points exactly once");
-    check(!game.spawnGuardian({}), "guardian cooldown prevents instant respawn");
-    game.loadSnapshot(game.snapshot());
-    check(game.state["points"].asDouble() == 3, "guardian points persist");
+    auto old = game.snapshot();
+    old["guardian"]["active"] = true;
+    old["equipment_sets"][0]["name"] = "old set";
+    const auto inventory = old["inventory_slots"];
+    game.loadSnapshot(old);
+    check(!game.state.isMember("guardian") && !game.state.isMember("equipment_sets"),
+          "retired encounter and equipment reference state is removed");
+    check(game.state["inventory_slots"] == inventory, "removing equipment sets preserves owned items");
     game.state["devmode"] = true;
-    check(game.spawnGuardian({}, true) && game.tickGuardian(180), "guardian deadline expires");
-    check(game.state["points"].asDouble() == 3, "expired encounter cannot award points");
+    check(!game.command("/test guardian").ok && !game.command("/guardian").ok,
+          "removed guardians cannot be summoned or opened");
+    check(game.command("/contracts").ok, "contracts remain available");
+}
+
+void progressionBalance(const prison::Data& data) {
+    prison::Game game(data);
+    const auto density = game.mineUpgradeQuote("ore_density");
+    check(density["money"] == 5e10 && density["points"] == 10 && density["rebirth"] == 0,
+          "midgame density starts at 50b and ten points before rebirth");
+    game.state["money"] = 5e10;
+    game.state["points"] = 10;
+    check(game.itemAction("mine_upgrade", density).ok && game.state["money"] == 0.0 &&
+              game.state["points"] == 0.0, "mine upgrade charges its exact quote");
+    check(!game.itemAction("mine_upgrade", density).ok, "stale mine quote cannot buy the next level");
+    game.loadSnapshot(game.snapshot());
+    check(game.mineUpgradeQuote("ore_density")["level"] == 1, "owned upgrade survives loading");
+    auto pet = equipped("pet", "sell", .1);
+    pet["pet_type"] = "Rabbit";
+    pet["tier_id"] = "common";
+    pet["level"] = 1;
+    pet["exp"] = 0;
+    game.state["inventory_slots"][1] = pet;
+    check(game.expeditionQuote(1)["points"] == 1, "quarry gives one point");
+    game.state["inventory_slots"][1]["tier_id"] = "mythical";
+    check(game.expeditionQuote(1)["points"] == 1, "rarity cannot bypass the point reduction");
+    game.state["rebirth"] = 5;
+    for (const auto& route : data.systems["expeditions"]["routes"])
+        if (!route["species"].empty()) {
+            game.state["inventory_slots"][1]["pet_type"] = route["species"][0];
+            const auto quote = game.expeditionQuote(1);
+            check(quote["region"] == route["id"] && quote["points"] == (route["id"] == "ember" ? 2 : 1),
+                  "unlocked routes award one or two points");
+        }
+    check(game.itemAction("expedition_start", game.expeditionQuote(1)).ok, "start expedition");
+    auto saved = game.snapshot();
+    auto& trip = saved["progression"]["expeditions"][0];
+    trip["points"] = 500;
+    trip["materials"] = 20;
+    trip["progress"] = trip["goal"];
+    const auto petBefore = trip["pet"], loot = trip["loot"];
+    game.loadSnapshot(saved);
+    const auto loaded = game.state["progression"]["expeditions"][0];
+    check(loaded["points"] == 2 && loaded["pet"] == petBefore && loaded["loot"] == loot &&
+              loaded["progress"] == loaded["goal"], "old unclaimed points are capped without losing trip progress or loot");
+    game.loadSnapshot(game.snapshot());
+    check(game.state["progression"]["expeditions"][0] == loaded, "expedition migration is idempotent");
+    prison::Json args;
+    args["serial"] = loaded["serial"];
+    check(game.itemAction("expedition_claim", args).ok && game.state["points"] == 2.0 &&
+              !game.itemAction("expedition_claim", args).ok, "expedition pays its reduced points once");
 }
 
 void retiredContent(const prison::Data& data) {
@@ -439,6 +457,7 @@ int main(int argc, char** argv) {
         prison::Data data;
         data.load(argc > 1 ? argv[1] : "..");
         nativeContent(data);
+        progressionBalance(data);
         retiredContent(data);
         nativeEconomy(data);
         tutorial(data);
