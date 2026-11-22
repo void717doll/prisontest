@@ -108,9 +108,18 @@ on windows x64, use an MSYS2 UCRT64 shell:
 pacman -S --needed mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-cmake mingw-w64-ucrt-x86_64-ninja mingw-w64-ucrt-x86_64-pkgconf mingw-w64-ucrt-x86_64-SDL2 mingw-w64-ucrt-x86_64-freetype mingw-w64-ucrt-x86_64-libpng mingw-w64-ucrt-x86_64-jsoncpp mingw-w64-ucrt-x86_64-curl
 ```
 
-for win32, use a MINGW32 shell and replace `mingw-w64-ucrt-x86_64-` with
-`mingw-w64-i686-` in those package names. [MSYS2 environments](https://www.msys2.org/docs/environments/)
-list the target architectures.
+for win32, use a MINGW32 shell:
+
+```sh
+pacman -S --needed mingw-w64-i686-gcc mingw-w64-i686-cmake mingw-w64-i686-ninja mingw-w64-i686-pkgconf mingw-w64-i686-jsoncpp mingw-w64-i686-curl
+sh tools/build_win32_deps.sh
+```
+
+msys2 no longer publishes SDL2, freetype and libpng for mingw32. the script builds
+pinned upstream sources, verifies their checksums and installs them in the
+mingw32 prefix. their runtime libraries and licenses are included in both windows
+packages. x64 still uses the prebuilt packages.
+[MSYS2 environments](https://www.msys2.org/docs/environments/) list the target architectures.
 
 windows installers use [NSIS](https://nsis.sourceforge.io/Download), available
 with `choco install nsis --yes`. each installer includes the runtime DLLs and

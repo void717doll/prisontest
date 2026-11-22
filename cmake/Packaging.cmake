@@ -28,6 +28,10 @@ elseif(WIN32)
         POST_EXCLUDE_REGEXES ".*[Ww][Ii][Nn][Dd][Oo][Ww][Ss][/\\\\].*"
         RUNTIME DESTINATION bin)
     install(PROGRAMS packaging/prisontest.cmd DESTINATION .)
+    install(DIRECTORY "${SDL2_RUNTIME_PREFIX}/share/licenses/SDL2"
+        "${SDL2_RUNTIME_PREFIX}/share/licenses/freetype"
+        "${SDL2_RUNTIME_PREFIX}/share/licenses/libpng"
+        DESTINATION "${PRISON_DATA_DESTINATION}/licenses")
 else()
     # jsoncpp's soname differs between supported debian and ubuntu releases.
     set_target_properties(prisoncpp PROPERTIES INSTALL_RPATH "$ORIGIN/../lib/prisoncpp")

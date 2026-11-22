@@ -163,11 +163,14 @@ jobs:
             ${{ matrix.prefix }}-cmake
             ${{ matrix.prefix }}-ninja
             ${{ matrix.prefix }}-pkgconf
-            ${{ matrix.prefix }}-SDL2
-            ${{ matrix.prefix }}-freetype
-            ${{ matrix.prefix }}-libpng
             ${{ matrix.prefix }}-jsoncpp
             ${{ matrix.prefix }}-curl
+      - name: graphics dependencies (x64)
+        if: matrix.msystem == 'UCRT64'
+        run: pacman --noconfirm -S --needed mingw-w64-ucrt-x86_64-SDL2 mingw-w64-ucrt-x86_64-freetype mingw-w64-ucrt-x86_64-libpng
+      - name: graphics dependencies (win32)
+        if: matrix.msystem == 'MINGW32'
+        run: sh tools/build_win32_deps.sh
       - name: build
         env:
           PRISON_VERSION: ${{ needs.prepare.outputs.version }}
